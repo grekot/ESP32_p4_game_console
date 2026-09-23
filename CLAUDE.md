@@ -14,8 +14,9 @@ dokumentacja w `docs/`, README i ten plik z polskimi znakami.
 - Firmware kompiluje się: 809 kB flash (19 % z 4 MB), 27,2 kB RAM statycznie. Emulator kompiluje się i działa.
 - Wszystkie mechaniki Lake Mario zweryfikowane skryptami w emulatorze (lista niżej). Bez testu skryptowego,
   tylko przegląd kodu: meta `F`, śmierć w przepaści, koniec czasu.
-- **Brak repozytorium git** — użytkownik nie prosił o commit. Uwaga: świeże `git init` bez commita wywala
-  build ESP-IDF (woła `git describe`); po `git init` zrobić od razu pierwszy commit.
+- Repozytorium: **https://github.com/grekot/ESP32_p4_game_console.git**, gałąź `main`, pierwszy commit 23.09.2026.
+  Commit i push tylko na wyraźne polecenie użytkownika. `.gitattributes` wymusza LF w repozytorium.
+  Uwaga historyczna: repozytorium bez żadnego commita wywala build ESP-IDF (woła `git describe`).
 - Około 6800 linii własnego kodu (bez sterownika ST7701 producenta).
 
 ## Komendy

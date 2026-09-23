@@ -1,0 +1,10 @@
+# Konce linii: w repozytorium zawsze LF, niezaleznie od systemu.
+# Bez tego git na Windows (core.autocrlf=true) ostrzega przy kazdym pliku i miesza CRLF/LF.
+* text=auto eol=lf
+
+# Pliki binarne
+*.png binary
+*.bmp binary
+*.jpg binary
+*.webp binary
+*.pdf binary
