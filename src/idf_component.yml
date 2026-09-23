@@ -1,0 +1,9 @@
+## Zaleznosci z ESP Component Registry (pobierane automatycznie przy pierwszym buildzie)
+dependencies:
+  idf: ">=5.4"
+  # Sterownik dotyku Goodix GT911 (ciagnie za soba espressif/esp_lcd_touch)
+  espressif/esp_lcd_touch_gt911: "^1.1"
+  # LVGL - UI konsoli i gier. Wersja przypieta do 9.5.x, bo emulator (sim/) buduje
+  # DOKLADNIE te sama wersje, zeby UI wygladalo tak samo na plytce i na PC.
+  # Konfiguracja: src/ui/lv_conf.h (wspolna dla obu), znajdowana przez -I src/ui.
+  lvgl/lvgl: "~9.5.0"

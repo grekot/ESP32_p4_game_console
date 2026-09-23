@@ -1,0 +1,23 @@
+# PlatformIO
+.pio/
+managed_components/
+sdkconfig.jc4880p443c
+sdkconfig.old
+build/
+
+# VS Code - pliki generowane przez PlatformIO
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/ipch/
+.vscode/.browse.c_cpp.db*
+
+# System
+*.log
+Thumbs.db
+.DS_Store
+
+# Emulator (build CMake)
+sim/build/
+
+# CMake Tools - lokalne presety uzytkownika
+sim/CMakeUserPresets.json

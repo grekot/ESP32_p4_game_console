@@ -1,0 +1,28 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+    "configurePresets": [
+        {
+            "name": "mingw",
+            "displayName": "Emulator (MinGW z MSYS2)",
+            "description": "Emulator konsoli na Windows: g++ z C:/msys64/mingw64, Ninja, RelWithDebInfo",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER":   "C:/msys64/mingw64/bin/gcc.exe",
+                "CMAKE_CXX_COMPILER": "C:/msys64/mingw64/bin/g++.exe",
+                "CMAKE_BUILD_TYPE":   "RelWithDebInfo"
+            },
+            "environment": {
+                "PATH": "C:/msys64/mingw64/bin;$penv{PATH}"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "mingw",
+            "displayName": "Emulator (MinGW z MSYS2)",
+            "configurePreset": "mingw"
+        }
+    ]
+}

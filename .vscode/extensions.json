@@ -1,0 +1,14 @@
+{
+    "recommendations": [
+        "Jason2866.esp-decoder",
+        "ms-vscode.cmake-tools",
+        "ms-vscode.cpptools",
+        "pioarduino.pioarduino-ide",
+        "platformio.platformio-ide"
+    ],
+    "unwantedRecommendations": [
+        "espressif.esp-idf-extension",
+        "ms-vscode.cpptools-extension-pack",
+        "pioarduino.pioarduino-ide"
+    ]
+}

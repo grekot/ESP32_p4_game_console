@@ -1,0 +1,78 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "PIO: Build",
+            "type": "shell",
+            "command": "pio run",
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": ["$gcc"],
+            "detail": "Firmware na plytke (pierwszy raz pobiera ESP-IDF i toolchain, ~15 min)"
+        },
+        {
+            "label": "PIO: Upload",
+            "type": "shell",
+            "command": "pio run --target upload",
+            "problemMatcher": ["$gcc"],
+            "detail": "Wgraj firmware na plytke (USB-C podpisane USB/JTAG)"
+        },
+        {
+            "label": "PIO: Monitor",
+            "type": "shell",
+            "command": "pio device monitor",
+            "problemMatcher": [],
+            "detail": "Logi z plytki, 115200"
+        },
+        {
+            "label": "PIO: Upload + Monitor",
+            "type": "shell",
+            "command": "pio run --target upload --target monitor",
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "PIO: Clean",
+            "type": "shell",
+            "command": "pio run --target clean",
+            "problemMatcher": [],
+            "detail": "Po dodaniu nowych plikow zrodlowych albo zmianie sdkconfig.defaults"
+        },
+        {
+            "label": "PIO: menuconfig",
+            "type": "shell",
+            "command": "pio run --target menuconfig",
+            "problemMatcher": []
+        },
+        {
+            "label": "SIM: Configure",
+            "type": "shell",
+            "command": "cmake -S sim --preset mingw",
+            "options": { "env": { "PATH": "C:\\msys64\\mingw64\\bin;${env:PATH}" } },
+            "problemMatcher": [],
+            "detail": "Jednorazowo i po dodaniu nowych plikow zrodlowych (preset: sim/CMakePresets.json)"
+        },
+        {
+            "label": "SIM: Build",
+            "type": "shell",
+            "command": "cmake --build sim/build",
+            "options": { "env": { "PATH": "C:\\msys64\\mingw64\\bin;${env:PATH}" } },
+            "group": "build",
+            "problemMatcher": ["$gcc"],
+            "detail": "Emulator na Windows (zamknij dzialajacy emulator przed budowaniem)"
+        },
+        {
+            "label": "SIM: Run",
+            "type": "shell",
+            "command": "${workspaceFolder}/sim/build/lake_sim.exe",
+            "dependsOn": ["SIM: Build"],
+            "problemMatcher": [],
+            "detail": "Zbuduj (jesli trzeba) i uruchom emulator"
+        },
+        {
+            "label": "SIM: Test (mechaniki Lake Mario)",
+            "type": "shell",
+            "command": "${workspaceFolder}/sim/build/lake_sim.exe --game 0 --hold B 3 4 --hold RIGHT 20 90 --frames 90 --trace 15",
+            "problemMatcher": [],
+            "detail": "Przyklad testu skryptowanego: slad stanu gry co 15 klatek podczas chodu w prawo"
+        }
+    ]
+}

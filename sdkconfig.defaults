@@ -1,0 +1,78 @@
+# ESP-IDF sdkconfig defaults - LakeMarioGame
+# Plytka: Guition JC4880P443C_I_W_Y (ESP32-P4 + ESP32-C6)
+# Ekran: 4.3" IPS 480x800 MIPI-DSI (ST7701), dotyk GT911 (I2C GPIO7/8)
+#
+# Kazda opcja ponizej ma znaczenie dla tej konkretnej plytki - zobacz docs/HARDWARE.md
+# przed zmiana.
+
+# --- Target ---
+CONFIG_IDF_TARGET="esp32p4"
+
+# --- Rewizja krzemu ---
+# Modul JC-ESP32P4-M3 ma ESP32-P4 rev 1.x. Rewizje <3.0 i >=3.0 maja inna mape pamieci;
+# zly wybor = crash w bootloaderze zanim wykona sie jakikolwiek nasz kod.
+CONFIG_ESP32P4_SELECTS_REV_LESS_V3=y
+# Minimalna wspierana rewizja: v0.0 (obejmuje 0.x i 1.x; bezpieczne, gdy nie znamy dokladnej rewizji modulu)
+CONFIG_ESP32P4_REV_MIN_0=y
+
+# --- CPU: 360 MHz ---
+# To maksimum dla ESP32-P4 rev <3.0. Opcja 400 MHz jest dostepna tylko dla rev >=3.0 albo po
+# wlaczeniu CONFIG_ESP_FORCE_400MHZ_ON_REV_LESS_V3 (wymaga chipow osobno kwalifikowanych przez
+# Espressif - na zwyklym module grozi niestabilnoscia).
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_360=y
+
+# --- Flash: 16 MB, DIO 80 MHz (bezpieczny tryb, zgodny z firmware fabrycznym) ---
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+
+# --- Tablica partycji ---
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_OFFSET=0x8000
+
+# --- PSRAM: 32 MB, HEX (16-bit) @ 200 MHz - ESP32-P4 wspiera tylko tryb HEX ---
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_HEX=y
+CONFIG_SPIRAM_SPEED_200M=y
+CONFIG_SPIRAM_BOOT_INIT=y
+# Duze alokacje (bufory ramki, assety) moga ladowac w PSRAM przez zwykly malloc()
+CONFIG_SPIRAM_USE_MALLOC=y
+CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=32768
+CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL=65536
+CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY=y
+
+# --- Cache: L2 256 KB (linia 64 B - jedyna dozwolona dla 128/256 KB) ---
+CONFIG_CACHE_L2_CACHE_256KB=y
+CONFIG_CACHE_L2_CACHE_LINE_64B=y
+
+# --- FreeRTOS ---
+CONFIG_FREERTOS_HZ=1000
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+# --- Optymalizacja: wydajnosc (-O2) ---
+CONFIG_COMPILER_OPTIMIZATION_PERF=y
+
+# --- Dotyk: GT911 obsluguje do 5 punktow (domyslnie komponent esp_lcd_touch ma 1) ---
+CONFIG_ESP_LCD_TOUCH_MAX_POINTS=5
+
+# --- Konsola: UART0 (GPIO37/38, mostek USB-UART) + USB-Serial/JTAG jako drugi kanal ---
+# Logi widoczne na obu zlaczach USB-C.
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG=y
+
+# --- LVGL ---
+# n = bierz konfiguracje z src/ui/lv_conf.h (wspolnej z emulatorem), a NIE z tego Kconfiga.
+# Domyslnie na ESP-IDF jest y, przez co lv_conf.h bylby po cichu ignorowany.
+# Sciezke do lv_conf.h dodaje globalnie CMakeLists.txt w katalogu projektu.
+CONFIG_LV_CONF_SKIP=n
+
+# Te dwie opcje decyduja, KTORE pliki LVGL trafiaja do kompilacji (esp.cmake czyta je z Kconfiga,
+# nie z lv_conf.h). Domyslnie sa wlaczone i firmware kompiluje kilkaset przykladow oraz dem,
+# ktorych konsola nie uzywa - to tylko czas kompilacji i miejsce we flashu.
+CONFIG_LV_BUILD_EXAMPLES=n
+CONFIG_LV_BUILD_DEMOS=n
+
+# --- Logowanie ---
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+CONFIG_LOG_COLORS=n

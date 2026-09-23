@@ -1,0 +1,54 @@
+{
+    // ---------------------------------------------------------------- edytor
+    "files.associations": {
+        "*.h": "cpp",
+        "sdkconfig.defaults": "properties",
+        "partitions.csv": "csv",
+        "keymap.cfg": "ini"
+    },
+    "files.encoding": "utf8",
+    "files.eol": "\n",
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.rulers": [120],
+    "search.exclude": {
+        "**/.pio": true,
+        "**/managed_components": true,
+        "**/sim/build": true
+    },
+    "files.watcherExclude": {
+        "**/.pio/**": true,
+        "**/managed_components/**": true,
+        "**/sim/build/**": true
+    },
+
+    // ---------------------------------------------------------------- C/C++ (IntelliSense)
+    // Sciezki include generuje PlatformIO w c_cpp_properties.json (konfiguracja "PlatformIO").
+    // Pliki emulatora (sim/) beda pokazywac bledy na <windows.h> - to tylko IntelliSense, kompilacja jest OK.
+    "C_Cpp.default.cppStandard": "gnu++20",
+    "C_Cpp.default.cStandard": "gnu17",
+
+    // ---------------------------------------------------------------- CMake Tools = EMULATOR
+    // Glowny CMakeLists.txt w katalogu projektu nalezy do ESP-IDF i buduje go PlatformIO, NIE CMake Tools.
+    // CMake Tools ma patrzec wylacznie na emulator w sim/.
+    "cmake.sourceDirectory": "${workspaceFolder}/sim",
+    "cmake.buildDirectory": "${workspaceFolder}/sim/build",
+    "cmake.useCMakePresets": "always",
+    "cmake.configureOnOpen": false,
+    "cmake.configureOnEdit": false,
+    "cmake.options.statusBarVisibility": "visible",
+    // Kompilator MinGW potrzebuje swoich DLL-i z tego katalogu, takze przy budowaniu.
+    "cmake.environment": {
+        "PATH": "C:\\msys64\\mingw64\\bin;${env:PATH}"
+    },
+    // Debugowanie emulatora: przycisk "Debug" na pasku CMake (albo Ctrl+F5) uruchamia gdb z MSYS2.
+    "cmake.debugConfig": {
+        "MIMode": "gdb",
+        "miDebuggerPath": "C:/msys64/mingw64/bin/gdb.exe",
+        "cwd": "${workspaceFolder}",
+        "externalConsole": false,
+        "setupCommands": [
+            { "text": "-enable-pretty-printing", "ignoreFailures": true }
+        ]
+    }
+}
