@@ -1,0 +1,121 @@
+// ROZWIAZANIE zadan 1-5 z lekcji 07 (plik .txt - najpierw sprobuj sam!). Wariant: smierc na scianie.
+#include "lake/lake.h"
+
+namespace {
+
+const int CELL    = 20;
+const int GRID_W  = 40;
+const int GRID_H  = 24;
+const int MAX_LEN = 200;
+
+int snake_x[MAX_LEN];
+int snake_y[MAX_LEN];
+int length = 3;
+
+int  dir_x  = 1;
+int  dir_y  = 0;
+int  food_x = 20;
+int  food_y = 12;
+int  score  = 0;
+int  step   = 6;       // zad. 1 + 5: zmienna zamiast stalej
+bool dead   = false;   // zad. 2
+
+// zad. 4: jedzenie tylko na wolnej kratce
+void place_food()
+{
+    bool free = false;
+    while (!free) {
+        food_x = random(0, GRID_W - 1);
+        food_y = random(0, GRID_H - 1);
+        free = true;
+        for (int i = 0; i < length; i++) {
+            if (snake_x[i] == food_x && snake_y[i] == food_y) {
+                free = false;
+            }
+        }
+    }
+}
+
+void setup()
+{
+    length = 3;
+    for (int i = 0; i < length; i++) {
+        snake_x[i] = 10 - i;
+        snake_y[i] = 12;
+    }
+    dir_x = 1;
+    dir_y = 0;
+    score = 0;
+    step  = 6;
+    dead  = false;
+    place_food();
+}
+
+void frame()
+{
+    clear(BLACK);
+
+    if (dead) {
+        text(240, 190, "GAME OVER", RED, 4);
+        text(300, 270, "Wcisnij A", WHITE, 2);
+        if (pressed(A)) {
+            restart();
+        }
+    } else {
+        if (pressed(UP)    && dir_y != 1)  { dir_x = 0;  dir_y = -1; }
+        if (pressed(DOWN)  && dir_y != -1) { dir_x = 0;  dir_y = 1;  }
+        if (pressed(LEFT)  && dir_x != 1)  { dir_x = -1; dir_y = 0;  }
+        if (pressed(RIGHT) && dir_x != -1) { dir_x = 1;  dir_y = 0;  }
+
+        if (frame_count() % step == 0) {
+            for (int i = length - 1; i > 0; i--) {
+                snake_x[i] = snake_x[i - 1];
+                snake_y[i] = snake_y[i - 1];
+            }
+            snake_x[0] = snake_x[0] + dir_x;
+            snake_y[0] = snake_y[0] + dir_y;
+
+            // zad. 2: sciany
+            if (snake_x[0] < 0 || snake_x[0] >= GRID_W || snake_y[0] < 0 || snake_y[0] >= GRID_H) {
+                dead = true;
+            }
+            // zad. 3: wlasny ogon
+            for (int i = 1; i < length; i++) {
+                if (snake_x[0] == snake_x[i] && snake_y[0] == snake_y[i]) {
+                    dead = true;
+                }
+            }
+
+            if (snake_x[0] == food_x && snake_y[0] == food_y) {
+                if (length < MAX_LEN) {
+                    snake_x[length] = snake_x[length - 1];
+                    snake_y[length] = snake_y[length - 1];
+                    length = length + 1;
+                }
+                score = score + 1;
+                step  = max(2, step - 1);   // zad. 5: coraz szybciej
+                place_food();
+            }
+        }
+    }
+
+    for (int i = 0; i < length; i++) {
+        Color c = GREEN;
+        if (i == 0) {
+            c = YELLOW;
+        }
+        rect(snake_x[i] * CELL, snake_y[i] * CELL, CELL - 1, CELL - 1, c);
+    }
+    rect(food_x * CELL, food_y * CELL, CELL - 1, CELL - 1, RED);
+    text(12, 8, score, WHITE, 3);
+
+    watch("length", length);
+    watch("head_x", snake_x[0]);
+    watch("head_y", snake_y[0]);
+    watch("dead", dead);
+    watch("step", step);
+}
+
+}  // namespace
+
+LAKE_GAME(waz, "Waz", "Lekcja 07: tablice jako listy")

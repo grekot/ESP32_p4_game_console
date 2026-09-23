@@ -3,7 +3,7 @@
 // Wirtualny pad dotykowy (strefy na dole ekranu) jest zapasem na wypadek, gdy klawiatura nie jest
 // jeszcze zbudowana albo podlaczona. Po pierwszym uzyciu klawiszy jego podpowiedzi sa chowane.
 //
-// Strefy dotykowe (wspolrzedne plotna 400x240):
+// Strefy dotykowe (wspolrzedne plotna 800x480):
 //   dol-lewo:  [<] [>]        dol-prawo:  [B] [A]
 #pragma once
 

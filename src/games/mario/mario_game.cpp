@@ -6,21 +6,21 @@
 
 #include "core/log.h"
 
+#include "engine/math2d.h"
 #include "engine/screen.h"
 #include "engine/stats.h"
 #include "games/mario/mario_assets.h"
 #include "gfx/font.h"
 
-using mario::LEVEL_ROWS;
-using mario::TILE;
-namespace spr = mario::spr;
+namespace mario {
 
 namespace {
 
 const char* TAG = "mario";
 
-constexpr int VIEW_W = engine::CANVAS_W;   // 400
-constexpr int VIEW_H = engine::CANVAS_H;   // 240
+// Lake Mario to pixel-art: rysuje na 400x240 (canvas_scale() == 2), konsola powieksza x2.
+constexpr int VIEW_W = engine::PIXEL_CANVAS_W;   // 400
+constexpr int VIEW_H = engine::PIXEL_CANVAS_H;   // 240
 
 // --- parametry fizyki (px, px/s, px/s^2) ---
 constexpr float GRAVITY     = 1100.f;
@@ -56,18 +56,11 @@ constexpr uint16_t HUD_COLOR   = gfx::WHITE;
 constexpr uint16_t HUD_SHADOW  = gfx::rgb565(20, 30, 60);
 constexpr uint16_t DEBRIS_COLOR = gfx::rgb565(155, 95, 40);
 
-inline int   tile_of(float v) { return (int)floorf(v / (float)TILE); }
-inline float fabsf_(float v)  { return v < 0 ? -v : v; }
-inline float approach(float v, float target, float step)
-{
-    if (v < target) { v += step; return v > target ? target : v; }
-    if (v > target) { v -= step; return v < target ? target : v; }
-    return v;
-}
-inline bool overlap(float ax, float ay, int aw, int ah, float bx, float by, int bw, int bh)
-{
-    return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
-}
+// Matematyka wspolna dla gier jest w engine/math2d.h; tu tylko skroty z kafelkiem 16 px.
+inline int   tile_of(float v) { return engine::tile_of(v, TILE); }
+inline float fabsf_(float v)  { return engine::absf(v); }
+using engine::approach;
+using engine::overlap;
 
 }  // namespace
 
@@ -76,8 +69,9 @@ inline bool overlap(float ax, float ay, int aw, int ah, float bx, float by, int 
 void MarioGame::init(gfx::Canvas&)
 {
     mario::load_assets();
+    map_.set_solid_fn(mario::tile_is_solid);
     new_game();
-    LAKE_LOGI(TAG, "poziom: %d kolumn, %d przeciwnikow", cols_, enemy_count_);
+    LAKE_LOGI(TAG, "poziom: %d kolumn, %d przeciwnikow", map_.cols(), enemy_count_);
 }
 
 void MarioGame::new_game()
@@ -92,7 +86,7 @@ void MarioGame::new_game()
 
 void MarioGame::load_level()
 {
-    cols_        = mario::LEVEL_SEGMENTS * mario::SEG_COLS;
+    map_.reset(mario::LEVEL_SEGMENTS * mario::SEG_COLS, LEVEL_ROWS, TILE);
     enemy_count_ = 0;
     spawn_x_     = 2 * TILE;
     spawn_y_     = 0;
@@ -116,11 +110,11 @@ void MarioGame::load_level()
                     }
                     t = ' ';
                 }
-                tiles_[r][col] = t;
+                map_.set_tile(col, r, t);
             }
         }
     }
-    for (Particle& p : particles_) p.kind = 0;
+    particles_.clear();
 
     reset_enemies();
     reset_player();
@@ -172,25 +166,6 @@ void MarioGame::level_clear()
 
 // ============================================================================ mapa
 
-char MarioGame::tile_at(int col, int row) const
-{
-    if (col < 0 || col >= cols_ || row < 0 || row >= LEVEL_ROWS) return ' ';
-    return tiles_[row][col];
-}
-
-bool MarioGame::solid_at(int col, int row) const
-{
-    if (col < 0 || col >= cols_) return true;     // sciany na krancach poziomu
-    if (row < 0 || row >= LEVEL_ROWS) return false; // nad ekranem i pod nim - pusto
-    return mario::tile_is_solid(tiles_[row][col]);
-}
-
-void MarioGame::set_tile(int col, int row, char t)
-{
-    if (col < 0 || col >= cols_ || row < 0 || row >= LEVEL_ROWS) return;
-    tiles_[row][col] = t;
-}
-
 void MarioGame::bump_block(int col, int row)
 {
     const char t = tile_at(col, row);
@@ -210,67 +185,9 @@ void MarioGame::bump_block(int col, int row)
     }
 }
 
-// ============================================================================ fizyka
-
-void MarioGame::move_x(float& x, float y, float& vx, int w, int h, float dt, bool& hit_wall)
-{
-    hit_wall = false;
-    x += vx * dt;
-    const int r0 = tile_of(y), r1 = tile_of(y + (float)h - 1);
-    if (vx > 0) {
-        const int col = tile_of(x + (float)w - 1);
-        for (int r = r0; r <= r1; ++r) {
-            if (solid_at(col, r)) { x = (float)(col * TILE - w); vx = 0; hit_wall = true; break; }
-        }
-    } else if (vx < 0) {
-        const int col = tile_of(x);
-        for (int r = r0; r <= r1; ++r) {
-            if (solid_at(col, r)) { x = (float)((col + 1) * TILE); vx = 0; hit_wall = true; break; }
-        }
-    }
-}
-
-// Zwraca true, gdy obiekt stoi na podlozu po ruchu. hit_col/hit_row: kafelek uderzony glowa (albo -1).
-bool MarioGame::move_y(float x, float& y, float& vy, int w, int h, float dt, int& hit_col, int& hit_row)
-{
-    hit_col = hit_row = -1;
-    y += vy * dt;
-    const int c0 = tile_of(x), c1 = tile_of(x + (float)w - 1);
-    if (vy > 0) {
-        // Sprawdzamy kafelek pod DOLNA KRAWEDZIA (y + h), a nie ostatni piksel hitboxa (y + h - 1).
-        // Po przyciagnieciu do gory kafelka stopy stoja dokladnie na jego krawedzi i wersja
-        // "y + h - 1" trafiala w pusty wiersz powyzej - postac przez 2-3 klatki uchodzila za
-        // bedaca w powietrzu, po czym znow ladowala. Efekt: sprite skoku i stania na przemian,
-        // czyli migotanie, oraz reset animacji chodu.
-        const int row = tile_of(y + (float)h);
-        for (int c = c0; c <= c1; ++c) {
-            if (solid_at(c, row)) { y = (float)(row * TILE - h); vy = 0; return true; }
-        }
-        return false;
-    }
-    if (vy < 0) {
-        const int row = tile_of(y);
-        // wybierz kafelek najblizszy srodka obiektu (zeby uderzac w "ten" blok, w ktory celujemy)
-        const float cx = x + (float)w * 0.5f;
-        float best = 1e9f;
-        for (int c = c0; c <= c1; ++c) {
-            if (solid_at(c, row)) {
-                const float d = fabsf_((float)(c * TILE + TILE / 2) - cx);
-                if (d < best) { best = d; hit_col = c; hit_row = row; }
-            }
-        }
-        if (hit_col >= 0) { y = (float)((row + 1) * TILE); vy = 0; }
-        return false;
-    }
-    // vy == 0: sprawdz, czy nadal stoimy
-    const int row = tile_of(y + (float)h);
-    for (int c = c0; c <= c1; ++c) {
-        if (solid_at(c, row)) return true;
-    }
-    return false;
-}
-
 // ============================================================================ logika
+// Kolizje z kafelkami (move_x/move_y) sa w engine::TileMap - patrz engine/tilemap.cpp, tam tez
+// wyjasnienie, dlaczego podloze sprawdza sie pod dolna krawedzia (y + h), a nie pod ostatnim pikselem.
 
 void MarioGame::update(float dt, const input::PadState& pad)
 {
@@ -383,9 +300,9 @@ void MarioGame::update_player(float dt, const input::PadState& pad)
 
     // --- ruch i kolizje z mapa ---
     bool hit_wall = false;
-    move_x(p.x, p.y, p.vx, PLAYER_W, PLAYER_H, dt, hit_wall);
+    map_.move_x(p.x, p.y, p.vx, PLAYER_W, PLAYER_H, dt, hit_wall);
     int hit_col, hit_row;
-    p.on_ground = move_y(p.x, p.y, p.vy, PLAYER_W, PLAYER_H, dt, hit_col, hit_row);
+    p.on_ground = map_.move_y(p.x, p.y, p.vy, PLAYER_W, PLAYER_H, dt, hit_col, hit_row);
     if (hit_col >= 0) bump_block(hit_col, hit_row);
 
     // --- animacja ---
@@ -445,10 +362,10 @@ void MarioGame::update_enemies(float dt)
 
         const float dir = e.vx;
         bool hit_wall = false;
-        move_x(e.x, e.y, e.vx, ENEMY_W, ENEMY_H, dt, hit_wall);
+        map_.move_x(e.x, e.y, e.vx, ENEMY_W, ENEMY_H, dt, hit_wall);
         if (hit_wall) e.vx = -dir;            // odbicie od sciany
         int hc, hr;
-        move_y(e.x, e.y, e.vy, ENEMY_W, ENEMY_H, dt, hc, hr);
+        map_.move_y(e.x, e.y, e.vy, ENEMY_W, ENEMY_H, dt, hc, hr);
 
         if (e.y > (float)(LEVEL_ROWS * TILE + 32)) { e.alive = false; continue; }
 
@@ -471,25 +388,13 @@ void MarioGame::update_enemies(float dt)
 
 void MarioGame::spawn_particle(float x, float y, float vx, float vy, uint8_t kind)
 {
-    for (Particle& p : particles_) {
-        if (p.kind == 0) {
-            p.x = x; p.y = y; p.vx = vx; p.vy = vy; p.kind = kind;
-            p.t = (kind == 1) ? 0.55f : 1.0f;
-            return;
-        }
-    }
+    // Moneta (kind 1) zyje krotko i jest lzejsza; odlamek cegly (kind 2) spada z pelna grawitacja.
+    particles_.spawn(x, y, vx, vy, kind, kind == 1 ? 0.55f : 1.0f, kind == 1 ? 700.f : GRAVITY);
 }
 
 void MarioGame::update_particles(float dt)
 {
-    for (Particle& p : particles_) {
-        if (p.kind == 0) continue;
-        p.t -= dt;
-        if (p.t <= 0) { p.kind = 0; continue; }
-        p.vy += (p.kind == 1 ? 700.f : GRAVITY) * dt;
-        p.x  += p.vx * dt;
-        p.y  += p.vy * dt;
-    }
+    particles_.update(dt);
 }
 
 void MarioGame::update_camera(float dt)
@@ -498,7 +403,7 @@ void MarioGame::update_camera(float dt)
     float k = dt * 10.f;
     if (k > 1.f) k = 1.f;
     cam_x_ += (target - cam_x_) * k;
-    const float max_cam = (float)(cols_ * TILE - VIEW_W);
+    const float max_cam = (float)(map_.width_px() - VIEW_W);
     if (cam_x_ < 0) cam_x_ = 0;
     if (cam_x_ > max_cam) cam_x_ = max_cam;
 }
@@ -537,17 +442,8 @@ void MarioGame::render(gfx::Canvas& c)
 
 void MarioGame::draw_tiles(gfx::Canvas& c) const
 {
-    const int camx = (int)cam_x_;
-    const int c0   = camx / TILE;
-    const int c1   = c0 + VIEW_W / TILE + 1;
     const int coin_frame = (int)(anim_t_ * 4.f) & 1;
-
-    for (int r = 0; r < LEVEL_ROWS; ++r) {
-        for (int col = c0; col <= c1; ++col) {
-            const gfx::Sprite* s = mario::tile_sprite(tile_at(col, r), coin_frame);
-            if (s) c.blit(*s, col * TILE - camx, r * TILE);
-        }
-    }
+    map_.draw(c, (int)cam_x_, mario::tile_sprite, coin_frame);
 }
 
 void MarioGame::draw_entities(gfx::Canvas& c) const
@@ -555,7 +451,7 @@ void MarioGame::draw_entities(gfx::Canvas& c) const
     const int camx = (int)cam_x_;
 
     // czasteczki
-    for (const Particle& p : particles_) {
+    for (const auto& p : particles_) {
         if (p.kind == 1) {
             c.blit(spr::coin_a, (int)p.x - camx, (int)p.y);
         } else if (p.kind == 2) {
@@ -639,3 +535,5 @@ void MarioGame::draw_overlay(gfx::Canvas& c) const
             break;
     }
 }
+
+}  // namespace mario

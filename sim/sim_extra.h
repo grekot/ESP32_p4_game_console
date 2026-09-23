@@ -16,4 +16,9 @@ bool save_screenshot(const char* path);
 void     set_synthetic_keys(uint16_t mask);
 uint16_t synthetic_keys();
 
+// Wylacza czekanie na 60 FPS w present() - tryb --frames liczy klatki tak szybko, jak sie da.
+// Nie zmienia wynikow (krok czasu jest staly), tylko czas trwania testow.
+void set_unthrottled(bool on);
+bool unthrottled();
+
 }  // namespace sim

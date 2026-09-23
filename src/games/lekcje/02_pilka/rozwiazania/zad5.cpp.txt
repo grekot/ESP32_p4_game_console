@@ -1,0 +1,68 @@
+// ROZWIAZANIE zadania 5 z lekcji 02: grawitacja z tlumieniem.
+#include "lake/lake.h"
+
+namespace {
+
+const int RADIUS = 30;
+
+int ball_x = 100;
+int ball_y = 200;
+int vx = 8;
+int vy = 0;
+
+Color ball_color = WHITE;
+int   bounces    = 0;
+
+void setup()
+{
+    ball_x = 100;
+    ball_y = 200;
+    vx     = 8;
+    vy     = 0;
+    ball_color = WHITE;
+    bounces    = 0;
+}
+
+void frame()
+{
+    clear(BLACK);
+
+    vy = vy + 1;              // zad. 5: grawitacja - co klatke pilka spada szybciej
+
+    ball_x = ball_x + vx;
+    ball_y = ball_y + vy;
+
+    if (ball_x > screen_width() - RADIUS) {
+        vx = -vx;
+        ball_color = RED;
+        bounces = bounces + 1;
+    }
+    if (ball_x < RADIUS) {
+        vx = -vx;
+        ball_color = GREEN;
+        bounces = bounces + 1;
+    }
+    if (ball_y > screen_height() - RADIUS) {
+        ball_y = screen_height() - RADIUS;   // wyciagnij z podlogi
+        vy = -vy * 9 / 10;                   // odbicie z utrata energii
+        ball_color = YELLOW;
+        bounces = bounces + 1;
+    }
+    if (ball_y < RADIUS) {
+        vy = -vy;
+        ball_color = BLUE;
+        bounces = bounces + 1;
+    }
+
+    circle(ball_x, ball_y, RADIUS, ball_color);
+    text(20, 16, bounces, WHITE, 3);
+
+    watch("x", ball_x);
+    watch("y", ball_y);
+    watch("vy", vy);
+    watch("bounces", bounces);
+}
+
+}  // namespace
+
+LAKE_GAME(pilka, "Pilka", "Lekcja 02: instrukcja if")

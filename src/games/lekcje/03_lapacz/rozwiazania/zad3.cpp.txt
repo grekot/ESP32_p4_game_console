@@ -1,0 +1,67 @@
+// ROZWIAZANIE zadan 1-3 z lekcji 03 (plik .txt - najpierw sprobuj sam!).
+#include "lake/lake.h"
+
+namespace {
+
+const int PADDLE_W = 120;
+const int PADDLE_H = 16;
+const int PADDLE_Y = 440;
+const int RADIUS   = 12;
+
+int paddle_x = 340;
+int ball_x   = 400;
+int ball_y   = 0;
+int speed    = 7;      // zad. 1
+int score    = 0;
+int misses   = 0;      // zad. 3
+
+void setup()
+{
+    paddle_x = 340;
+    ball_x   = random(RADIUS, screen_width() - RADIUS);
+    ball_y   = 0;
+    speed    = 7;
+    score    = 0;
+    misses   = 0;
+}
+
+void frame()
+{
+    clear(DARK_GREEN);   // zad. 1
+
+    if (held(LEFT)) {
+        paddle_x = paddle_x - 8;
+    }
+    if (held(RIGHT)) {
+        paddle_x = paddle_x + 8;
+    }
+    paddle_x = clamp(paddle_x, 0, screen_width() - PADDLE_W);   // zad. 2
+
+    ball_y = ball_y + speed;
+
+    if (ball_y + RADIUS >= PADDLE_Y && ball_x >= paddle_x && ball_x <= paddle_x + PADDLE_W) {
+        score = score + 1;
+        print("Zlapana! Wynik:", score);
+        ball_y = 0;
+        ball_x = random(RADIUS, screen_width() - RADIUS);
+    }
+
+    if (ball_y > screen_height()) {
+        misses = misses + 1;   // zad. 3
+        ball_y = 0;
+        ball_x = random(RADIUS, screen_width() - RADIUS);
+    }
+
+    rect(paddle_x, PADDLE_Y, PADDLE_W, PADDLE_H, WHITE);
+    circle(ball_x, ball_y, RADIUS, ORANGE);
+    text(20, 16, score, WHITE, 3);
+    text(720, 16, misses, RED, 3);   // zad. 3
+
+    watch("paddle_x", paddle_x);
+    watch("score", score);
+    watch("misses", misses);
+}
+
+}  // namespace
+
+LAKE_GAME(lapacz, "Lapacz", "Lekcja 03: klawisze i warunki")

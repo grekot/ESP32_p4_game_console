@@ -1,0 +1,4 @@
+# Testy zadan z lekcji 05. Format: argumenty emulatora | regex w wyjsciu (--game dokleja skrypt).
+
+# test 1 - zadanie 3: trzy rzedy po 8 kosmitow, licznik w watch
+--frames 10 --trace 9 | aliens=24

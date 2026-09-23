@@ -1,0 +1,46 @@
+// ROZWIAZANIE zadania 5 z lekcji 01: zmienna speed, ruch w lewo.
+// Kwadrat wyjezdza za lewa krawedz i znika - liczba w watch robi sie ujemna i rosnie w nieskonczonosc.
+// Jak go zatrzymac albo odbic, to temat lekcji 02 (instrukcja if).
+#include "lake/lake.h"
+
+namespace {
+
+const int   SIZE       = 120;
+const Color BACKGROUND = DARK_GREEN;
+
+int square_x  = 120;
+int square_y  = 240;
+int square2_x = 280;
+int square2_y = 240;
+int circle_x  = 600;
+int circle_y  = 280;
+int radius    = 30;
+int speed     = 4;     // zad. 5: predkosc w pikselach na klatke
+
+const char* name = "Kuba";
+
+void setup()
+{
+}
+
+void frame()
+{
+    clear(BACKGROUND);
+
+    text(40, 40, "Wizytowka:", WHITE, 2);
+    text(40, 80, name, YELLOW, 4);
+
+    rect(square_x, square_y, SIZE, SIZE, RED);
+    rect(square2_x, square2_y, SIZE, SIZE, ORANGE);
+    circle(circle_x, circle_y, radius, GREEN);
+
+    line(0, 460, screen_width() - 1, 460, WHITE);
+
+    square_x = square_x - speed;   // zad. 5: odejmowanie = ruch w lewo
+
+    watch("square_x", square_x);
+}
+
+}  // namespace
+
+LAKE_GAME(wizytowka, "Wizytowka", "Lekcja 01: zmienne i figury")

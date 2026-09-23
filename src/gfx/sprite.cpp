@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "core/log.h"
+#include "gfx/palette.h"
 
 namespace gfx {
 
@@ -47,6 +48,11 @@ Sprite make_sprite(const char* const* rows, int w, int h, const PaletteEntry* pa
     s.h  = h;
     s.px = px;
     return s;
+}
+
+Sprite make_sprite(const char* const* rows, int w, int h)
+{
+    return make_sprite(rows, w, h, DEFAULT_PALETTE, DEFAULT_PALETTE_N);
 }
 
 }  // namespace gfx

@@ -1,0 +1,4 @@
+# Testy zadan z lekcji 10. Format: argumenty emulatora | regex w wyjsciu (--game dokleja skrypt).
+
+# test 1 - zadanie 3: bohater idacy w prawo przez 5 s zbiera monete stojaca na jego drodze
+--hold RIGHT 0 300 --frames 301 --trace 300 | coins=[1-9]\d*

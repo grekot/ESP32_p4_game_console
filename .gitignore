@@ -21,3 +21,10 @@ sim/build/
 
 # CMake Tools - lokalne presety uzytkownika
 sim/CMakeUserPresets.json
+
+# Zrzuty robione przez ucznia (zadanie LEKCJA: Zrzut ekranu)
+src/games/lekcje/**/zrzut.bmp
+src/games/lekcje/**/zrzut.png
+
+# LVGL pobrane skryptem tools/fetch_lvgl.ps1 (komputer bez PlatformIO)
+third_party/

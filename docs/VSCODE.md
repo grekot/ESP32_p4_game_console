@@ -27,6 +27,8 @@ Gdyby się jednak pojawiły:
 - **„Select a configure preset"** — jest jeden: *Emulator (MinGW z MSYS2)*. Wybierz go.
 - **„Use CMake Tools as IntelliSense provider?"** — **No**. IntelliSense dostarcza PlatformIO
   z listą nagłówków ESP-IDF. Jeśli to zmienisz, podświetlanie w kodzie płytki przestanie działać.
+  **Na komputerze ucznia (bez PlatformIO) odpowiedź jest odwrotna: Yes** — tam IntelliSense bierze się z CMake Tools
+  (ustawia to `tools/setup_kid_pc.ps1`).
 - **PlatformIO: „Rebuild IntelliSense index"** — tak, jeśli zaproponuje. Trwa chwilę, tworzy
   `c_cpp_properties.json`.
 
@@ -50,10 +52,19 @@ Do zwykłej pracy nad grami użyj emulatora.
 
 | zadanie | co robi |
 |---|---|
-| `SIM: Configure` | jednorazowo i po dodaniu nowych plików; używa presetu `sim/CMakePresets.json` |
+| `LEKCJA: Uruchom gre z otwartego pliku` | **domyślne (Ctrl+Shift+B)**: zamyka emulator, buduje, uruchamia grę z katalogu otwartego pliku (`--game ${relativeFileDirname}`) |
+| `LEKCJA: Zrzut ekranu` | 120 klatek bez klawiszy, `zrzut.bmp` w katalogu lekcji |
+| `LEKCJA: Slad` | 300 klatek, co 30 wypisuje wartości z `watch()` |
+| `LEKCJA: Sprawdz zadania` | `tools/testy.ps1` na `testy.txt` otwartej lekcji |
+| `SIM: Zamknij emulator` | `Stop-Process lake_sim` — Windows nie pozwala nadpisać działającego exe |
+| `SIM: Configure` | jednorazowo; używa presetu `sim/CMakePresets.json` (nowe pliki wykrywa sam build) |
 | `SIM: Build` | kompilacja emulatora, kilka sekund |
-| `SIM: Run` | zbuduj i uruchom |
-| `SIM: Test (mechaniki Lake Mario)` | przykład testu skryptowanego ze śladem stanu gry |
+| `SIM: Run` | zbuduj i uruchom z menu konsoli |
+| `SIM: Lista gier` | `lake_sim.exe --list` |
+| `SIM: Testy regresji (Mario + lekcje)` | `tools/testy.ps1`: ślady i zrzuty Lake Mario + testy lekcji |
+
+Domyślne zadanie budowania to `LEKCJA: Uruchom`, bo z niego korzysta uczeń (patrz [NAUKA.md](NAUKA.md)); `PIO: Build`
+zostaje w liście i w pasku PlatformIO. Na komputerze ucznia skrypt instalacyjny przypisuje do tego zadania też **F6**.
 
 **Zamknij działający emulator przed `SIM: Build`.** Windows nie pozwala nadpisać uruchomionego pliku
 i linker kończy się błędem bez czytelnego komunikatu.

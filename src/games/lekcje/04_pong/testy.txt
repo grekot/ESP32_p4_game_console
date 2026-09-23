@@ -1,0 +1,4 @@
+# Testy zadan z lekcji 04. Format: argumenty emulatora | regex w wyjsciu (--game dokleja skrypt).
+
+# test 1 - zadanie 5: prawa paletka sterowana przez komputer rusza sie bez klawiszy (right_y rozne od startowego 192/200)
+--frames 301 --trace 300 | right_y=(?!(192|200)( |$))\d+

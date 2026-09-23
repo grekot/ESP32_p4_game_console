@@ -31,13 +31,17 @@
 #define LV_DRAW_SW_SUPPORT_RGB565 1
 #define LV_DRAW_SW_SUPPORT_ARGB8888 1
 
-// --- Czcionki (plotno ma 400x240, wiec male rozmiary; skalowanie x2 robi sprzet) ---
+// --- Czcionki (ekran 800x480 w natywnej rozdzielczosci; z tych korzysta tez renderer gier - gfx/text.h) ---
 #define LV_FONT_MONTSERRAT_12 1
 #define LV_FONT_MONTSERRAT_14 1
 #define LV_FONT_MONTSERRAT_16 1
 #define LV_FONT_MONTSERRAT_20 1
+#define LV_FONT_MONTSERRAT_24 1
 #define LV_FONT_MONTSERRAT_28 1
-#define LV_FONT_DEFAULT &lv_font_montserrat_14
+#define LV_FONT_MONTSERRAT_32 1
+#define LV_FONT_MONTSERRAT_40 1
+#define LV_FONT_MONTSERRAT_48 1
+#define LV_FONT_DEFAULT &lv_font_montserrat_20
 
 // --- Widgety i motyw ---
 #define LV_USE_THEME_DEFAULT 1
@@ -49,6 +53,9 @@
 #define LV_USE_LOG 0
 
 // --- Asercje: wlaczone na hoscie (latwiej zlapac blad w emulatorze), oszczedne na plytce ---
+// Domyslna obsluga asercji LVGL to while(1) - emulator "wisi" bez slowa. abort() daje kod wyjscia i stos w gdb.
+#define LV_ASSERT_HANDLER_INCLUDE <stdlib.h>
+#define LV_ASSERT_HANDLER abort();
 #if defined(LAKE_HOST_BUILD)
 #define LV_USE_ASSERT_NULL      1
 #define LV_USE_ASSERT_MALLOC    1

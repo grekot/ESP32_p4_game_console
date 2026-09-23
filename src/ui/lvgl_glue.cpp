@@ -13,7 +13,7 @@ namespace {
 
 const char* TAG = "ui";
 
-// Bufor roboczy LVGL: 80 wierszy z 240. Wiecej nie daje zysku, bo i tak kopiujemy fragmenty.
+// Bufor roboczy LVGL: 80 wierszy z 480 (800x80x2 B = 128 kB). Wiecej nie daje zysku, bo i tak kopiujemy fragmenty.
 constexpr int LVGL_BUF_ROWS = 80;
 
 lv_display_t* s_disp       = nullptr;

@@ -153,7 +153,7 @@ a próg zamiany wychylenia na kierunek cyfrowy to 50 procent.
    ze sterownikiem producenta w [src/board/st7701/](../src/board/st7701/) (sekwencja inicjalizacyjna
    ST7701 z pakietu SDK Guition; komponent `esp_lcd_st7701` z rejestru daje na tej płytce czarny ekran).
 3. Panel DPI 480x800 RGB565 @ 34 MHz z **dwoma buforami ramki** w PSRAM (`num_fbs = 2`).
-4. Gra rysuje do własnego płótna 400x240 (SRAM). `display::present()` skaluje x2 i obraca o 90° sprzętowo
+4. Konsola rysuje do płótna 800x480 (PSRAM; gry pixel-art rysują 400x240 w SRAM i są powiększane x2 przez CPU). `display::present()` obraca o 90° sprzętowo (PPA, skala 1)
    przez **PPA** (Pixel Processing Accelerator) wprost do tylnego bufora DPI, po czym
    `esp_lcd_panel_draw_bitmap` z adresem tego bufora przełącza bufory bez kopiowania. Czekamy na
    zdarzenie `on_frame_buf_complete` (koniec wysyłania ramki) - stąd naturalne 60 FPS.

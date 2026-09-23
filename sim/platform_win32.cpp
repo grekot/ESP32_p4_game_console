@@ -1,8 +1,8 @@
 // Emulator konsoli na Windows - implementacja warstwy platform:: przez czyste Win32 (GDI).
 // Bez SDL i bez zadnych zewnetrznych bibliotek: wystarczy g++/MSVC + gdi32.
 //
-// Okno pokazuje logiczny ekran konsoli (800x480), czyli plotno 400x240 powiekszone x2 metoda
-// najblizszego sasiada - dokladnie tak, jak PPA skaluje obraz na plytce.
+// Okno pokazuje logiczny ekran konsoli 800x480 w skali 1:1 (plotno konsoli ma te sama
+// rozdzielczosc; gry pixel-art powieksza sama konsola, patrz engine/screen.h).
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -22,6 +22,7 @@
 // Zadeklarowane tu, bo controller() (nizej) korzysta z zastrzyku klawiszy (--hold, --pause-at).
 namespace sim {
 uint16_t synthetic_keys();
+bool     unthrottled();
 }
 
 namespace platform {
@@ -30,7 +31,7 @@ namespace {
 
 const char* TAG = "sim";
 
-constexpr int   DEFAULT_ZOOM   = 2;
+constexpr int   DEFAULT_ZOOM   = 1;   // plotno 800x480 = okno 1:1
 constexpr float TARGET_FPS     = 60.0f;
 const wchar_t*  WINDOW_CLASS   = L"LakeConsoleSim";
 
@@ -279,6 +280,9 @@ void present(const uint16_t* canvas)
     StretchBlt(dc, 0, 0, cw, ch, s_memdc, 0, 0, engine::CANVAS_W, engine::CANVAS_H, SRCCOPY);
     ReleaseDC(s_hwnd, dc);
 
+    // Tryb skryptowany (--frames): nie czekamy na 60 FPS - wyniki sa i tak liczone ze stalym dt.
+    if (sim::unthrottled()) return;
+
     // Rownanie do ~60 FPS (na plytce te role pelni synchronizacja pionowa panelu).
     const int64_t frame_us = (int64_t)(1000000.0f / TARGET_FPS);
     const int64_t now      = micros();
@@ -351,10 +355,13 @@ namespace sim {
 
 namespace {
 uint16_t s_synthetic_keys = 0;
+bool     s_unthrottled     = false;
 }
 
 void     set_synthetic_keys(uint16_t mask) { s_synthetic_keys = mask; }
 uint16_t synthetic_keys()                  { return s_synthetic_keys; }
+void     set_unthrottled(bool on)          { s_unthrottled = on; }
+bool     unthrottled()                     { return s_unthrottled; }
 
 bool save_screenshot(const char* path)
 {

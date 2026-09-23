@@ -6,7 +6,7 @@ gry. Różni je wyłącznie implementacja warstwy `platform::`:
 | | płytka | emulator |
 |---|---|---|
 | implementacja | [src/platform/platform_esp.cpp](../src/platform/platform_esp.cpp) | [sim/platform_win32.cpp](../sim/platform_win32.cpp) |
-| obraz | MIPI-DSI + PPA (skalowanie x2, obrót) | okno Win32, `StretchBlt` najbliższym sąsiadem |
+| obraz | MIPI-DSI + PPA (obrót; płótno 800x480 natywne) | okno Win32 800x480 1:1 |
 | wejście | przełączniki + gałka na ADC2, dotyk GT911, BOOT | klawiatura + pad USB + mysz (dotyk) |
 | tempo klatek | synchronizacja pionowa panelu | odmierzanie do 60 FPS |
 
@@ -36,6 +36,8 @@ cmake --build sim/build
 ```
 
 W VS Code te same kroki są pod Ctrl+Shift+B jako zadania `SIM: Configure`, `SIM: Build`, `SIM: Run`.
+Nowe pliki `.cpp` (np. nowa lekcja) są wykrywane przy zwykłym `cmake --build` (`CONFIGURE_DEPENDS`),
+rekonfiguracja jest potrzebna tylko po zmianie `CMakeLists.txt`.
 
 ## Sterowanie i mapowanie klawiszy
 
@@ -89,11 +91,16 @@ zatwierdzają, `B` albo `SELECT` cofają.
 ## Tryby pomocnicze
 
 ```bash
+./sim/build/lake_sim.exe --list
 ./sim/build/lake_sim.exe --game 0
+./sim/build/lake_sim.exe --game pilka
+./sim/build/lake_sim.exe --game src/games/lekcje/02_pilka
 ```
 
-Wchodzi od razu do gry o podanym numerze (kolejność z [registry.cpp](../src/games/registry.cpp)),
-bez klikania w menu — przydatne przy pracy nad konkretną grą.
+`--list` wypisuje gry (numer, id, nazwa). `--game` wchodzi od razu do gry — po numerze, po `id`
+(pole `GameEntry::id`, dla lekcji nazwa z `LAKE_GAME`), po nazwie z menu albo po ścieżce katalogu lekcji
+(ostatni segment bez numeru `NN_`). Dzięki temu zadanie VS Code może uruchomić grę z otwartego pliku.
+Nieznana gra: komunikat, lista dostępnych i kod wyjścia 2, jeszcze przed otwarciem okna.
 
 ```bash
 ./sim/build/lake_sim.exe --game 0 --pause-at 20 --frames 40 --shot pauza.bmp
@@ -115,18 +122,37 @@ czas i najbliższego przeciwnika. Razem dają powtarzalne testy mechanik bez udz
 Przykład powyżej sprawdza, że postać po 20 klatkach chodu ma prędkość 100 px/s. Gra dostarcza tę linię
 przez `engine::Game::debug_line()`, więc każda kolejna gra może mieć własną.
 
-W trybie `--frames` krok czasu jest stały (1/60 s), więc ten sam skrypt daje zawsze identyczny wynik,
-niezależnie od obciążenia komputera. W trybie okienkowym emulator liczy czas rzeczywisty, tak jak płytka.
+W trybie `--frames` krok czasu jest stały (1/60 s), generator losowy dostaje stałe ziarno, a emulator nie czeka
+na 60 FPS (600 klatek liczy się w ułamku sekundy) — ten sam skrypt daje zawsze identyczny wynik, niezależnie od
+obciążenia komputera. W trybie okienkowym emulator liczy czas rzeczywisty i losuje z zegara, tak jak płytka.
+
+### Zestaw regresji i testy lekcji
+
+```bash
+powershell -File tools/testy.ps1 mario          # tests/scenarios.txt: ślady i zrzuty Lake Mario bajt w bajt
+powershell -File tools/testy.ps1                # to samo + testy.txt każdej lekcji (src/games/lekcje/*)
+powershell -File tools/testy.ps1 mario -Update  # nagraj wzorce od nowa (po świadomej zmianie fizyki/wyglądu)
+```
+
+Scenariusze Mario są w [tests/scenarios.txt](../tests/scenarios.txt), wzorce w `tests/expected/`. Refaktoring silnika
+ma zostawić je bez zmian. Testy lekcji (`testy.txt`: `argumenty | regex`) czytają wartości z `watch()` w linii `TRACE` —
+szczegóły w [NAUKA.md](NAUKA.md).
 
 Uwaga: przed przebudową zamknij działający emulator. Windows nie pozwala nadpisać uruchomionego
 pliku i linker kończy się błędem bez czytelnego komunikatu.
 
 ## Skąd bierze się LVGL
 
-CMake najpierw szuka kopii ściągniętej przez ESP-IDF (`managed_components/lvgl__lvgl`). Jeśli
-firmware był już budowany, emulator używa **dokładnie tej samej wersji** bez pobierania czegokolwiek.
-W przeciwnym razie pobiera tag `v9.5.0` z GitHuba — ten sam, który jest przypięty w
-[src/idf_component.yml](../src/idf_component.yml). Obie ścieżki są sprawdzone.
+CMake szuka kolejno:
+
+1. `managed_components/lvgl__lvgl` — kopia ściągnięta przez ESP-IDF; jeśli firmware był budowany, emulator używa
+   **dokładnie tej samej wersji** bez pobierania czegokolwiek;
+2. `third_party/lvgl` — kopia rozpakowana przez `tools/fetch_lvgl.ps1` (komputer bez PlatformIO, np. ucznia;
+   katalog jest w `.gitignore`; skrypt zostawia tylko ~30 MB potrzebne do kompilacji i sprawdza sumę SHA-256 zipa;
+   `-Zip plik` pozwala podać archiwum z pendrive'a);
+3. pobranie zipa taga `v9.5.0` z GitHuba przez `FetchContent` (bez gita, ~100 MB, wymaga internetu przy pierwszej konfiguracji).
+
+Tag jest ten sam, który jest przypięty w [src/idf_component.yml](../src/idf_component.yml). Wszystkie trzy ścieżki są sprawdzone.
 
 Własną kopię LVGL wskazuje się tak:
 

@@ -1,6 +1,6 @@
 #include "input/virtual_pad.h"
 
-#include "gfx/font.h"
+#include "gfx/text.h"
 
 namespace input {
 
@@ -11,18 +11,19 @@ struct Zone {
     bool contains(int x, int y) const { return x >= x0 && x < x1 && y >= y0 && y < y1; }
 };
 
-// Strefy sa rozmyslnie wieksze niz rysowane obrysy - palec nie musi byc precyzyjny.
-constexpr Zone ZONE_LEFT  = {   0, 130,  68, 240 };
-constexpr Zone ZONE_RIGHT = {  68, 130, 136, 240 };
-constexpr Zone ZONE_B     = { 258, 130, 328, 240 };
-constexpr Zone ZONE_A     = { 328, 130, 400, 240 };
+// Strefy sa rozmyslnie wieksze niz rysowane obrysy - palec nie musi byc precyzyjny. Wspolrzedne plotna 800x480.
+constexpr Zone ZONE_LEFT  = {   0, 260, 136, 480 };
+constexpr Zone ZONE_RIGHT = { 136, 260, 272, 480 };
+constexpr Zone ZONE_B     = { 516, 260, 656, 480 };
+constexpr Zone ZONE_A     = { 656, 260, 800, 480 };
 
 // Obrysy (mniejsze, dyskretne)
 struct Box { int x, y, w, h; const char* label; };
-constexpr Box BOX_LEFT  = {   6, 176, 56, 56, "<" };
-constexpr Box BOX_RIGHT = {  72, 176, 56, 56, ">" };
-constexpr Box BOX_B     = { 268, 176, 56, 56, "B" };
-constexpr Box BOX_A     = { 338, 176, 56, 56, "A" };
+constexpr Box BOX_LEFT  = {  12, 352, 112, 112, "<" };
+constexpr Box BOX_RIGHT = { 144, 352, 112, 112, ">" };
+constexpr Box BOX_B     = { 536, 352, 112, 112, "B" };
+constexpr Box BOX_A     = { 676, 352, 112, 112, "A" };
+constexpr int LABEL_PX = 40;     // wygladzana czcionka (gfx/text.h)
 
 }  // namespace
 
@@ -90,9 +91,11 @@ void VirtualPad::draw(gfx::Canvas& c) const
     auto draw_box = [&](const Box& b, bool on) {
         const uint16_t col = on ? active : idle;
         c.draw_rect(b.x, b.y, b.w, b.h, col);
-        if (on) c.draw_rect(b.x + 1, b.y + 1, b.w - 2, b.h - 2, col);
-        const int tw = gfx::text_width(b.label, 2);
-        gfx::draw_text(c, b.x + (b.w - tw) / 2, b.y + (b.h - 14) / 2, b.label, col, 2);
+        c.draw_rect(b.x + 1, b.y + 1, b.w - 2, b.h - 2, col);
+        if (on) c.draw_rect(b.x + 2, b.y + 2, b.w - 4, b.h - 4, col);
+        const int tw = gfx::text_width_px(b.label, LABEL_PX);
+        const int th = gfx::text_height_px(LABEL_PX);
+        gfx::draw_text_px(c, b.x + (b.w - tw) / 2, b.y + (b.h - th) / 2, b.label, col, LABEL_PX);
     };
 
     draw_box(BOX_LEFT,  out_.left);

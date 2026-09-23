@@ -1,0 +1,44 @@
+// ROZWIAZANIE zadan 1-4 z lekcji 01 (plik .txt, zeby sie nie kompilowal - najpierw sprobuj sam!).
+// Zeby sprawdzic: skopiuj tresc do gra.cpp.
+#include "lake/lake.h"
+
+namespace {
+
+const int   SIZE       = 120;         // zad. 2
+const Color BACKGROUND = DARK_GREEN;  // zad. 1
+
+int square_x  = 120;
+int square_y  = 240;
+int square2_x = 280;   // zad. 3: drugi kwadrat
+int square2_y = 240;
+int circle_x  = 600;
+int circle_y  = 280;
+int radius    = 30;    // zad. 2
+
+const char* name = "Kuba";   // zad. 1
+
+void setup()
+{
+}
+
+void frame()
+{
+    clear(BACKGROUND);
+
+    text(40, 40, "Wizytowka:", WHITE, 2);
+    text(40, 80, name, YELLOW, 4);
+
+    rect(square_x, square_y, SIZE, SIZE, RED);
+    rect(square2_x, square2_y, SIZE, SIZE, ORANGE);   // zad. 3
+    circle(circle_x, circle_y, radius, GREEN);
+
+    line(0, 460, screen_width() - 1, 460, WHITE);
+
+    square_x = square_x + 1;   // zad. 4: co klatke o 1 px w prawo
+
+    watch("square_x", square_x);
+}
+
+}  // namespace
+
+LAKE_GAME(wizytowka, "Wizytowka", "Lekcja 01: zmienne i figury")

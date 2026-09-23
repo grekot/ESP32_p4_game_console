@@ -1,0 +1,8 @@
+# Testy zadan z lekcji 02. Format: argumenty emulatora | regex w wyjsciu (--game dokleja skrypt).
+# Kod startowy NIE przechodzi - testy sprawdzaja rozwiazania.
+
+# test 1 - zadanie 2: po 5 s pilka nadal na ekranie (y w zakresie 0..479)
+--frames 301 --trace 300 | TRACE +300 .* y=(\d|[1-9]\d|[1-3]\d\d|4[0-7]\d)( |$)
+
+# test 2 - zadanie 4: licznik odbic widoczny w watch i wiekszy od zera
+--frames 301 --trace 300 | bounces=[1-9]\d*

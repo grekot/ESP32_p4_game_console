@@ -1,0 +1,4 @@
+# Testy zadan z lekcji 07. Format: argumenty emulatora | regex w wyjsciu (--game dokleja skrypt).
+
+# test 1 - zadanie 2: bez klawiszy waz jedzie w prawo i po 30 ruchach (240 klatek) uderza w sciane
+--frames 301 --trace 300 | dead=true

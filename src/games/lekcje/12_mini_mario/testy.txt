@@ -1,0 +1,4 @@
+# Testy zadan z lekcji 12. Format: argumenty emulatora | regex w wyjsciu (--game dokleja skrypt).
+
+# test 1 - zadanie 3: gracz idacy w prawo przez 200 klatek (400 px) zbiera dwie monety z trawy (kolumny 8 i 12)
+--hold RIGHT 0 200 --frames 201 --trace 200 | coins=2

@@ -1,5 +1,6 @@
 #include "games/mario/mario_assets.h"
 
+#include "gfx/palette.h"
 #include "gfx/sprite.h"
 
 namespace mario {
@@ -16,35 +17,12 @@ gfx::Sprite cloud, bush;
 
 namespace {
 
-using gfx::rgb565;
-
-// Wspolna paleta wszystkich sprite'ow ('.' = przezroczysty)
-const gfx::PaletteEntry PAL[] = {
-    {'k', rgb565(0, 0, 0)},         // czern
-    {'w', rgb565(255, 255, 255)},   // biel
-    {'e', rgb565(165, 165, 175)},   // szary
-    {'E', rgb565(85, 85, 95)},      // ciemny szary
-    {'r', rgb565(225, 45, 45)},     // czerwien
-    {'R', rgb565(145, 20, 20)},     // ciemna czerwien
-    {'o', rgb565(240, 140, 40)},    // pomarancz
-    {'y', rgb565(250, 215, 50)},    // zolty
-    {'Y', rgb565(200, 150, 20)},    // ciemny zolty
-    {'g', rgb565(70, 190, 70)},     // zielen
-    {'G', rgb565(30, 120, 40)},     // ciemna zielen
-    {'b', rgb565(155, 95, 40)},     // braz
-    {'B', rgb565(85, 50, 20)},      // ciemny braz
-    {'t', rgb565(205, 175, 125)},   // bezowy
-    {'s', rgb565(255, 205, 160)},   // skora
-    {'u', rgb565(50, 100, 220)},    // niebieski
-    {'U', rgb565(30, 55, 140)},     // ciemny niebieski
-    {'p', rgb565(170, 80, 200)},    // fiolet
-    {'P', rgb565(100, 40, 130)},    // ciemny fiolet
-};
-constexpr int PAL_N = sizeof(PAL) / sizeof(PAL[0]);
-
+// Litery w ASCII-arcie ponizej to wspolna paleta konsoli (gfx/palette.h): k czern, w biel, e/E szary,
+// r/R czerwien, o pomarancz, y/Y zolty, g/G zielen, b/B braz, t bez, s skora, u/U niebieski, p/P fiolet,
+// '.' = przezroczysty. Tej samej palety uzywaja gry ucznia (lake::load_sprite).
 gfx::Sprite S16(const char* const (&rows)[16])
 {
-    return gfx::make_sprite(rows, 16, 16, PAL, PAL_N);
+    return gfx::make_sprite(rows, 16, 16);
 }
 
 // ---------------------------------------------------------------- bohater (hitbox: kolumny 2..13)

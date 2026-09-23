@@ -20,6 +20,19 @@ bool PadState::held(Key k) const
     }
 }
 
+bool PadState::pressed(Key k) const
+{
+    switch (k) {
+        case Key::A:      return a_pressed;
+        case Key::B:      return b_pressed;
+        case Key::X:      return x_pressed;
+        case Key::Y:      return y_pressed;
+        case Key::Start:  return start_pressed;
+        case Key::Select: return select_pressed;
+        default:          return false;
+    }
+}
+
 bool PadState::any_held() const
 {
     return up || down || left || right || a || b || x || y || start || select;

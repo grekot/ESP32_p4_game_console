@@ -6,6 +6,7 @@
 #include "core/log.h"
 #include "engine/game.h"
 #include "engine/game_registry.h"
+#include "engine/rng.h"
 #include "engine/screen.h"
 #include "engine/stats.h"
 #include "gfx/canvas.h"
@@ -23,9 +24,13 @@ const char* TAG = "app";
 
 enum class State { Menu, Playing, Paused };
 
-uint16_t*         s_pixels = nullptr;   // plotno konsoli (to jest wyswietlane)
+uint16_t*         s_pixels = nullptr;   // plotno konsoli 800x480 (to jest wyswietlane)
 uint16_t*         s_frozen = nullptr;   // kopia klatki gry pokazywana pod UI pauzy
 gfx::Canvas*      s_canvas = nullptr;
+// Pod-plotno 400x240 dla gier pixel-art (Game::canvas_scale() == 2): gra rysuje tu, konsola powieksza x2.
+uint16_t*         s_small_pixels = nullptr;
+gfx::Canvas*      s_small_canvas = nullptr;
+int               s_scale        = 1;
 input::VirtualPad s_pad;
 
 State          s_state     = State::Menu;
@@ -39,11 +44,27 @@ void start_game(int index)
     if (index < 0 || index >= engine::GAME_COUNT) return;
 
     ui::menu::hide();
+    // Losowosc: w trybie skryptowanym (staly dt) zawsze to samo ziarno, zeby testy byly powtarzalne;
+    // w normalnej grze ziarno z zegara, zeby kazda rozgrywka byla inna.
+    engine::seed_rng(s_fixed_dt > 0.f ? 0x4C414B45u : (uint32_t)platform::micros());
     s_game      = engine::GAMES[index].create();
     s_game_name = engine::GAMES[index].name;
-    s_game->init(*s_canvas);
+    s_scale     = s_game->canvas_scale() == 2 ? 2 : 1;
+    if (s_scale == 2 && !s_small_canvas) {
+        // 192 kB - probujemy szybkiej pamieci wewnetrznej, gra pixel-art rysuje tu co klatke.
+        s_small_pixels = platform::alloc_pixels((size_t)engine::PIXEL_CANVAS_W * engine::PIXEL_CANVAS_H, /*fast=*/true);
+        if (!s_small_pixels) {
+            LAKE_LOGE(TAG, "brak pamieci na plotno pixel-art - gra dostaje pelne plotno");
+            s_scale = 1;
+        } else {
+            static gfx::Canvas small(s_small_pixels, engine::PIXEL_CANVAS_W, engine::PIXEL_CANVAS_H);
+            s_small_canvas = &small;
+            s_small_canvas->clear(gfx::BLACK);
+        }
+    }
+    s_game->init(s_scale == 2 ? *s_small_canvas : *s_canvas);
     s_state = State::Playing;
-    LAKE_LOGI(TAG, "start gry: %s", s_game_name);
+    LAKE_LOGI(TAG, "start gry: %s (plotno %s)", s_game_name, s_scale == 2 ? "400x240 x2" : "800x480");
 }
 
 void back_to_menu()
@@ -60,7 +81,8 @@ void back_to_menu()
 
 bool init()
 {
-    s_pixels = platform::alloc_pixels((size_t)engine::CANVAS_W * engine::CANVAS_H, /*fast=*/true);
+    // 768 kB - w PSRAM (SRAM ma ~300 kB); dla gier pixel-art jest osobne male plotno w SRAM (start_game).
+    s_pixels = platform::alloc_pixels((size_t)engine::CANVAS_W * engine::CANVAS_H, /*fast=*/false);
     if (!s_pixels) {
         LAKE_LOGE(TAG, "brak pamieci na plotno %dx%d", engine::CANVAS_W, engine::CANVAS_H);
         return false;
@@ -137,7 +159,12 @@ void frame()
             s_pad.end_frame();
 
             s_game->update(dt, s_pad.state());
-            s_game->render(*s_canvas);
+            if (s_scale == 2) {
+                s_game->render(*s_small_canvas);
+                s_canvas->blit_upscale2x(s_small_pixels, engine::PIXEL_CANVAS_W, engine::PIXEL_CANVAS_H);
+            } else {
+                s_game->render(*s_canvas);
+            }
             if (!s_pad.keys_used()) {
                 s_pad.draw(*s_canvas);   // podpowiedzi dotykowe tylko dopoki nie ma klawiatury
             }

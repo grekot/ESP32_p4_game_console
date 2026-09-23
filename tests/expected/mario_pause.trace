@@ -1,0 +1,8 @@
+TRACE    0 TITLE x= 114.0 y= 160.0 vx=   0.0 vy=    0.0 ground=0 score=0 coins=0 lives=3 time=300 enemy=-1,-1
+TRACE    5 TITLE x= 114.0 y= 160.0 vx=   0.0 vy=    0.0 ground=0 score=0 coins=0 lives=3 time=300 enemy=-1,-1
+TRACE   10 TITLE x= 114.0 y= 160.0 vx=   0.0 vy=    0.0 ground=0 score=0 coins=0 lives=3 time=300 enemy=-1,-1
+TRACE   15 TITLE x= 114.0 y= 160.0 vx=   0.0 vy=    0.0 ground=0 score=0 coins=0 lives=3 time=300 enemy=-1,-1
+TRACE   20 PAUSED (Lake Mario)
+TRACE   25 PAUSED (Lake Mario)
+TRACE   30 PAUSED (Lake Mario)
+TRACE   35 PAUSED (Lake Mario)

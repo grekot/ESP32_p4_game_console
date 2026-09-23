@@ -2,13 +2,14 @@
 #pragma once
 
 #include "gfx/canvas.h"
+#include "gfx/palette.h"
 
 namespace mario {
 
 constexpr int TILE = 16;
 
-// Kolor nieba
-constexpr uint16_t SKY = gfx::rgb565(100, 170, 255);
+// Kolor nieba (ze wspolnej palety konsoli)
+constexpr uint16_t SKY = gfx::pal::SKY;
 
 namespace spr {
 extern gfx::Sprite player_idle, player_walk1, player_walk2, player_jump;

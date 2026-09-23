@@ -44,6 +44,8 @@ struct PadState {
     float stick_y = 0.f;
 
     bool held(Key k) const;
+    // Zbocze wcisniecia dla A/B/X/Y/Start/Select (pola *_pressed). Kierunki nie maja zbocza - false.
+    bool pressed(Key k) const;
     bool any_held() const;
 };
 

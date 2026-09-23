@@ -1,6 +1,6 @@
 # Emulator konsoli Lake na Windows.
 #
-# Buduje TEN SAM kod co firmware (src/app, engine, gfx, input, ui, games) i dokleja
+# Buduje TEN SAM kod co firmware (src/app, engine, gfx, input, ui, lake, games) i dokleja
 # implementacje platform:: opartą o Win32 GDI. Nie wymaga SDL ani innych bibliotek.
 #
 #   cmake -S sim -B sim/build -G Ninja
@@ -38,16 +38,26 @@ set(CONFIG_LV_USE_THORVG_INTERNAL OFF CACHE BOOL "" FORCE)
 # konfiguracji w katalogu sim/ i przerwal konfiguracje bledem.
 set(LV_BUILD_CONF_DIR ${LAKE_SRC}/ui CACHE PATH "" FORCE)
 
+# Trzy zrodla, w kolejnosci:
+#   1. managed_components/lvgl__lvgl - kopia pobrana przez ESP-IDF przy budowie firmware (komputer rodzica),
+#   2. third_party/lvgl              - kopia rozpakowana przez tools/fetch_lvgl.ps1 (komputer ucznia, bez PlatformIO;
+#                                      katalog jest w .gitignore),
+#   3. FetchContent                  - CMake sam pobiera zip taga z GitHuba (bez gita; pelne drzewo to 180 MB,
+#                                      zip ok. 60 MB). Wymaga internetu przy pierwszej konfiguracji.
+set(LVGL_THIRD_PARTY "${CMAKE_CURRENT_LIST_DIR}/../third_party/lvgl")
+
 if(EXISTS ${LVGL_FROM_IDF}/lvgl.h)
     message(STATUS "LVGL: uzywam kopii z managed_components (${LVGL_FROM_IDF})")
     add_subdirectory(${LVGL_FROM_IDF} ${CMAKE_BINARY_DIR}/lvgl_build)
+elseif(EXISTS ${LVGL_THIRD_PARTY}/lvgl.h)
+    message(STATUS "LVGL: uzywam kopii z third_party (${LVGL_THIRD_PARTY})")
+    add_subdirectory(${LVGL_THIRD_PARTY} ${CMAKE_BINARY_DIR}/lvgl_build)
 else()
-    message(STATUS "LVGL: pobieram ${LVGL_TAG} z GitHuba")
+    message(STATUS "LVGL: pobieram ${LVGL_TAG} z GitHuba (zip). Bez internetu: uruchom tools/fetch_lvgl.ps1 albo skopiuj third_party/lvgl z innego komputera.")
     include(FetchContent)
     FetchContent_Declare(lvgl
-        GIT_REPOSITORY https://github.com/lvgl/lvgl.git
-        GIT_TAG ${LVGL_TAG}
-        GIT_SHALLOW TRUE)
+        URL https://github.com/lvgl/lvgl/archive/refs/tags/${LVGL_TAG}.zip
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
     FetchContent_MakeAvailable(lvgl)
 endif()
 
@@ -57,12 +67,15 @@ target_compile_definitions(lvgl PUBLIC LV_CONF_INCLUDE_SIMPLE LAKE_HOST_BUILD)
 
 # ---------------------------------------------------------------- kod wspolny z firmware
 # Celowo BEZ src/board (sterowniki plytki), src/platform (implementacja ESP) i src/main.cpp.
-file(GLOB_RECURSE LAKE_SHARED_SOURCES
+# CONFIGURE_DEPENDS: nowy plik .cpp (np. lekcja) jest wykrywany przy zwyklym `cmake --build`,
+# bez recznej rekonfiguracji. W firmware to niedozwolone (ESP-IDF), tu - tak.
+file(GLOB_RECURSE LAKE_SHARED_SOURCES CONFIGURE_DEPENDS
     ${LAKE_SRC}/app/*.cpp
     ${LAKE_SRC}/engine/*.cpp
     ${LAKE_SRC}/gfx/*.cpp
     ${LAKE_SRC}/input/*.cpp
     ${LAKE_SRC}/ui/*.cpp
+    ${LAKE_SRC}/lake/*.cpp
     ${LAKE_SRC}/games/*.cpp)
 
 add_executable(lake_sim

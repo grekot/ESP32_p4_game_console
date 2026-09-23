@@ -1,0 +1,6 @@
+# Testy zadan z lekcji 01. Format: argumenty emulatora | regex, ktory musi wystapic w wyjsciu.
+# Uruchamianie: powershell -File tools/testy.ps1 src/games/lekcje/01_wizytowka
+# (--game dokleja skrypt; kod startowy NIE przechodzi - testy sprawdzaja rozwiazania zadan)
+
+# test 1 - zadanie 4: kwadrat jedzie w prawo o 1 px na klatke; start x=120, klatki 0..120 = 121 klatek -> x=241
+--frames 121 --trace 120 | TRACE +120 .*square_x=241

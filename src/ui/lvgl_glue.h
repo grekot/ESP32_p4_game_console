@@ -1,7 +1,7 @@
 // Spiecie LVGL z plotnem gry i warstwa platformy.
 //
 // LVGL rysuje do wlasnego, malego bufora roboczego, a gotowe fragmenty sa kopiowane na plotno
-// konsoli (400x240 RGB565). Wyswietlanie (skalowanie x2 + obrot) robi platform::present().
+// konsoli (800x480 RGB565, natywna rozdzielczosc - czcionki bez schodkow). Wyswietlanie (obrot) robi platform::present().
 //
 // Jak pokazac UI NA TLE gry: gra renderuje klatke, app kopiuje ja do osobnego bufora i podaje
 // przez set_background_frame(). LVGL dostaje wtedy nieprzezroczyste tlo w postaci widgetu canvas

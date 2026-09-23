@@ -109,25 +109,46 @@ src/
   core/log.h           logowanie: ESP_LOGx na plytce, printf w emulatorze
   gfx/                 renderer 2D: Canvas (RGB565), Sprite (ASCII-art), czcionka 5x7
   input/               klawisze konsoli, PadState, wirtualny pad dotykowy
-  engine/              interfejs Game, rozmiar plotna, licznik FPS, rejestr gier
+  engine/              interfejs Game, rozmiar plotna, licznik FPS, rejestr gier (id, find_game), rng
   ui/                  LVGL: lv_conf.h (WSPOLNY z emulatorem), spiecie z plotnem, menu, pauza
   app/                 petla konsoli: menu -> gra -> pauza -> menu
+  lake/                proste API dla ucznia: lake.h (LAKE_GAME), lake_api.h, runtime, adapter SimpleGame
   games/mario/         gra: assety, poziom (ASCII), logika
+  games/lekcje/        lekcje: lista.h + NN_nazwa/ (gra.cpp, README.md, testy.txt, rozwiazania/)
 sim/                   emulator Windows: backend Win32, mapowanie klawiszy, pad USB, keymap.cfg
+tests/                 scenariusze regresji Lake Mario (slady --trace i zrzuty) + wzorce
+tools/                 testy.ps1 (regresja + testy lekcji), setup_kid_pc.ps1, fetch_lvgl.ps1, bmp2png.ps1
+third_party/           (gitignore) LVGL pobrane przez fetch_lvgl.ps1 na komputerze bez PlatformIO
 docs/HARDWARE.md       pinout, opis plytki, co zweryfikowac po przyjsciu sprzetu
 docs/EMULATOR.md       emulator: budowanie, sterowanie, testy skryptowane
 docs/VSCODE.md         konfiguracja VS Code: rozszerzenia, zadania, debug emulatora
+docs/NAUKA.md          nauka C++: zalozenia, program lekcji, testy zadan, komputer ucznia (dla rodzica)
+docs/DLA_UCZNIA.md     instrukcja dla ucznia: start, klawisze, sciagawka API, czytanie bledow
 docs/DECYZJE.md        dziennik decyzji projektowych z uzasadnieniami
 CLAUDE.md              kompletny przewodnik dla agenta AI: stan, komendy, pulapki, otwarte decyzje
 ```
 
+## Nauka programowania: lekcje dla ucznia
+
+Konsola jest też platformą do nauki C++ dla dziecka po Scratchu. Uczeń pisze dwie funkcje, `setup()` i `frame()`,
+przez proste API [`lake`](src/lake/lake_api.h) (`rect`, `circle`, `held(LEFT)`, `random`, `watch`...), a menu, pauzę,
+emulator i testy dostaje od konsoli. Lekcje leżą w [src/games/lekcje/](src/games/lekcje/): każda to katalog
+z `gra.cpp`, `README.md` (jedna nowa koncepcja, zadania), `testy.txt` i rozwiązaniami. F6 w VS Code buduje
+i uruchamia grę z otwartego pliku. Przewodnik dla rodzica: [docs/NAUKA.md](docs/NAUKA.md), instrukcja dla ucznia:
+[docs/DLA_UCZNIA.md](docs/DLA_UCZNIA.md), instalacja na komputerze ucznia (bez PlatformIO): `tools/setup_kid_pc.ps1`.
+
 ## Dodawanie nowej gry
 
-1. Nowy katalog `src/games/<nazwa>/`, klasa dziedzicząca po `engine::Game` (`init`, `update`, `render`).
-2. Rysowanie na `gfx::Canvas` 400x240 (skalowane sprzętowo x2), wejście z `input::PadState`.
-3. Wpis w [src/games/registry.cpp](src/games/registry.cpp) — gra pojawi się w menu.
-4. Po dodaniu plików: `pio run --target clean` oraz ponowne `cmake -S sim -B sim/build`
-   (oba buildy wyliczają listę plików przy konfiguracji).
+**Prosta gra (jak lekcja):** skopiuj `src/games/lekcje/00_szablon`, zmień `LAKE_GAME(id, "Nazwa", "opis")` na końcu
+`gra.cpp`, dopisz `LEKCJA(id)` w [src/games/lekcje/lista.h](src/games/lekcje/lista.h). Emulator wykryje nowy plik sam.
+
+**Gra na pełnym silniku (jak Lake Mario):**
+
+1. Nowy katalog `src/games/<nazwa>/`, klasa dziedzicząca po `engine::Game` (`init`, `update`, `render`, `debug_line`).
+2. Rysowanie na `gfx::Canvas` 800x480 (albo 400x240 powiększane x2 przez konsolę, gdy `canvas_scale()` zwraca 2 — pixel-art jak Lake Mario), wejście z `input::PadState`, losowość z `engine::rng()`, wygładzony tekst z `gfx/text.h`.
+3. Wpis `{ "id", "Nazwa", "opis", fabryka }` w [src/games/registry.cpp](src/games/registry.cpp) — gra pojawi się w menu
+   i pod `lake_sim.exe --game id`.
+4. Firmware wylicza listę plików przy konfiguracji: po dodaniu plików `pio run --target clean`.
 
 ## UI w grze
 
@@ -138,6 +159,8 @@ nieprzezroczystego tła — rysowanie widgetów wprost na pikselach gry nie zadz
 
 ## Plan (roadmapa)
 
+- [x] Platforma do nauki C++: API `lake`, 13 lekcji z testami, skrypt instalacyjny na komputer ucznia (`docs/NAUKA.md`)
+- [ ] Próba generalna `tools/setup_kid_pc.ps1` na czystej maszynie, gałąź `lekcje`
 - [ ] Uruchomienie na sprzęcie: ekran, dotyk, orientacja (patrz `docs/HARDWARE.md`)
 - [ ] Dźwięk: ES8311 przez I2S (efekty + muzyka)
 - [ ] Assety z partycji SPIFFS (narzędzie PNG -> RGB565)

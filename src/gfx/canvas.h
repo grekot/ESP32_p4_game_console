@@ -38,11 +38,25 @@ public:
     void hline(int x, int y, int w, uint16_t color);
     void vline(int x, int y, int h, uint16_t color);
 
+    // Odcinek 1 px (Bresenham), konce wlacznie.
+    void line(int x0, int y0, int x1, int y1, uint16_t color);
+
+    // Kolo wypelnione / okrag 1 px o srodku (cx, cy) i promieniu r.
+    void fill_circle(int cx, int cy, int r, uint16_t color);
+    void draw_circle(int cx, int cy, int r, uint16_t color);
+
     // Rysuje sprite z przezroczystoscia; flip_x = odbicie lustrzane w poziomie.
     void blit(const Sprite& s, int x, int y, bool flip_x = false);
 
     // Rysuje sprite, zastepujac wszystkie nieprzezroczyste piksele jednym kolorem (np. cien, migotanie).
     void blit_tinted(const Sprite& s, int x, int y, uint16_t color, bool flip_x = false);
+
+    // Rysuje sprite powiekszony `scale` razy (najblizszy sasiad, pixel-art na plotnie 800x480).
+    void blit_scaled(const Sprite& s, int x, int y, int scale, bool flip_x = false);
+
+    // Kopiuje mniejszy bufor src_w x src_h powiekszony x2 najblizszym sasiadem od (0,0) - klatka gry
+    // pixel-art (400x240) na plotno 800x480. Przycina do rozmiaru plotna.
+    void blit_upscale2x(const uint16_t* src, int src_w, int src_h);
 
 private:
     uint16_t* px_;

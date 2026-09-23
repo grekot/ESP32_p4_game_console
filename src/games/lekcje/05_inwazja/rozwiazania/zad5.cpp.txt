@@ -1,0 +1,95 @@
+// ROZWIAZANIE zadan 1-5 z lekcji 05 (plik .txt - najpierw sprobuj sam!).
+#include "lake/lake.h"
+
+namespace {
+
+const int COLS    = 8;
+const int ROWS    = 3;      // zad. 3
+const int ALIEN_W = 48;
+const int ALIEN_H = 32;
+const int GAP_X   = 32;
+const int GAP_Y   = 16;
+const int SHIP_W  = 40;
+const int SHIP_H  = 20;
+const int SHIP_Y  = 440;
+
+int block_x = 80;
+int block_y = 60;
+int dir     = 1;
+int ship_x  = 380;
+
+// zad. 2 + 4: kosmita z korpusem, nogami i oczami; pose 0/1 = nogi wasko/szeroko
+void draw_alien(int x, int y, int pose)
+{
+    rect(x + 8, y, ALIEN_W - 16, ALIEN_H - 12, GREEN);         // korpus
+    rect(x, y + 8, ALIEN_W, 12, GREEN);                         // "ramiona"
+    if (pose == 0) {
+        rect(x + 12, y + ALIEN_H - 12, 8, 12, GREEN);           // nogi wasko
+        rect(x + ALIEN_W - 20, y + ALIEN_H - 12, 8, 12, GREEN);
+    } else {
+        rect(x + 4, y + ALIEN_H - 12, 8, 12, GREEN);            // nogi szeroko
+        rect(x + ALIEN_W - 12, y + ALIEN_H - 12, 8, 12, GREEN);
+    }
+    rect(x + 16, y + 6, 4, 4, BLACK);                           // oczy
+    rect(x + ALIEN_W - 20, y + 6, 4, 4, BLACK);
+}
+
+void setup()
+{
+    block_x = 80;
+    block_y = 60;
+    dir     = 1;
+    ship_x  = 380;
+}
+
+void frame()
+{
+    clear(BLACK);
+
+    // zad. 5: gwiazdy z reszty z dzielenia - zawsze w tych samych miejscach
+    for (int i = 0; i < 40; i++) {
+        rect((i * 37) % screen_width(), (i * 53) % screen_height(), 2, 2, GRAY);
+    }
+
+    if (block_y > 360) {
+        // zad. 5: przegrana
+        text(230, 190, "PRZEGRALES", RED, 4);
+        text(300, 270, "Wcisnij A", WHITE, 2);
+        if (pressed(A)) {
+            restart();
+        }
+    } else {
+        int pose = (frame_count() / 30) % 2;   // zad. 4: co 30 klatek inna poza
+
+        for (int row = 0; row < ROWS; row++) {             // zad. 3: petla w petli
+            for (int col = 0; col < COLS; col++) {
+                int x = block_x + col * (ALIEN_W + GAP_X);
+                int y = block_y + row * (ALIEN_H + GAP_Y);
+                draw_alien(x, y, pose);
+            }
+        }
+
+        // zad. 4: marsz skokami co 10 klatek
+        if (frame_count() % 10 == 0) {
+            block_x = block_x + dir * 12;
+            int block_w = COLS * (ALIEN_W + GAP_X) - GAP_X;
+            if (block_x + block_w > screen_width() || block_x < 0) {
+                dir = -dir;
+                block_y = block_y + 16;
+            }
+        }
+    }
+
+    if (held(LEFT))  ship_x = ship_x - 6;
+    if (held(RIGHT)) ship_x = ship_x + 6;
+    ship_x = clamp(ship_x, 0, screen_width() - SHIP_W);
+    rect(ship_x, SHIP_Y, SHIP_W, SHIP_H, WHITE);
+
+    watch("block_x", block_x);
+    watch("block_y", block_y);
+    watch("aliens", ROWS * COLS);   // zad. 3
+}
+
+}  // namespace
+
+LAKE_GAME(inwazja, "Inwazja", "Lekcja 05: petla for")

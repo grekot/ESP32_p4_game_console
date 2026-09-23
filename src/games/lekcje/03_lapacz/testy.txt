@@ -1,0 +1,7 @@
+# Testy zadan z lekcji 03. Format: argumenty emulatora | regex w wyjsciu (--game dokleja skrypt).
+
+# test 1 - zadanie 2: paletka trzymana w lewo przez 5 s zatrzymuje sie na x=0 (clamp)
+--hold LEFT 0 300 --frames 301 --trace 300 | paddle_x=0( |$)
+
+# test 2 - zadanie 3: licznik nieudanych pilek jest w watch i po 10 s jest wiekszy od zera
+--frames 601 --trace 600 | misses=[1-9]\d*

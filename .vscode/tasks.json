@@ -2,10 +2,106 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "LEKCJA: Uruchom gre z otwartego pliku",
+            "type": "shell",
+            "command": "${workspaceFolder}/sim/build/lake_sim.exe",
+            "args": ["--game", "${relativeFileDirname}"],
+            "dependsOrder": "sequence",
+            "dependsOn": ["SIM: Zamknij emulator", "SIM: Build"],
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+            "detail": "Otworz gra.cpp swojej lekcji i wcisnij Ctrl+Shift+B: zamyka stary emulator, buduje, uruchamia TWOJA gre"
+        },
+        {
+            "label": "LEKCJA: Zrzut ekranu (po 120 klatkach)",
+            "type": "shell",
+            "command": "${workspaceFolder}/sim/build/lake_sim.exe",
+            "args": ["--game", "${relativeFileDirname}", "--frames", "120", "--shot", "${fileDirname}/zrzut.bmp"],
+            "dependsOrder": "sequence",
+            "dependsOn": ["SIM: Zamknij emulator", "SIM: Build"],
+            "problemMatcher": [],
+            "detail": "Zapisuje zrzut.bmp w katalogu lekcji (2 sekundy gry bez klawiszy)"
+        },
+        {
+            "label": "LEKCJA: Slad (trace co 30 klatek)",
+            "type": "shell",
+            "command": "${workspaceFolder}/sim/build/lake_sim.exe",
+            "args": ["--game", "${relativeFileDirname}", "--frames", "300", "--trace", "30"],
+            "dependsOrder": "sequence",
+            "dependsOn": ["SIM: Zamknij emulator", "SIM: Build"],
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+            "detail": "5 sekund gry bez klawiszy; co pol sekundy wypisuje wartosci z watch(...)"
+        },
+        {
+            "label": "LEKCJA: Sprawdz zadania",
+            "type": "shell",
+            "command": "powershell",
+            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/tools/testy.ps1", "${relativeFileDirname}"],
+            "dependsOrder": "sequence",
+            "dependsOn": ["SIM: Zamknij emulator", "SIM: Build"],
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+            "detail": "Uruchamia testy z pliku testy.txt otwartej lekcji"
+        },
+        {
+            "label": "SIM: Zamknij emulator",
+            "type": "shell",
+            "command": "powershell",
+            "args": ["-NoProfile", "-Command", "Stop-Process -Name lake_sim -Force -ErrorAction SilentlyContinue; exit 0"],
+            "problemMatcher": [],
+            "presentation": { "reveal": "silent", "close": true },
+            "detail": "Windows nie pozwala nadpisac dzialajacego exe - bez tego build konczy sie bledem linkera"
+        },
+        {
+            "label": "SIM: Configure",
+            "type": "shell",
+            "command": "cmake -S sim --preset mingw",
+            "options": { "env": { "PATH": "C:\\msys64\\mingw64\\bin;${env:PATH}" } },
+            "problemMatcher": [],
+            "detail": "Jednorazowo (preset: sim/CMakePresets.json); nowe pliki .cpp sa wykrywane same"
+        },
+        {
+            "label": "SIM: Build",
+            "type": "shell",
+            "command": "cmake --build sim/build",
+            "options": { "env": { "PATH": "C:\\msys64\\mingw64\\bin;${env:PATH}" } },
+            "group": "build",
+            "problemMatcher": ["$gcc"],
+            "detail": "Emulator na Windows (zamknij dzialajacy emulator przed budowaniem)"
+        },
+        {
+            "label": "SIM: Run",
+            "type": "shell",
+            "command": "${workspaceFolder}/sim/build/lake_sim.exe",
+            "dependsOrder": "sequence",
+            "dependsOn": ["SIM: Zamknij emulator", "SIM: Build"],
+            "problemMatcher": [],
+            "detail": "Zbuduj (jesli trzeba) i uruchom emulator z menu konsoli"
+        },
+        {
+            "label": "SIM: Lista gier",
+            "type": "shell",
+            "command": "${workspaceFolder}/sim/build/lake_sim.exe --list",
+            "problemMatcher": [],
+            "detail": "Numer, id i nazwa kazdej gry (Lake Mario + lekcje z lista.h)"
+        },
+        {
+            "label": "SIM: Testy regresji (Mario + lekcje)",
+            "type": "shell",
+            "command": "powershell",
+            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/tools/testy.ps1"],
+            "dependsOrder": "sequence",
+            "dependsOn": ["SIM: Zamknij emulator", "SIM: Build"],
+            "problemMatcher": [],
+            "detail": "tests/scenarios.txt (slady i zrzuty Lake Mario bajt w bajt) + testy.txt kazdej lekcji"
+        },
+        {
             "label": "PIO: Build",
             "type": "shell",
             "command": "pio run",
-            "group": { "kind": "build", "isDefault": true },
+            "group": "build",
             "problemMatcher": ["$gcc"],
             "detail": "Firmware na plytke (pierwszy raz pobiera ESP-IDF i toolchain, ~15 min)"
         },
@@ -34,45 +130,13 @@
             "type": "shell",
             "command": "pio run --target clean",
             "problemMatcher": [],
-            "detail": "Po dodaniu nowych plikow zrodlowych albo zmianie sdkconfig.defaults"
+            "detail": "Po dodaniu nowych plikow zrodlowych (firmware wylicza liste przy konfiguracji) albo zmianie sdkconfig.defaults"
         },
         {
             "label": "PIO: menuconfig",
             "type": "shell",
             "command": "pio run --target menuconfig",
             "problemMatcher": []
-        },
-        {
-            "label": "SIM: Configure",
-            "type": "shell",
-            "command": "cmake -S sim --preset mingw",
-            "options": { "env": { "PATH": "C:\\msys64\\mingw64\\bin;${env:PATH}" } },
-            "problemMatcher": [],
-            "detail": "Jednorazowo i po dodaniu nowych plikow zrodlowych (preset: sim/CMakePresets.json)"
-        },
-        {
-            "label": "SIM: Build",
-            "type": "shell",
-            "command": "cmake --build sim/build",
-            "options": { "env": { "PATH": "C:\\msys64\\mingw64\\bin;${env:PATH}" } },
-            "group": "build",
-            "problemMatcher": ["$gcc"],
-            "detail": "Emulator na Windows (zamknij dzialajacy emulator przed budowaniem)"
-        },
-        {
-            "label": "SIM: Run",
-            "type": "shell",
-            "command": "${workspaceFolder}/sim/build/lake_sim.exe",
-            "dependsOn": ["SIM: Build"],
-            "problemMatcher": [],
-            "detail": "Zbuduj (jesli trzeba) i uruchom emulator"
-        },
-        {
-            "label": "SIM: Test (mechaniki Lake Mario)",
-            "type": "shell",
-            "command": "${workspaceFolder}/sim/build/lake_sim.exe --game 0 --hold B 3 4 --hold RIGHT 20 90 --frames 90 --trace 15",
-            "problemMatcher": [],
-            "detail": "Przyklad testu skryptowanego: slad stanu gry co 15 klatek podczas chodu w prawo"
         }
     ]
 }

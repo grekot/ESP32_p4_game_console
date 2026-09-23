@@ -1,0 +1,170 @@
+// ROZWIAZANIE zadan 1-4 z lekcji 11 (plik .txt - najpierw sprobuj sam!).
+#include "lake/lake.h"
+
+namespace {
+
+const int BIRD_R        = 16;
+const int PIPE_W        = 80;
+const int PIPES         = 3;
+const int PIPE_SPACING  = 320;
+const int PIPE_SPEED    = 4;
+const int GRAVITY_EVERY = 2;
+const int FLAP          = -10;
+
+enum State {
+    TITLE,
+    PLAYING,
+    GAME_OVER
+};
+
+struct Bird {
+    int x;
+    int y;
+    int vy;
+};
+
+struct Pipe {
+    int  x;
+    int  gap_y;
+    bool passed;
+};
+
+State state = TITLE;
+Bird  bird;
+Pipe  pipes[PIPES];
+int   score       = 0;
+int   gap         = 160;   // zad. 4: zmienna zamiast stalej
+int   start_frame = 0;     // zad. 2
+int   flight_time = 0;     // sekundy lotu ("time" to nazwa funkcji z biblioteki C - lepiej jej nie uzywac)
+int   best        = 0;     // zad. 3: NIE zerowane w setup ani start_round
+
+Pipe make_pipe(int start_x)
+{
+    Pipe p;
+    p.x      = start_x;
+    p.gap_y  = random(60, screen_height() - gap - 60);
+    p.passed = false;
+    return p;
+}
+
+void start_round()
+{
+    bird.x  = 200;
+    bird.y  = 240;
+    bird.vy = 0;
+    score   = 0;
+    gap     = 160;
+    start_frame = frame_count();
+    flight_time = 0;
+    for (int i = 0; i < PIPES; i++) {
+        pipes[i] = make_pipe(screen_width() + i * PIPE_SPACING);
+    }
+    state = PLAYING;
+}
+
+void setup()
+{
+    state = TITLE;
+}
+
+bool hits_pipe(Pipe p)
+{
+    int bx = bird.x - BIRD_R, by = bird.y - BIRD_R, bs = 2 * BIRD_R;
+    if (overlaps(bx, by, bs, bs, p.x, 0, PIPE_W, p.gap_y)) return true;
+    if (overlaps(bx, by, bs, bs, p.x, p.gap_y + gap, PIPE_W, screen_height() - p.gap_y - gap)) return true;
+    return false;
+}
+
+void draw_pipe(Pipe p)
+{
+    rect(p.x, 0, PIPE_W, p.gap_y, GREEN);
+    rect(p.x, p.gap_y + gap, PIPE_W, screen_height() - p.gap_y - gap, GREEN);
+}
+
+void draw_world()
+{
+    clear(SKY);
+    for (int i = 0; i < PIPES; i++) {
+        draw_pipe(pipes[i]);
+    }
+    circle(bird.x, bird.y, BIRD_R, YELLOW);
+}
+
+void update_playing()
+{
+    if (frame_count() % GRAVITY_EVERY == 0) bird.vy = bird.vy + 1;
+    if (pressed(A)) bird.vy = FLAP;
+    bird.y = bird.y + bird.vy;
+    flight_time = (frame_count() - start_frame) / 60;   // zad. 2
+
+    for (int i = 0; i < PIPES; i++) {
+        pipes[i].x = pipes[i].x - PIPE_SPEED;
+        if (pipes[i].x + PIPE_W < 0) {
+            pipes[i] = make_pipe(pipes[i].x + PIPES * PIPE_SPACING);
+        }
+        if (pipes[i].x + PIPE_W < bird.x && !pipes[i].passed) {
+            score = score + 1;
+            pipes[i].passed = true;
+            if (score % 5 == 0) gap = max(100, gap - 10);   // zad. 4
+        }
+        if (hits_pipe(pipes[i])) state = GAME_OVER;
+    }
+    if (bird.y + BIRD_R > screen_height() || bird.y - BIRD_R < 0) state = GAME_OVER;
+
+    if (state == GAME_OVER && score > best) {   // zad. 3
+        best = score;
+    }
+}
+
+void frame()
+{
+    switch (state) {
+        case TITLE:
+            clear(SKY);
+            bird.x = 200;
+            bird.y = 240 + (frame_count() / 10) % 12 - 6;               // zad. 1: falowanie
+            circle(bird.x, bird.y, BIRD_R, YELLOW);
+            text(260, 110, "FLAPPY", WHITE, 4);
+            if ((frame_count() / 30) % 2 == 0) {                        // zad. 1: miganie
+                text(310, 300, "Wcisnij A", WHITE, 2);
+            }
+            text(320, 400, "Rekord", WHITE, 1);
+            text(400, 400, best, YELLOW, 1);
+            if (pressed(A)) start_round();
+            break;
+
+        case PLAYING:
+            update_playing();
+            draw_world();
+            text(screen_width() / 2 - 14, 16, score, WHITE, 4);
+            text(20, 16, flight_time, WHITE, 3);                        // zad. 2
+            break;
+
+        case GAME_OVER:
+            draw_world();
+            rect(160, 100, 480, 260, BLACK);
+            text(230, 115, "GAME OVER", RED, 4);
+            text(200, 190, "Wynik", WHITE, 3);
+            text(380, 190, score, YELLOW, 3);
+            text(200, 230, "Rekord", WHITE, 3);                          // zad. 3
+            text(380, 230, best, YELLOW, 3);
+            text(200, 270, "Czas", WHITE, 3);                            // zad. 2
+            text(380, 270, flight_time, WHITE, 3);
+            text(430, 270, "s", WHITE, 3);
+            text(200, 320, "A - jeszcze raz", WHITE, 2);
+            if (pressed(A)) start_round();
+            break;
+    }
+
+    if (state == TITLE)     watch("state", "TITLE");
+    if (state == PLAYING)   watch("state", "PLAYING");
+    if (state == GAME_OVER) watch("state", "GAME_OVER");
+    watch("score", score);
+    watch("best", best);
+    watch("time", flight_time);
+    watch("gap", gap);
+}
+
+}  // namespace
+
+LAKE_GAME(flappy_pelny, "Flappy pelny", "Lekcja 11: stan gry, enum")

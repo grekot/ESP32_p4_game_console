@@ -1,0 +1,4 @@
+# Testy zadan z lekcji 09. Format: argumenty emulatora | regex w wyjsciu (--game dokleja skrypt).
+
+# test 1 - zadanie 2: pilka startuje z paletki w gore i zbija cegielke bez udzialu gracza
+--frames 301 --trace 300 | score=[1-9]\d*

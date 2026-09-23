@@ -1,0 +1,122 @@
+// ROZWIAZANIE zadan 2-4 z lekcji 12 (plik .txt - najpierw sprobuj sam!).
+#include "lake/lake.h"
+
+namespace {
+
+const char* const MAP[15] = {
+    "                                                  ",
+    "                                                  ",
+    "                                                  ",
+    "                                                  ",
+    "                                                  ",
+    "                                                  ",
+    "                       o                          ",
+    "                      BBB                         ",
+    "             o                       o   o        ",
+    "            BBB                     BBBBBB        ",
+    "                                                  ",
+    "                                                  ",
+    "        o   o                             BB      ",
+    "##############################   #################",
+    "==============================   =================",
+};
+
+const int PLAYER_W = 24;
+const int PLAYER_H = 32;
+const int WALK     = 4;
+const int JUMP_V   = -13;
+const int MAX_FALL = 16;
+
+struct Player {
+    int  x;
+    int  y;
+    int  vx;
+    int  vy;
+    bool on_ground;
+};
+
+Player p;
+int    cam_x = 0;
+int    coins = 0;
+int    lives = 3;   // zad. 4
+
+void respawn()
+{
+    p.x = 2 * TILE;
+    p.y = 13 * TILE - PLAYER_H;
+    p.vx = 0;
+    p.vy = 0;
+    p.on_ground = false;
+}
+
+void setup()
+{
+    load_map(MAP, "#=B");
+    respawn();
+    cam_x = 0;
+    coins = 0;
+    lives = 3;
+}
+
+void frame()
+{
+    clear(SKY);
+
+    p.vx = 0;
+    if (held(LEFT))  p.vx = -WALK;
+    if (held(RIGHT)) p.vx = WALK;
+
+    // zad. 2: skok tylko z ziemi; puszczenie A skraca skok
+    if (pressed(A) && p.on_ground) {
+        p.vy = JUMP_V;
+    }
+    if (!held(A) && p.vy < -5) {
+        p.vy = -5;
+    }
+
+    p.vy = p.vy + 1;
+    if (p.vy > MAX_FALL) p.vy = MAX_FALL;
+
+    MoveResult r = move_box(p.x, p.y, PLAYER_W, PLAYER_H, p.vx, p.vy);
+    p.on_ground = r.on_ground;
+
+    // zad. 3: moneta pod srodkiem gracza
+    int col = map_col(p.x + PLAYER_W / 2);
+    int row = map_row(p.y + PLAYER_H / 2);
+    if (map_tile(col, row) == 'o') {
+        map_set(col, row, ' ');
+        coins = coins + 1;
+    }
+
+    // zad. 4: spadl w dziure
+    if (p.y > map_rows() * TILE) {
+        lives = lives - 1;
+        if (lives <= 0) {
+            restart();
+        } else {
+            respawn();
+        }
+    }
+
+    cam_x = clamp(p.x - screen_width() * 2 / 5, 0, map_width() - screen_width());
+
+    draw_tiles('#', DARK_GREEN, cam_x);
+    draw_tiles('=', BROWN, cam_x);
+    draw_tiles('B', ORANGE, cam_x);
+    draw_tiles('o', YELLOW, cam_x);
+
+    rect(p.x - cam_x, p.y, PLAYER_W, PLAYER_H, RED);
+    text(20, 8, coins, WHITE, 3);
+    text(screen_width() - 40, 8, lives, RED, 3);
+
+    watch("x", p.x);
+    watch("y", p.y);
+    watch("vy", p.vy);
+    watch("ground", p.on_ground);
+    watch("coins", coins);
+    watch("lives", lives);
+}
+
+}  // namespace
+
+LAKE_GAME(mini_mario, "Mini Mario", "Lekcja 12: mapa kafelkow")

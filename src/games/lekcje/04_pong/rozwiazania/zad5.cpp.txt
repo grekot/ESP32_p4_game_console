@@ -1,0 +1,154 @@
+// ROZWIAZANIE zadan 1-5 z lekcji 04 (plik .txt - najpierw sprobuj sam!).
+#include "lake/lake.h"
+
+namespace {
+
+const int PADDLE_W     = 16;
+const int PADDLE_H     = 80;    // zad. 1
+const int PADDLE_SPEED = 8;
+const int MARGIN       = 20;
+const int RADIUS       = 12;
+const int WIN_SCORE    = 5;
+
+int left_y  = 200;
+int right_y = 200;
+int ball_x  = 400;
+int ball_y  = 240;
+int vx      = 6;
+int vy      = 4;
+int score_left  = 0;
+int score_right = 0;
+
+void draw_paddle(int x, int y)
+{
+    rect(x, y, PADDLE_W, PADDLE_H, WHITE);
+}
+
+bool hits_paddle(int px, int py)
+{
+    return overlaps(ball_x - RADIUS, ball_y - RADIUS, 2 * RADIUS, 2 * RADIUS,
+                    px, py, PADDLE_W, PADDLE_H);
+}
+
+void new_ball()
+{
+    ball_x = screen_width() / 2;
+    ball_y = screen_height() / 2;
+    if (chance(50)) {
+        vx = 6;
+    } else {
+        vx = -6;
+    }
+    vy = random(-4, 4);
+    if (vy == 0) {          // zad. 1: pilka nie moze leciec idealnie poziomo
+        vy = 2;
+    }
+}
+
+// zad. 2: wynik z cieniem
+void draw_score(int x, int value)
+{
+    text(x + 3, 23, value, DARK_GRAY, 4);
+    text(x, 20, value, WHITE, 4);
+}
+
+// zad. 3: srodek paletki
+int paddle_center(int y)
+{
+    return y + PADDLE_H / 2;
+}
+
+// zad. 4
+bool game_over()
+{
+    return score_left >= WIN_SCORE || score_right >= WIN_SCORE;
+}
+
+// zad. 5: komputer - paletka podaza za pilka
+int follow_ball(int paddle_y)
+{
+    if (paddle_center(paddle_y) < ball_y) {
+        return paddle_y + PADDLE_SPEED;
+    }
+    if (paddle_center(paddle_y) > ball_y) {
+        return paddle_y - PADDLE_SPEED;
+    }
+    return paddle_y;
+}
+
+void setup()
+{
+    left_y  = 200;
+    right_y = 200;
+    score_left  = 0;
+    score_right = 0;
+    new_ball();
+}
+
+void frame()
+{
+    clear(BLACK);
+    const int right_x = screen_width() - MARGIN - PADDLE_W;
+
+    if (game_over()) {
+        // zad. 4: koniec gry
+        if (score_left >= WIN_SCORE) {
+            text(220, 190, "Lewy wygral", GREEN, 4);
+        } else {
+            text(210, 190, "Prawy wygral", GREEN, 4);
+        }
+        text(300, 270, "Wcisnij A", WHITE, 2);
+        if (pressed(A)) {
+            restart();
+        }
+    } else {
+        // --- sterowanie ---
+        if (held(UP))   left_y = left_y - PADDLE_SPEED;
+        if (held(DOWN)) left_y = left_y + PADDLE_SPEED;
+        right_y = follow_ball(right_y);                   // zad. 5
+        left_y  = clamp(left_y, 0, screen_height() - PADDLE_H);
+        right_y = clamp(right_y, 0, screen_height() - PADDLE_H);
+
+        // --- pilka ---
+        ball_x = ball_x + vx;
+        ball_y = ball_y + vy;
+        if (ball_y < RADIUS || ball_y > screen_height() - RADIUS) {
+            vy = -vy;
+        }
+        if (hits_paddle(MARGIN, left_y) && vx < 0) {
+            vx = -vx;
+            if (ball_y < paddle_center(left_y)) { vy = -6; } else { vy = 6; }   // zad. 3: celowanie
+        }
+        if (hits_paddle(right_x, right_y) && vx > 0) {
+            vx = -vx;
+            if (ball_y < paddle_center(right_y)) { vy = -6; } else { vy = 6; }
+        }
+
+        // --- punkty ---
+        if (ball_x < 0) {
+            score_right = score_right + 1;
+            new_ball();
+        }
+        if (ball_x > screen_width()) {
+            score_left = score_left + 1;
+            new_ball();
+        }
+    }
+
+    // --- rysowanie ---
+    draw_paddle(MARGIN, left_y);
+    draw_paddle(right_x, right_y);
+    circle(ball_x, ball_y, RADIUS, YELLOW);
+    draw_score(330, score_left);    // zad. 2
+    draw_score(440, score_right);
+
+    watch("left_y", left_y);
+    watch("right_y", right_y);
+    watch("ball_y", ball_y);
+    watch("score_l", score_left);
+    watch("score_r", score_right);
+}
+
+}  // namespace
+
+LAKE_GAME(pong, "Pong", "Lekcja 04: funkcje")

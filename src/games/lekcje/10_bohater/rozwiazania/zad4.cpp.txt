@@ -1,0 +1,156 @@
+// ROZWIAZANIE zadan 1-4 z lekcji 10 (plik .txt - najpierw sprobuj sam!).
+#include "lake/lake.h"
+
+namespace {
+
+const char* const HERO_ROWS[16] = {
+    "......pppppp....",          // zad. 1: fioletowa czapka
+    ".....ppppppppp..",
+    ".....BBBsssks...",
+    "....BsBsssskss..",
+    "....BsBBssssss..",
+    "....BBsssskkk...",
+    "......ssssss....",
+    ".....oooUooo....",
+    "....oooooUooooo.",
+    "...oooUUUUUooo..",
+    "...ssUUUUUUUUss.",
+    "...ssUUUyyUUUss.",
+    ".....UUUU.UUUU..",
+    "....BBBB..BBBB..",
+    "...BBBBB..BBBBB.",
+    "................",
+};
+
+// zad. 2: druga klatka chodu - nogi rozsuniete
+const char* const HERO_WALK_ROWS[16] = {
+    "......pppppp....",
+    ".....ppppppppp..",
+    ".....BBBsssks...",
+    "....BsBsssskss..",
+    "....BsBBssssss..",
+    "....BBsssskkk...",
+    "......ssssss....",
+    ".....oooUooo....",
+    "....oooooUooooo.",
+    "...oooUUUUUooo..",
+    "...ssUUUUUUUUss.",
+    "...ssUUUyyUUUss.",
+    "....UUUU...UUUU.",
+    "...BBBB.....BBBB",
+    "..BBBBB.....BBBB",
+    "................",
+};
+
+const char* const COIN_ROWS[8] = {
+    "..yyyy..",
+    ".yYYYYy.",
+    "yYyyyyYy",
+    "yYyyyyYy",
+    "yYyyyyYy",
+    "yYyyyyYy",
+    ".yYYYYy.",
+    "..yyyy..",
+};
+
+// zad. 4: moneta widziana z boku
+const char* const COIN_THIN_ROWS[8] = {
+    "...yy...",
+    "...Yy...",
+    "...Yy...",
+    "...Yy...",
+    "...Yy...",
+    "...Yy...",
+    "...Yy...",
+    "...yy...",
+};
+
+struct Coin {
+    int  x;
+    bool taken;
+};
+
+const int COINS    = 5;
+const int SCALE    = 3;
+const int GROUND_Y = 400;
+const int SPEED    = 4;
+
+Sprite hero;
+Sprite hero_walk;
+Sprite coin;
+Sprite coin_thin;
+
+Coin all_coins[COINS];
+int  hero_x      = 100;
+bool facing_left = false;
+int  coins       = 0;
+
+void setup()
+{
+    hero      = load_sprite(HERO_ROWS);
+    hero_walk = load_sprite(HERO_WALK_ROWS);
+    coin      = load_sprite(COIN_ROWS);
+    coin_thin = load_sprite(COIN_THIN_ROWS);
+    hero_x      = 100;
+    facing_left = false;
+    coins       = 0;
+    for (int i = 0; i < COINS; i++) {
+        all_coins[i].x     = 200 + i * 120;
+        all_coins[i].taken = false;
+    }
+}
+
+void frame()
+{
+    clear(DARK_BLUE);                                                     // zad. 1: noc
+    circle(680, 80, 36, BEIGE);                                           // ksiezyc
+    rect(0, GROUND_Y, screen_width(), screen_height() - GROUND_Y, DARK_GREEN);
+
+    bool walking = false;
+    if (held(LEFT)) {
+        hero_x = hero_x - SPEED;
+        facing_left = true;
+        walking = true;
+    }
+    if (held(RIGHT)) {
+        hero_x = hero_x + SPEED;
+        facing_left = false;
+        walking = true;
+    }
+    hero_x = clamp(hero_x, 0, screen_width() - hero.w * SCALE);
+
+    const int hero_w = hero.w * SCALE, hero_h = hero.h * SCALE;
+    const int coin_w = coin.w * SCALE, coin_h = coin.h * SCALE;
+
+    // zad. 4: monety w tablicy, obracajace sie
+    bool thin = (frame_count() / 10) % 2 == 1;
+    for (int i = 0; i < COINS; i++) {
+        if (all_coins[i].taken) continue;
+        if (thin) {
+            sprite(coin_thin, all_coins[i].x, GROUND_Y - coin_h, false, SCALE);
+        } else {
+            sprite(coin, all_coins[i].x, GROUND_Y - coin_h, false, SCALE);
+        }
+        // zad. 3: zbieranie
+        if (overlaps(hero_x, GROUND_Y - hero_h, hero_w, hero_h,
+                     all_coins[i].x, GROUND_Y - coin_h, coin_w, coin_h)) {
+            all_coins[i].taken = true;
+            coins = coins + 1;
+        }
+    }
+
+    // zad. 2: animacja chodu
+    if (walking && (frame_count() / 8) % 2 == 1) {
+        sprite(hero_walk, hero_x, GROUND_Y - hero_h, facing_left, SCALE);
+    } else {
+        sprite(hero, hero_x, GROUND_Y - hero_h, facing_left, SCALE);
+    }
+
+    text(20, 8, coins, WHITE, 3);
+    watch("hero_x", hero_x);
+    watch("coins", coins);
+}
+
+}  // namespace
+
+LAKE_GAME(bohater, "Bohater", "Lekcja 10: wlasna grafika")

@@ -1,0 +1,4 @@
+# Testy zadan z lekcji 06. Format: argumenty emulatora | regex w wyjsciu (--game dokleja skrypt).
+
+# test 1 - zadanie 2: trzy strzaly bez ruszania statkiem, blok przechodzi nad nim - co najmniej jedno trafienie
+--hold A 10 11 --hold A 120 121 --hold A 240 241 --frames 400 --trace 399 | score=[1-9]\d*

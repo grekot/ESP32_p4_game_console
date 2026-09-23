@@ -4,13 +4,18 @@
 #include <stdint.h>
 
 #include "engine/game.h"
+#include "engine/particles.h"
+#include "engine/tilemap.h"
 #include "games/mario/mario_level.h"
+
+namespace mario {
 
 class MarioGame final : public engine::Game {
 public:
     void init(gfx::Canvas& canvas) override;
     void update(float dt, const input::PadState& pad) override;
     void render(gfx::Canvas& canvas) override;
+    int  canvas_scale() const override { return 2; }   // pixel-art 400x240 powiekszany x2
     void debug_line(char* buf, size_t n) const override;
 
 private:
@@ -30,23 +35,17 @@ private:
         bool  active   = false;   // aktywuje sie, gdy wejdzie w kadr
         float squash_t = 0;       // >0: zgnieciony, znika po czasie
     };
-    struct Particle {
-        float   x = 0, y = 0, vx = 0, vy = 0, t = 0;
-        uint8_t kind = 0;         // 0 wolny, 1 moneta, 2 odlamek cegly
-    };
-
     static constexpr int MAX_ENEMIES   = 32;
-    static constexpr int MAX_PARTICLES = 48;
+    static constexpr int MAX_PARTICLES = 48;   // czasteczki: kind 1 = moneta, 2 = odlamek cegly
 
     // --- stan poziomu ---
-    char  tiles_[mario::LEVEL_ROWS][mario::LEVEL_MAX_COLS] = {};
-    int   cols_ = 0;
+    engine::TileMap map_;                 // kafelki + kolizje + rysowanie (engine/tilemap.h)
     float spawn_x_ = 0, spawn_y_ = 0;
 
     Player   player_{};
     Enemy    enemies_[MAX_ENEMIES]{};
     int      enemy_count_ = 0;
-    Particle particles_[MAX_PARTICLES]{};
+    engine::ParticlePool<MAX_PARTICLES> particles_;
 
     // Ulatwienia sterowania skokiem - patrz JUMP_BUFFER_TIME / COYOTE_TIME w mario_game.cpp.
     float jump_buffer_ = 0;   // pamiec wcisniecia A tuz przed ladowaniem
@@ -67,15 +66,10 @@ private:
     void kill_player();
     void level_clear();
 
-    // --- mapa ---
-    char tile_at(int col, int row) const;
-    bool solid_at(int col, int row) const;
-    void set_tile(int col, int row, char t);
+    // --- mapa (skroty do map_) ---
+    char tile_at(int col, int row) const { return map_.tile_at(col, row); }
+    void set_tile(int col, int row, char t) { map_.set_tile(col, row, t); }
     void bump_block(int col, int row);
-
-    // --- fizyka ---
-    void move_x(float& x, float y, float& vx, int w, int h, float dt, bool& hit_wall);
-    bool move_y(float x, float& y, float& vy, int w, int h, float dt, int& hit_col, int& hit_row);
 
     // --- logika ---
     void update_player(float dt, const input::PadState& pad);
@@ -91,3 +85,5 @@ private:
     void draw_hud(gfx::Canvas& c) const;
     void draw_overlay(gfx::Canvas& c) const;
 };
+
+}  // namespace mario

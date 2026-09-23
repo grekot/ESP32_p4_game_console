@@ -1,0 +1,4 @@
+# Testy zadan z lekcji 08. Format: argumenty emulatora | regex w wyjsciu (--game dokleja skrypt).
+
+# test 1 - zadanie 2: bez klawiszy ptak spada na ziemie przed 200. klatka
+--frames 200 --trace 199 | dead=true

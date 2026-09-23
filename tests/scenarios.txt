@@ -1,0 +1,14 @@
+# Scenariusze regresji emulatora. Format: rodzaj | nazwa | argumenty lake_sim.exe
+#   trace - porownuje linie ^TRACE z tests/expected/<nazwa>.trace (dokladnie, bajt w bajt)
+#   shot  - porownuje zrzut BMP z tests/expected/<nazwa>.bmp (dokladnie)
+# Uruchamianie: powershell -File tools/testy.ps1 mario   (--update nadpisuje wzorce)
+# Wzorce nagrane 23.09.2026 z binarki sprzed refaktoru - kazda zmiana fizyki musi byc swiadoma.
+trace | mario_walk      | --game 0 --hold B 3 4 --hold RIGHT 20 90 --frames 90 --trace 15
+trace | mario_jump_tap  | --game 0 --hold B 3 4 --hold A 30 31 --frames 90 --trace 3
+trace | mario_jump_full | --game 0 --hold B 3 4 --hold A 30 60 --frames 90 --trace 3
+trace | mario_run       | --game 0 --hold B 3 4 --hold B 20 200 --hold RIGHT 20 200 --frames 200 --trace 10
+trace | mario_far       | --game 0 --hold B 3 4 --hold RIGHT 20 600 --frames 600 --trace 20
+trace | mario_pause     | --game 0 --pause-at 20 --frames 40 --trace 5
+shot  | mario_title     | --game 0 --frames 5
+shot  | mario_play      | --game 0 --hold B 3 4 --hold RIGHT 20 90 --frames 90
+shot  | menu            | --frames 5

@@ -1,10 +1,13 @@
 // Emulator konsoli Lake na Windows.
-// Uruchamia DOKLADNIE ten sam kod co plytka (app/, engine/, gfx/, input/, ui/, games/) -
+// Uruchamia DOKLADNIE ten sam kod co plytka (app/, engine/, gfx/, input/, ui/, lake/, games/) -
 // rozni je tylko implementacja warstwy platform:: w sim/platform_win32.cpp.
 //
 // Uzycie:
 //   lake_sim.exe                              - normalne okno
+//   lake_sim.exe --list                       - wypisz gry (numer, id, nazwa) i zakoncz
 //   lake_sim.exe --game 0                     - wejdz od razu do gry nr 0 (bez klikania w menu)
+//   lake_sim.exe --game pilka                 - to samo po id albo nazwie; dziala tez sciezka katalogu
+//                                               lekcji (src/games/lekcje/02_pilka -> "pilka")
 //   lake_sim.exe --frames 120 --shot ui.bmp   - przelicz N klatek, zapisz zrzut i zakoncz
 //                                               (do dokumentacji i sprawdzania regresji UI)
 //   lake_sim.exe --game 0 --pause-at 20 --frames 40 --shot pauza.bmp
@@ -16,6 +19,8 @@
 //   lake_sim.exe --game 0 --hold SELECT 5 6 --hold A 30 50 --frames 80
 //                                             - skryptowane wcisniecia: klawisz od klatki N do M.
 //                                               Mozna podac do 8 wpisow (scenariusze testowe).
+// W trybie --frames krok czasu jest staly (1/60 s) i nie ma czekania na 60 FPS - ten sam
+// skrypt daje zawsze identyczny wynik, a 600 klatek liczy sie w ulamku sekundy.
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,11 +28,20 @@
 
 #include "app/app.h"
 #include "core/log.h"
+#include "engine/game_registry.h"
 #include "platform/platform.h"
 #include "keymap_win32.h"
 #include "sim_extra.h"
 
 static const char* TAG = "lake-sim";
+
+static void print_games(FILE* out)
+{
+    for (int i = 0; i < engine::GAME_COUNT; ++i) {
+        fprintf(out, "  %2d  %-12s %s - %s\n", i, engine::GAMES[i].id, engine::GAMES[i].name,
+                engine::GAMES[i].description);
+    }
+}
 
 int main(int argc, char** argv)
 {
@@ -35,7 +49,7 @@ int main(int argc, char** argv)
     setvbuf(stderr, nullptr, _IONBF, 0);
 
     int         frames   = -1;
-    int         game     = -1;
+    const char* game_arg = nullptr;
     int         pause_at = -1;
     const char* shot     = nullptr;
     const char* keymap   = nullptr;
@@ -44,12 +58,16 @@ int main(int argc, char** argv)
     Hold hold[8] = {};
     int  hold_count = 0;
     for (int i = 1; i < argc; ++i) {
-        if (strcmp(argv[i], "--frames") == 0 && i + 1 < argc) {
+        if (strcmp(argv[i], "--list") == 0) {
+            printf("Gry w konsoli (numer, id, nazwa - opis):\n");
+            print_games(stdout);
+            return 0;
+        } else if (strcmp(argv[i], "--frames") == 0 && i + 1 < argc) {
             frames = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--shot") == 0 && i + 1 < argc) {
             shot = argv[++i];
         } else if (strcmp(argv[i], "--game") == 0 && i + 1 < argc) {
-            game = atoi(argv[++i]);
+            game_arg = argv[++i];
         } else if (strcmp(argv[i], "--pause-at") == 0 && i + 1 < argc) {
             pause_at = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--keymap") == 0 && i + 1 < argc) {
@@ -73,6 +91,18 @@ int main(int argc, char** argv)
         }
     }
 
+    // Gre sprawdzamy PRZED otwarciem okna - blad ma byc widoczny od razu, bez migajacego okna.
+    int game = -1;
+    if (game_arg) {
+        game = engine::find_game(game_arg);
+        if (game < 0) {
+            LAKE_LOGE(TAG, "nie ma gry \"%s\" - dostepne (numer, id, nazwa):", game_arg);
+            print_games(stderr);
+            fprintf(stderr, "Lekcja nie jest na liscie? Sprawdz LAKE_GAME(...) na koncu gra.cpp i wpis w lekcje/lista.h.\n");
+            return 2;
+        }
+    }
+
     LAKE_LOGI(TAG, "Lake Console - emulator");
     sim::keymap_load(keymap);
 
@@ -92,6 +122,7 @@ int main(int argc, char** argv)
     if (frames > 0) {
         // Tryb skryptowany: staly krok 1/60 s, zeby wyniki nie zalezaly od obciazenia PC.
         app::set_fixed_dt(1.f / 60.f);
+        sim::set_unthrottled(true);   // bez czekania na 60 FPS - 600 klatek liczy sie w ulamku sekundy
         for (int i = 0; i < frames && platform::should_run(); ++i) {
             // Klawisze wstrzykniete: START na jedna klatke (--pause-at) i/lub przytrzymanie (--hold).
             uint16_t syn = 0;
@@ -103,7 +134,7 @@ int main(int argc, char** argv)
             app::frame();
 
             if (trace_every > 0 && (i % trace_every) == 0) {
-                char line[160];
+                char line[256];
                 app::debug_line(line, sizeof(line));
                 printf("TRACE %4d %s\n", i, line);
             }

@@ -1,0 +1,66 @@
+// ROZWIAZANIE zadan 1-4 z lekcji 02 (plik .txt - najpierw sprobuj sam!).
+#include "lake/lake.h"
+
+namespace {
+
+const int RADIUS = 30;   // zad. 1
+
+int ball_x = 100;
+int ball_y = 200;
+int vx = 8;              // zad. 1
+int vy = 3;
+
+Color ball_color = WHITE;   // zad. 3
+int   bounces    = 0;       // zad. 4
+
+void setup()
+{
+    ball_x = 100;
+    ball_y = 200;
+    vx     = 8;
+    vy     = 3;
+    ball_color = WHITE;
+    bounces    = 0;
+}
+
+void frame()
+{
+    clear(BLACK);
+
+    ball_x = ball_x + vx;
+    ball_y = ball_y + vy;
+
+    if (ball_x > screen_width() - RADIUS) {
+        vx = -vx;
+        ball_color = RED;
+        bounces = bounces + 1;
+    }
+    if (ball_x < RADIUS) {
+        vx = -vx;
+        ball_color = GREEN;
+        bounces = bounces + 1;
+    }
+    if (ball_y > screen_height() - RADIUS) {   // zad. 2: dol
+        vy = -vy;
+        ball_color = YELLOW;
+        bounces = bounces + 1;
+    }
+    if (ball_y < RADIUS) {                      // zad. 2: gora
+        vy = -vy;
+        ball_color = BLUE;
+        bounces = bounces + 1;
+    }
+
+    circle(ball_x, ball_y, RADIUS, ball_color);
+    text(20, 16, bounces, WHITE, 3);            // zad. 4
+
+    watch("x", ball_x);
+    watch("y", ball_y);
+    watch("vx", vx);
+    watch("vy", vy);
+    watch("bounces", bounces);
+}
+
+}  // namespace
+
+LAKE_GAME(pilka, "Pilka", "Lekcja 02: instrukcja if")

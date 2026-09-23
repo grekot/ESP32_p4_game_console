@@ -1,0 +1,123 @@
+// ROZWIAZANIE zadan 1-4 z lekcji 08 (plik .txt - najpierw sprobuj sam!).
+#include "lake/lake.h"
+
+namespace {
+
+const int BIRD_R        = 16;
+const int PIPE_W        = 80;
+const int GAP           = 180;   // zad. 1
+const int PIPE_SPEED    = 4;
+const int GRAVITY_EVERY = 2;
+const int FLAP          = -10;
+
+struct Bird {
+    int x;
+    int y;
+    int vy;
+};
+
+struct Pipe {
+    int  x;
+    int  gap_y;
+    bool passed;   // zad. 3: czy juz policzona
+};
+
+Bird bird;
+Pipe pipe;
+Pipe pipe2;        // zad. 4
+int  score = 0;
+bool dead  = false;
+
+// zad. 4: funkcja dla obu rur (struktura jako parametr, wynik zwracany)
+Pipe make_pipe(int start_x)
+{
+    Pipe p;
+    p.x      = start_x;
+    p.gap_y  = random(60, screen_height() - GAP - 60);
+    p.passed = false;
+    return p;
+}
+
+void setup()
+{
+    bird.x  = 200;
+    bird.y  = 240;
+    bird.vy = 0;
+    score   = 0;
+    dead    = false;
+    pipe    = make_pipe(screen_width());
+    pipe2   = make_pipe(screen_width() + screen_width() / 2);
+}
+
+void draw_pipe(Pipe p)
+{
+    rect(p.x, 0, PIPE_W, p.gap_y, GREEN);
+    rect(p.x, p.gap_y + GAP, PIPE_W, screen_height() - p.gap_y - GAP, GREEN);
+}
+
+// zad. 2: czy ptak dotyka rury (gornej albo dolnej czesci)
+bool hits_pipe(Pipe p)
+{
+    int bx = bird.x - BIRD_R, by = bird.y - BIRD_R, bs = 2 * BIRD_R;
+    if (overlaps(bx, by, bs, bs, p.x, 0, PIPE_W, p.gap_y)) return true;
+    if (overlaps(bx, by, bs, bs, p.x, p.gap_y + GAP, PIPE_W, screen_height() - p.gap_y - GAP)) return true;
+    return false;
+}
+
+// Rura: ruch, nowa za ekranem, punkt. Zwraca zaktualizowana rure.
+Pipe update_pipe(Pipe p)
+{
+    p.x = p.x - PIPE_SPEED;
+    if (p.x + PIPE_W < 0) {
+        p = make_pipe(screen_width());
+    }
+    if (p.x + PIPE_W < bird.x && !p.passed) {   // zad. 3
+        score    = score + 1;
+        p.passed = true;
+    }
+    return p;
+}
+
+void frame()
+{
+    clear(SKY);
+
+    if (dead) {
+        text(240, 190, "GAME OVER", RED, 4);
+        text(300, 270, "Wcisnij A", WHITE, 2);
+        if (pressed(A)) {
+            restart();
+        }
+    } else {
+        if (frame_count() % GRAVITY_EVERY == 0) {
+            bird.vy = bird.vy + 1;
+        }
+        if (pressed(A)) {
+            bird.vy = FLAP;
+        }
+        bird.y = bird.y + bird.vy;
+
+        pipe  = update_pipe(pipe);
+        pipe2 = update_pipe(pipe2);
+
+        // zad. 2: ziemia i rury
+        if (bird.y + BIRD_R > screen_height() || hits_pipe(pipe) || hits_pipe(pipe2)) {
+            dead = true;
+        }
+    }
+
+    draw_pipe(pipe);
+    draw_pipe(pipe2);
+    circle(bird.x, bird.y, BIRD_R, ORANGE);
+    text(20, 8, score, WHITE, 3);
+
+    watch("bird_y", bird.y);
+    watch("bird_vy", bird.vy);
+    watch("pipe_x", pipe.x);
+    watch("score", score);
+    watch("dead", dead);
+}
+
+}  // namespace
+
+LAKE_GAME(flappy, "Flappy", "Lekcja 08: struktury")

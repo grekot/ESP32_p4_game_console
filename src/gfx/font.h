@@ -1,5 +1,5 @@
-// Wbudowana czcionka bitmapowa 5x7 (wielkie litery, cyfry, podstawowa interpunkcja).
-// Male litery sa rysowane jak wielkie. Znak zajmuje 6*scale px w poziomie, 8*scale w pionie.
+// Wbudowana czcionka bitmapowa 5x7 (wielkie i male litery, cyfry, podstawowa interpunkcja).
+// Znaki spoza ASCII rysowane jako "?". Znak zajmuje 6*scale px w poziomie, 8*scale w pionie.
 #pragma once
 
 #include "gfx/canvas.h"

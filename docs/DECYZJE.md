@@ -117,3 +117,66 @@ główny `CMakeLists.txt` ESP-IDF.
 **Decyzja.** `cmake.sourceDirectory` -> `sim/`, preset `mingw`, debug emulatora przez `cmake.debugConfig`
 (bez `launch.json`, który generuje PlatformIO). pioarduino IDE na liście niechcianych.
 **Konsekwencje.** IntelliSense pochodzi z PlatformIO, więc pliki `sim/` podkreślają `<windows.h>` — kosmetyka.
+
+## 15. Warstwa `lake` dla ucznia zamiast uproszczania `engine::Game` (23.09.2026)
+
+**Kontekst.** Konsola ma być platformą do nauki C++ dla 11–13-latka po Scratchu. `engine::Game` wymaga klasy,
+`override`, referencji, `float dt` i RGB565 — za dużo na pierwszą lekcję.
+**Decyzja.** Osobny katalog `src/lake/`: funkcje globalne w stylu Arduino/Processing (`setup()`/`frame()`, `rect`, `held`,
+`random`, `watch`), silny typ `Color`, matematyka całkowita przy stałych 60 FPS. Adapter `lake::SimpleGame` opakowuje
+funkcje ucznia w `engine::Game`, więc pętla konsoli, menu, pauza i `--trace` działają bez zmian. Nazwy API po angielsku
+(jak w każdym kursie), komentarze po polsku. `frame()` zamiast `loop()` (dzieci piszą wtedy `while(true)`) i zamiast
+`draw()` (w tej funkcji też się porusza obiektami).
+**Konsekwencje.** `engine::Game` zostaje pełnym interfejsem dla „dorosłych" gier. Zmienne globalne ucznia żyją między
+wejściami z menu — wartości startowe nadaje `setup()`. Sprite'y ucznia idą do areny 64 kB zerowanej przy `setup()`,
+żeby `load_sprite` nie wyciekało.
+
+## 16. Rejestracja lekcji: X-makro `lista.h`, nie samorejestracja
+
+**Kontekst.** Uczeń ma dodać grę jedną linią. Kuszące jest `static` z konstruktorem rejestrującym.
+**Decyzja.** `LAKE_GAME(id, ...)` definiuje `extern const engine::GameEntry lake_entry_id`, a `registry.cpp` włącza
+`lista.h` dwa razy (deklaracje i elementy `GAMES[]`). Jawna lista, bo ESP-IDF linkuje komponent jako bibliotekę
+statyczną: obiekt bez odwołań wypada z programu razem ze swoim inicjalizatorem. Do tego `GameEntry::id` i `find_game()`:
+`--game pilka`, `--game src/games/lekcje/02_pilka` (zadanie VS Code z `${relativeFileDirname}`).
+**Konsekwencje.** Kod ucznia siedzi w `namespace {}` — wszystkie lekcje trafiają do jednego binarium (także firmware).
+Brak klamry = czytelny błąd linkera `multiple definition of 'setup()'`, opisany w DLA_UCZNIA.md.
+
+## 17. Własny RNG (xorshift32) seedowany przez konsolę
+
+**Kontekst.** Lekcje potrzebują losowości, a testy `--frames` muszą być powtarzalne.
+**Decyzja.** `engine::rng()`; `app::start_game` ustawia ziarno stałe przy stałym `dt` (tryb testowy) i z zegara w oknie.
+Nie `rand()` — różne implementacje na PC i ESP.
+**Konsekwencje.** Mario nie losuje, więc jego ślady bez zmian. `lake::random(int,int)` nie koliduje z `random(void)`
+z newlib (inna arność) — sprawdzone na `pio run`.
+
+## 18. Siatka regresji przed refaktorem: ślady i zrzuty bajt w bajt
+
+**Kontekst.** Plan wyciągnięcia `TileMap`, cząsteczek i palety z `mario_game.cpp` do silnika.
+**Decyzja.** `tests/scenarios.txt` + `tests/expected/` nagrane z binarki sprzed zmian; `tools/testy.ps1 mario` porównuje
+dokładnie. Tryb `--frames` przestał czekać na 60 FPS (`sim::set_unthrottled`), więc 9 scenariuszy liczy się w 3,5 s.
+**Konsekwencje.** Każdy krok refaktoru musi dać 9/9. Zrzut `menu` zmienia się z każdą lekcją — wtedy `-Update` jest oczekiwane.
+
+## 19. Komputer ucznia bez PlatformIO: trzy źródła LVGL
+
+**Kontekst.** Emulator brał LVGL z `managed_components` (tylko po `pio run`) albo klonował 180 MB gitem.
+**Decyzja.** Kolejność: `managed_components` → `third_party/lvgl` (`tools/fetch_lvgl.ps1`: zip taga, SHA-256, ~30 MB
+potrzebnych plików, `-Zip` z pendrive'a) → `FetchContent` z `URL` zipa (bez gita). `tools/setup_kid_pc.ps1` stawia
+całe środowisko przez winget i przypisuje F6.
+**Konsekwencje.** Na komputerze ucznia IntelliSense pochodzi z CMake Tools (odpowiedź „Yes" na pytanie o providera —
+odwrotnie niż u rodzica). Domyślne zadanie Ctrl+Shift+B to `LEKCJA: Uruchom`.
+
+## 20. Płótno 800x480 zamiast 400x240 x2; pixel-art tylko tam, gdzie gra o to prosi (23.09.2026)
+
+**Kontekst.** Użytkownik ocenił menu LVGL jako brzydkie: litery ze schodkami. Przyczyną było powiększanie x2 najbliższym
+sąsiadem całej klatki 400x240 (PPA / `StretchBlt`), które niszczyło antyaliasing czcionek. Rekomendacja brzmiała:
+UI w 800x480, gry zostawić w 400x240; użytkownik wybrał **wszystko w 800x480**, „nowocześnie, nie retro".
+**Decyzja.** `engine::CANVAS_W/H = 800x480`, skala 1 (PPA robi sam obrót). Gra może zadeklarować
+`Game::canvas_scale() == 2` — dostaje pod-płótno 400x240 w SRAM, a konsola powiększa klatkę x2 (`blit_upscale2x`);
+tak działa Lake Mario, którego grafiki 16x16 są pixel-artem z założenia. Tekst w grach ucznia i etykiety wirtualnego pada
+rysuje `gfx/text.h` z glifów Montserrat LVGL (A8 mieszane z RGB565). Menu i pauza przeprojektowane (`ui/theme.h`: paleta
+slate, karty 64 px, pasek przewijania, panel z cieniem). W `lake`: `sprite(..., scale)`, kafelek 32 px; wszystkie lekcje
+przeliczone (rozmiary, prędkości, testy).
+**Konsekwencje.** Płótno 768 kB w PSRAM (było 192 kB w SRAM) — na płytce do zmierzenia czas klatki gier 800x480
+(rysowanie CPU do PSRAM) i koszt powiększenia x2 dla Mario (~1 ms szacunkowo; w razie potrzeby PPA). Ślady Mario bez zmian,
+zrzuty regresji to dokładne powiększenie x2 starych. Emulator 1:1, zrzuty 1,15 MB. Czcionka 5x7 zostaje tylko w HUD Mario.
+Po drodze: `LV_ASSERT_HANDLER abort()` w `lv_conf.h`, bo domyślne `while(1)` LVGL zawiesiło emulator bez komunikatu.

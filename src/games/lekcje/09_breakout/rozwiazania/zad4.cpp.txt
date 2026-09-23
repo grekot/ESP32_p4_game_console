@@ -1,0 +1,140 @@
+// ROZWIAZANIE zadan 1-4 z lekcji 09 (plik .txt - najpierw sprobuj sam!).
+#include "lake/lake.h"
+
+namespace {
+
+const int BRICK_COLS = 10;
+const int BRICK_ROWS = 5;      // zad. 1: piaty rzad
+const int BRICK_W    = 72;
+const int BRICK_H    = 24;
+const int BRICKS     = BRICK_ROWS * BRICK_COLS;
+const int PADDLE_W   = 120;
+const int PADDLE_H   = 16;
+const int PADDLE_Y   = 450;
+const int BALL_R     = 10;
+
+struct Brick {
+    int   x;
+    int   y;
+    bool  alive;
+    Color color;
+};
+
+struct Ball {
+    int x;
+    int y;
+    int vx;
+    int vy;
+};
+
+Brick bricks[BRICKS];
+Ball  ball;
+int   paddle_x = 340;
+int   score    = 0;
+int   lives    = 3;
+
+void reset_ball()
+{
+    ball.x  = paddle_x + PADDLE_W / 2;
+    ball.y  = PADDLE_Y - BALL_R - 1;
+    ball.vx = 4;
+    ball.vy = -6;
+}
+
+// zad. 3
+int bricks_left()
+{
+    int n = 0;
+    for (int i = 0; i < BRICKS; i++) {
+        if (bricks[i].alive) n = n + 1;
+    }
+    return n;
+}
+
+void setup()
+{
+    for (int row = 0; row < BRICK_ROWS; row++) {
+        for (int col = 0; col < BRICK_COLS; col++) {
+            int i = row * BRICK_COLS + col;
+            bricks[i].x     = 20 + col * (BRICK_W + 4);
+            bricks[i].y     = 60 + row * (BRICK_H + 6);
+            bricks[i].alive = true;
+            if (row == 0) bricks[i].color = RED;
+            if (row == 1) bricks[i].color = ORANGE;
+            if (row == 2) bricks[i].color = YELLOW;
+            if (row == 3) bricks[i].color = GREEN;
+            if (row == 4) bricks[i].color = BLUE;
+        }
+    }
+    paddle_x = 340;
+    score    = 0;
+    lives    = 3;
+    reset_ball();
+}
+
+void frame()
+{
+    clear(BLACK);
+
+    if (bricks_left() == 0 || lives == 0) {
+        // zad. 3
+        if (lives == 0) {
+            text(240, 190, "GAME OVER", RED, 4);
+        } else {
+            text(240, 190, "WYGRALES", GREEN, 4);
+        }
+        text(300, 270, "Wcisnij A", WHITE, 2);
+        if (pressed(A)) {
+            restart();
+        }
+    } else {
+        if (held(LEFT))  paddle_x = paddle_x - 8;
+        if (held(RIGHT)) paddle_x = paddle_x + 8;
+        paddle_x = clamp(paddle_x, 0, screen_width() - PADDLE_W);
+
+        ball.x = ball.x + ball.vx;
+        ball.y = ball.y + ball.vy;
+        if (ball.x < BALL_R || ball.x > screen_width() - BALL_R) ball.vx = -ball.vx;
+        if (ball.y < BALL_R) ball.vy = -ball.vy;
+        if (ball.vy > 0 && overlaps(ball.x - BALL_R, ball.y - BALL_R, 2 * BALL_R, 2 * BALL_R,
+                                    paddle_x, PADDLE_Y, PADDLE_W, PADDLE_H)) {
+            ball.vy = -ball.vy;
+            ball.vx = (ball.x - (paddle_x + PADDLE_W / 2)) / 8;   // zad. 4: kat zalezny od miejsca trafienia
+        }
+        if (ball.y > screen_height()) {
+            lives = lives - 1;
+            reset_ball();
+        }
+
+        // zad. 2: zbijanie - jedna cegielka na klatke (break)
+        for (int i = 0; i < BRICKS; i++) {
+            if (bricks[i].alive &&
+                overlaps(ball.x - BALL_R, ball.y - BALL_R, 2 * BALL_R, 2 * BALL_R,
+                         bricks[i].x, bricks[i].y, BRICK_W, BRICK_H)) {
+                bricks[i].alive = false;
+                ball.vy = -ball.vy;
+                score   = score + 10;
+                break;
+            }
+        }
+    }
+
+    for (int i = 0; i < BRICKS; i++) {
+        if (bricks[i].alive) {
+            rect(bricks[i].x, bricks[i].y, BRICK_W, BRICK_H, bricks[i].color);
+        }
+    }
+    rect(paddle_x, PADDLE_Y, PADDLE_W, PADDLE_H, WHITE);
+    circle(ball.x, ball.y, BALL_R, WHITE);
+    text(20, 8, score, WHITE, 3);
+    text(screen_width() - 40, 8, lives, RED, 3);
+
+    watch("score", score);
+    watch("lives", lives);
+    watch("left", bricks_left());
+    watch("ball_y", ball.y);
+}
+
+}  // namespace
+
+LAKE_GAME(breakout, "Breakout", "Lekcja 09: tablica struktur")
