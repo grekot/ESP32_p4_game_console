@@ -9,7 +9,7 @@ W komplecie **emulator na Windows**, który uruchamia ten sam kod bez płytki.
 |---|---|---|---|
 | ![menu](docs/images/menu.png) | ![gra](docs/images/gra.png) | ![rozgrywka](docs/images/rozgrywka.png) | ![pauza](docs/images/pauza.png) |
 
-Zrzuty pochodzą z emulatora, wygenerowane poleceniem `lake_sim.exe --shot`.
+Zrzuty pochodzą z emulatora, wygenerowane poleceniem `console_sim.exe --shot`.
 
 ## Framework: ESP-IDF 5.5 przez PlatformIO (pioarduino) + LVGL 9.5
 
@@ -54,7 +54,7 @@ cmake -S sim -B sim/build -G Ninja -DCMAKE_C_COMPILER=C:/msys64/mingw64/bin/gcc.
 ```
 
 ```bash
-cmake --build sim/build && ./sim/build/lake_sim.exe
+cmake --build sim/build && ./sim/build/console_sim.exe
 ```
 
 Szczegóły, sterowanie, tryb zrzutów ekranu i testy skryptowane: [docs/EMULATOR.md](docs/EMULATOR.md).
@@ -112,18 +112,24 @@ src/
   engine/              interfejs Game, rozmiar plotna, licznik FPS, rejestr gier (id, find_game), rng
   ui/                  LVGL: lv_conf.h (WSPOLNY z emulatorem), spiecie z plotnem, menu, pauza
   app/                 petla konsoli: menu -> gra -> pauza -> menu
-  lake/                proste API dla ucznia: lake.h (LAKE_GAME), lake_api.h, runtime, adapter SimpleGame
+  console/                proste API dla ucznia: console.h (CONSOLE_ADD_GAME), console_api.h, runtime, adapter SimpleGame
   games/mario/         gra: assety, poziom (ASCII), logika
+  games/labirynt3d/    gra pokazowa: labirynt pseudo-3D (raycasting), tekstury PNG, mini-mapa
+  games/kosmos/        gra pokazowa: strzelanka 2D w 800x480, sprite'y PNG, paralaksa, wybuchy
   games/lekcje/        lekcje: lista.h + NN_nazwa/ (gra.cpp, README.md, testy.txt, rozwiazania/)
+  gfx/lodepng/         dekoder PNG (lodepng, licencja zlib; tylko dekoder)
+assets/                obrazki PNG gier w assets/<id gry>/; emulator czyta z dysku, plytka z partycji SPIFFS (pio run -t uploadfs)
 sim/                   emulator Windows: backend Win32, mapowanie klawiszy, pad USB, keymap.cfg
 tests/                 scenariusze regresji Lake Mario (slady --trace i zrzuty) + wzorce
-tools/                 testy.ps1 (regresja + testy lekcji), setup_kid_pc.ps1, fetch_lvgl.ps1, bmp2png.ps1
+tools/                 testy.ps1 (regresja + testy lekcji), setup_kid_pc.ps1, fetch_lvgl.ps1, bmp2png.ps1, gen_demo_assets.py
 third_party/           (gitignore) LVGL pobrane przez fetch_lvgl.ps1 na komputerze bez PlatformIO
 docs/HARDWARE.md       pinout, opis plytki, co zweryfikowac po przyjsciu sprzetu
 docs/EMULATOR.md       emulator: budowanie, sterowanie, testy skryptowane
 docs/VSCODE.md         konfiguracja VS Code: rozszerzenia, zadania, debug emulatora
 docs/NAUKA.md          nauka C++: zalozenia, program lekcji, testy zadan, komputer ucznia (dla rodzica)
 docs/DLA_UCZNIA.md     instrukcja dla ucznia: start, klawisze, sciagawka API, czytanie bledow
+docs/API.md            opis wszystkich funkcji dla ucznia z plakatem (docs/images/api_plakat.png)
+docs/pdf/              wersje PDF: API, instrukcja ucznia, kazda lekcja (tools/md2pdf.py)
 docs/DECYZJE.md        dziennik decyzji projektowych z uzasadnieniami
 CLAUDE.md              kompletny przewodnik dla agenta AI: stan, komendy, pulapki, otwarte decyzje
 ```
@@ -131,15 +137,26 @@ CLAUDE.md              kompletny przewodnik dla agenta AI: stan, komendy, pulapk
 ## Nauka programowania: lekcje dla ucznia
 
 Konsola jest też platformą do nauki C++ dla dziecka po Scratchu. Uczeń pisze dwie funkcje, `setup()` i `frame()`,
-przez proste API [`lake`](src/lake/lake_api.h) (`rect`, `circle`, `held(LEFT)`, `random`, `watch`...), a menu, pauzę,
+przez proste API [`console`](src/console/console_api.h) (`rect`, `circle`, `held(LEFT)`, `random`, `watch`...), a menu, pauzę,
 emulator i testy dostaje od konsoli. Lekcje leżą w [src/games/lekcje/](src/games/lekcje/): każda to katalog
 z `gra.cpp`, `README.md` (jedna nowa koncepcja, zadania), `testy.txt` i rozwiązaniami. F6 w VS Code buduje
 i uruchamia grę z otwartego pliku. Przewodnik dla rodzica: [docs/NAUKA.md](docs/NAUKA.md), instrukcja dla ucznia:
 [docs/DLA_UCZNIA.md](docs/DLA_UCZNIA.md), instalacja na komputerze ucznia (bez PlatformIO): `tools/setup_kid_pc.ps1`.
 
+## Gry pokazowe: Labirynt 3D i Kosmos
+
+| ![Labirynt 3D](docs/images/labirynt3d.png) | ![Kosmos](docs/images/kosmos.png) |
+|---|---|
+| **Labirynt 3D** — pseudo-3D metodą raycastingu (jak Wolfenstein 3D): 400 promieni na klatkę, teksturowane ściany, drzwi otwierające się przy podejściu, monety i portal jako sprite'y skalowane odległością, mini-mapa. Płótno 400x240 x2. | **Kosmos** — strzelanka w natywnym 800x480: statek, asteroidy rozpadające się na mniejsze, gwiazdy w trzech warstwach paralaksy, wybuchy z klatek PNG, iskry silnika. |
+
+Obie gry czytają grafikę z `assets/labirynt3d/` i `assets/kosmos/` (PNG). Pliki wygenerował skrypt
+`python tools/gen_demo_assets.py` — wystarczy podmienić PNG o tej samej nazwie, żeby zmienić wygląd.
+Pełne 3D z wielokątami nie ma sensu na P4 bez GPU (patrz [docs/DECYZJE.md](docs/DECYZJE.md), wpis 23);
+raycasting daje efekt 3D kosztem ok. 0,1 ms na klatkę na PC (szacunkowo 2-4 ms na P4).
+
 ## Dodawanie nowej gry
 
-**Prosta gra (jak lekcja):** skopiuj `src/games/lekcje/00_szablon`, zmień `LAKE_GAME(id, "Nazwa", "opis")` na końcu
+**Prosta gra (jak lekcja):** skopiuj `src/games/lekcje/00_szablon`, zmień `CONSOLE_ADD_GAME(id, "Nazwa", "opis")` na końcu
 `gra.cpp`, dopisz `LEKCJA(id)` w [src/games/lekcje/lista.h](src/games/lekcje/lista.h). Emulator wykryje nowy plik sam.
 
 **Gra na pełnym silniku (jak Lake Mario):**
@@ -147,7 +164,7 @@ i uruchamia grę z otwartego pliku. Przewodnik dla rodzica: [docs/NAUKA.md](docs
 1. Nowy katalog `src/games/<nazwa>/`, klasa dziedzicząca po `engine::Game` (`init`, `update`, `render`, `debug_line`).
 2. Rysowanie na `gfx::Canvas` 800x480 (albo 400x240 powiększane x2 przez konsolę, gdy `canvas_scale()` zwraca 2 — pixel-art jak Lake Mario), wejście z `input::PadState`, losowość z `engine::rng()`, wygładzony tekst z `gfx/text.h`.
 3. Wpis `{ "id", "Nazwa", "opis", fabryka }` w [src/games/registry.cpp](src/games/registry.cpp) — gra pojawi się w menu
-   i pod `lake_sim.exe --game id`.
+   i pod `console_sim.exe --game id`.
 4. Firmware wylicza listę plików przy konfiguracji: po dodaniu plików `pio run --target clean`.
 
 ## UI w grze
@@ -159,7 +176,7 @@ nieprzezroczystego tła — rysowanie widgetów wprost na pikselach gry nie zadz
 
 ## Plan (roadmapa)
 
-- [x] Platforma do nauki C++: API `lake`, 13 lekcji z testami, skrypt instalacyjny na komputer ucznia (`docs/NAUKA.md`)
+- [x] Platforma do nauki C++: API `console`, 13 lekcji z testami, skrypt instalacyjny na komputer ucznia (`docs/NAUKA.md`)
 - [ ] Próba generalna `tools/setup_kid_pc.ps1` na czystej maszynie, gałąź `lekcje`
 - [ ] Uruchomienie na sprzęcie: ekran, dotyk, orientacja (patrz `docs/HARDWARE.md`)
 - [ ] Dźwięk: ES8311 przez I2S (efekty + muzyka)

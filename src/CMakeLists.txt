@@ -3,12 +3,12 @@
 # Po dodaniu NOWEGO pliku zrob `pio run --target clean` (albo dotknij ten plik), zeby CMake odswiezyl liste.
 # (CONFIGURE_DEPENDS jest niedozwolone - ESP-IDF wykonuje ten plik takze w trybie skryptu.)
 
-file(GLOB_RECURSE LAKE_SOURCES
+file(GLOB_RECURSE CONSOLE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/*.c
     ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
 idf_component_register(
-    SRCS ${LAKE_SOURCES}
+    SRCS ${CONSOLE_SOURCES}
     INCLUDE_DIRS "." "ui"
     REQUIRES
         esp_lcd          # MIPI-DSI / DPI panel, panel IO
@@ -20,5 +20,10 @@ idf_component_register(
         esp_psram
         esp_timer
         nvs_flash
+        spiffs           # partycja assets: pliki PNG dla gier (platform::read_file)
         lvgl__lvgl       # LVGL (menu konsoli, nakladki UI w grach)
 )
+
+# lodepng (src/gfx/lodepng): tylko dekoder, bez zapisu na dysk i bez API C++ - mniejszy kod.
+target_compile_definitions(${COMPONENT_LIB} PRIVATE LODEPNG_NO_COMPILE_ENCODER LODEPNG_NO_COMPILE_DISK
+    LODEPNG_NO_COMPILE_ANCILLARY_CHUNKS LODEPNG_NO_COMPILE_CPP)

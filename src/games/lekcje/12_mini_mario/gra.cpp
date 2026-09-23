@@ -1,6 +1,6 @@
 // LEKCJA 12 - MINI MARIO: mapa kafelkow, grawitacja, kolizje z mapa, kamera. Zadania w README.md.
 // Sterowanie: LEFT/RIGHT chod, A skok (zadanie 2).
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {   // pudelko na twoja gre - nie usuwaj
 
@@ -97,4 +97,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(mini_mario, "Mini Mario", "Lekcja 12: mapa kafelkow")
+CONSOLE_ADD_GAME(mini_mario, "Mini Mario", "Lekcja 12: mapa kafelkow")

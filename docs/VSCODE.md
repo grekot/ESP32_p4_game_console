@@ -56,11 +56,11 @@ Do zwykłej pracy nad grami użyj emulatora.
 | `LEKCJA: Zrzut ekranu` | 120 klatek bez klawiszy, `zrzut.bmp` w katalogu lekcji |
 | `LEKCJA: Slad` | 300 klatek, co 30 wypisuje wartości z `watch()` |
 | `LEKCJA: Sprawdz zadania` | `tools/testy.ps1` na `testy.txt` otwartej lekcji |
-| `SIM: Zamknij emulator` | `Stop-Process lake_sim` — Windows nie pozwala nadpisać działającego exe |
+| `SIM: Zamknij emulator` | `Stop-Process console_sim` — Windows nie pozwala nadpisać działającego exe |
 | `SIM: Configure` | jednorazowo; używa presetu `sim/CMakePresets.json` (nowe pliki wykrywa sam build) |
 | `SIM: Build` | kompilacja emulatora, kilka sekund |
 | `SIM: Run` | zbuduj i uruchom z menu konsoli |
-| `SIM: Lista gier` | `lake_sim.exe --list` |
+| `SIM: Lista gier` | `console_sim.exe --list` |
 | `SIM: Testy regresji (Mario + lekcje)` | `tools/testy.ps1`: ślady i zrzuty Lake Mario + testy lekcji |
 
 Domyślne zadanie budowania to `LEKCJA: Uruchom`, bo z niego korzysta uczeń (patrz [NAUKA.md](NAUKA.md)); `PIO: Build`
@@ -69,7 +69,7 @@ zostaje w liście i w pasku PlatformIO. Na komputerze ucznia skrypt instalacyjny
 **Zamknij działający emulator przed `SIM: Build`.** Windows nie pozwala nadpisać uruchomionego pliku
 i linker kończy się błędem bez czytelnego komunikatu.
 
-To samo z paska CMake Tools na dole okna: przycisk *Build*, obok wybór celu `lake_sim`, a przycisk
+To samo z paska CMake Tools na dole okna: przycisk *Build*, obok wybór celu `console_sim`, a przycisk
 z robakiem uruchamia emulator pod debuggerem gdb z MSYS2. Punkty przerwania, podgląd zmiennych,
 krokowanie po kodzie gry — bez żadnego `launch.json`.
 

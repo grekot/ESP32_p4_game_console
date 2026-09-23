@@ -42,4 +42,11 @@ input::PadState controller();
 // Emulator: false gdy uzytkownik zamknal okno. Na plytce zawsze true.
 bool should_run();
 
+// Pliki z zasobami (PNG, w przyszlosci dzwieki, poziomy). Sciezka wzgledna, np. "bohater/hero.png":
+//   plytka   -> partycja `assets` (SPIFFS) zamontowana pod /assets; wgrywanie: pio run -t uploadfs
+//   emulator -> katalog assets/ w repozytorium (szukany od katalogu roboczego i od pliku exe)
+// Zwraca bufor z cala zawartoscia (zwolnic przez free_file) i rozmiar; nullptr gdy pliku nie ma.
+uint8_t* read_file(const char* path, size_t& size);
+void     free_file(uint8_t* data);
+
 }  // namespace platform

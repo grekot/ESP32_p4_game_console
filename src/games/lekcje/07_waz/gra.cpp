@@ -1,5 +1,5 @@
 // LEKCJA 07 - WAZ (Snake): tablica jako lista, przesuwanie elementow, ruch co N klatek. Zadania w README.md.
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {   // pudelko na twoja gre - nie usuwaj
 
@@ -92,4 +92,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(waz, "Waz", "Lekcja 07: tablice jako listy")
+CONSOLE_ADD_GAME(waz, "Waz", "Lekcja 07: tablice jako listy")

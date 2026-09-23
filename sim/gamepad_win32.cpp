@@ -59,11 +59,11 @@ void detect_once()
 
         s_id      = id;
         s_present = true;
-        LAKE_LOGI(TAG, "pad USB %u: %s - lewa galka steruje galka konsoli",
+        CONSOLE_LOGI(TAG, "pad USB %u: %s - lewa galka steruje galka konsoli",
                   id, s_caps.szPname);
         return;
     }
-    LAKE_LOGI(TAG, "brak pada USB - galka konsoli sterowana klawiszami");
+    CONSOLE_LOGI(TAG, "brak pada USB - galka konsoli sterowana klawiszami");
 }
 
 }  // namespace
@@ -78,7 +78,7 @@ bool gamepad_axes(float& x, float& y)
     info.dwFlags = JOY_RETURNX | JOY_RETURNY;
     if (joyGetPosEx(s_id, &info) != JOYERR_NOERROR) {
         s_present = false;                 // pad odlaczony w trakcie
-        LAKE_LOGW(TAG, "pad USB zniknal");
+        CONSOLE_LOGW(TAG, "pad USB zniknal");
         return false;
     }
 

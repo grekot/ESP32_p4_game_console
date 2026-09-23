@@ -14,7 +14,7 @@ Własna gra od pomysłu do wersji, w którą zagra ktoś inny. Bez kodu startowe
 
 ## Plan pracy (w tej kolejności)
 
-- [ ] Skopiuj `00_szablon` do `13_twoja_gra` (albo `14_nazwa`), zmień `LAKE_GAME`, dopisz do `lista.h`. F6 – pusty ekran działa.
+- [ ] Skopiuj `00_szablon` do `13_twoja_gra` (albo `14_nazwa`), zmień `CONSOLE_ADD_GAME`, dopisz do `lista.h`. F6 – pusty ekran działa.
 - [ ] Gracz rusza się po ekranie. Sam. Nic więcej. F6.
 - [ ] Jedna „rzecz", która coś robi (spada, leci, goni). F6.
 - [ ] Zderzenie gracza z tą rzeczą i **jedna** konsekwencja (punkt albo życie). F6.
@@ -48,6 +48,6 @@ Po każdym punkcie: F6 działa, commit w Source Control.
 ## Co dalej po tej lekcji
 
 - `engine::Game` – „dorosły" interfejs gry (klasa, `update(dt)`, `render(canvas)`), na którym chodzi Lake Mario.
-  Twoja gra z `lake` da się przepisać na niego w godzinę.
+  Twoja gra z `console` da się przepisać na niego w godzinę.
 - Dźwięk, zapis wyników, gra na prawdziwej konsoli z ekranem dotykowym – gdy płytka przyjdzie, każda lekcja
   pojawi się w jej menu.

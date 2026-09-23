@@ -70,7 +70,7 @@ if (block_x + block_w > screen_width() || block_x < 0) {   // ktorys koniec blok
 Po zadaniu 3 w rogu ekranu jest `aliens 24`, a na ekranie 3 rzędy po 8:
 
 ```
-lake_sim.exe --game inwazja --frames 10 --trace 9
+console_sim.exe --game inwazja --frames 10 --trace 9
 ```
 
 W linii `TRACE` ma być `aliens=24`.

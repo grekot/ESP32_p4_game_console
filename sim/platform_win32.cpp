@@ -10,6 +10,7 @@
 #include <windows.h>
 #include <windowsx.h>
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -33,7 +34,7 @@ const char* TAG = "sim";
 
 constexpr int   DEFAULT_ZOOM   = 1;   // plotno 800x480 = okno 1:1
 constexpr float TARGET_FPS     = 60.0f;
-const wchar_t*  WINDOW_CLASS   = L"LakeConsoleSim";
+const wchar_t*  WINDOW_CLASS   = L"ConsoleSim";
 
 HWND     s_hwnd    = nullptr;
 HDC      s_memdc   = nullptr;
@@ -184,19 +185,19 @@ bool init()
     wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
     wc.lpszClassName = WINDOW_CLASS;
     if (!RegisterClassExW(&wc)) {
-        LAKE_LOGE(TAG, "RegisterClassEx nie powiodlo sie (%lu)", (unsigned long)GetLastError());
+        CONSOLE_LOGE(TAG, "RegisterClassEx nie powiodlo sie (%lu)", (unsigned long)GetLastError());
         return false;
     }
 
     RECT rc = { 0, 0, engine::CANVAS_W * DEFAULT_ZOOM, engine::CANVAS_H * DEFAULT_ZOOM };
     AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
 
-    s_hwnd = CreateWindowExW(0, WINDOW_CLASS, L"Lake Console - emulator (ESP32-P4)",
+    s_hwnd = CreateWindowExW(0, WINDOW_CLASS, L"Console - emulator (ESP32-P4)",
                              WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
                              rc.right - rc.left, rc.bottom - rc.top,
                              nullptr, nullptr, inst, nullptr);
     if (!s_hwnd) {
-        LAKE_LOGE(TAG, "CreateWindowEx nie powiodlo sie (%lu)", (unsigned long)GetLastError());
+        CONSOLE_LOGE(TAG, "CreateWindowEx nie powiodlo sie (%lu)", (unsigned long)GetLastError());
         return false;
     }
 
@@ -215,7 +216,7 @@ bool init()
     ReleaseDC(s_hwnd, screen);
 
     if (!s_dib || !s_dib_px) {
-        LAKE_LOGE(TAG, "CreateDIBSection nie powiodlo sie");
+        CONSOLE_LOGE(TAG, "CreateDIBSection nie powiodlo sie");
         return false;
     }
     SelectObject(s_memdc, s_dib);
@@ -223,10 +224,10 @@ bool init()
     ShowWindow(s_hwnd, SW_SHOW);
     UpdateWindow(s_hwnd);
 
-    LAKE_LOGI(TAG, "okno %dx%d (plotno %dx%d, powiekszenie x%d)",
+    CONSOLE_LOGI(TAG, "okno %dx%d (plotno %dx%d, powiekszenie x%d)",
               engine::CANVAS_W * DEFAULT_ZOOM, engine::CANVAS_H * DEFAULT_ZOOM,
               engine::CANVAS_W, engine::CANVAS_H, DEFAULT_ZOOM);
-    LAKE_LOGI(TAG, "klawisze konsoli wg mapowania powyzej; lewy przycisk myszy = dotyk ekranu, "
+    CONSOLE_LOGI(TAG, "klawisze konsoli wg mapowania powyzej; lewy przycisk myszy = dotyk ekranu, "
                    "Esc = wyjscie");
     return true;
 }
@@ -333,6 +334,59 @@ input::PadState controller()
 bool should_run()
 {
     return s_running;
+}
+
+namespace {
+
+// Katalog assets/: najpierw wzgledem katalogu roboczego (zadania VS Code i testy startuja z katalogu repo),
+// potem wzgledem pliku exe (sim/build/console_sim.exe -> ../../assets), na koniec obok exe.
+FILE* open_asset(const char* path)
+{
+    char exe[MAX_PATH] = {};
+    GetModuleFileNameA(nullptr, exe, MAX_PATH);
+    if (char* slash = strrchr(exe, '\\')) *slash = '\0';
+
+    char candidate[MAX_PATH * 2];
+    const char* prefixes[] = { "assets/", nullptr, nullptr };
+    char from_repo[MAX_PATH + 32], from_exe[MAX_PATH + 32];
+    snprintf(from_repo, sizeof(from_repo), "%s/../../assets/", exe);
+    snprintf(from_exe, sizeof(from_exe), "%s/assets/", exe);
+    prefixes[1] = from_repo;
+    prefixes[2] = from_exe;
+    for (const char* prefix : prefixes) {
+        snprintf(candidate, sizeof(candidate), "%s%s", prefix, path);
+        if (FILE* f = fopen(candidate, "rb")) return f;
+    }
+    return nullptr;
+}
+
+}  // namespace
+
+uint8_t* read_file(const char* path, size_t& size)
+{
+    size = 0;
+    if (!path || !*path) return nullptr;
+    FILE* f = open_asset(path);
+    if (!f) {
+        CONSOLE_LOGW(TAG, "brak pliku assets/%s", path);
+        return nullptr;
+    }
+    fseek(f, 0, SEEK_END);
+    const long len = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    if (len <= 0) { fclose(f); return nullptr; }
+    uint8_t* buf = (uint8_t*)malloc((size_t)len);
+    if (!buf) { fclose(f); return nullptr; }
+    const size_t got = fread(buf, 1, (size_t)len, f);
+    fclose(f);
+    if (got != (size_t)len) { free(buf); return nullptr; }
+    size = got;
+    return buf;
+}
+
+void free_file(uint8_t* data)
+{
+    free(data);
 }
 
 

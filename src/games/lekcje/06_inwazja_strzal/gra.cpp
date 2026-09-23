@@ -1,6 +1,6 @@
 // LEKCJA 06 - INWAZJA: STRZAL. Tablice. Zadania w README.md.
 // Punkt startowy = Inwazja z lekcji 05 (3 rzedy) + pocisk. Strzal: A (klawisz Z w emulatorze).
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {   // pudelko na twoja gre - nie usuwaj
 
@@ -109,4 +109,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(inwazja_strzal, "Inwazja: strzal", "Lekcja 06: tablice")
+CONSOLE_ADD_GAME(inwazja_strzal, "Inwazja: strzal", "Lekcja 06: tablice")

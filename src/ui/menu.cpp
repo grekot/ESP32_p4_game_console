@@ -57,7 +57,7 @@ lv_obj_t* make_card(lv_obj_t* list, int index)
     lv_obj_set_style_text_color(desc, lv_color_hex(theme::TEXT_MUTED), 0);
     lv_obj_align(desc, LV_ALIGN_LEFT_MID, 0, 14);
 
-    // Numer gry po prawej - ten sam, ktory rozumie `lake_sim --game N`.
+    // Numer gry po prawej - ten sam, ktory rozumie `console_sim --game N`.
     char num[8];
     snprintf(num, sizeof(num), "%02d", index);
     lv_obj_t* badge = lv_label_create(card);
@@ -88,7 +88,7 @@ void show()
 
     // --- naglowek: tytul + podtytul z liczba gier ---
     lv_obj_t* title = lv_label_create(s_root);
-    lv_label_set_text(title, "Lake Console");
+    lv_label_set_text(title, "Console");
     lv_obj_set_style_text_font(title, theme::FONT_TITLE, 0);
     lv_obj_set_style_text_color(title, lv_color_hex(theme::TEXT), 0);
     lv_obj_set_pos(title, theme::MARGIN, 22);

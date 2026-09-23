@@ -19,7 +19,7 @@ namespace {
 
 // Litery w ASCII-arcie ponizej to wspolna paleta konsoli (gfx/palette.h): k czern, w biel, e/E szary,
 // r/R czerwien, o pomarancz, y/Y zolty, g/G zielen, b/B braz, t bez, s skora, u/U niebieski, p/P fiolet,
-// '.' = przezroczysty. Tej samej palety uzywaja gry ucznia (lake::load_sprite).
+// '.' = przezroczysty. Tej samej palety uzywaja gry ucznia (console::load_sprite).
 gfx::Sprite S16(const char* const (&rows)[16])
 {
     return gfx::make_sprite(rows, 16, 16);

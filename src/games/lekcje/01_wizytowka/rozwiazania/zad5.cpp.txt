@@ -1,7 +1,7 @@
 // ROZWIAZANIE zadania 5 z lekcji 01: zmienna speed, ruch w lewo.
 // Kwadrat wyjezdza za lewa krawedz i znika - liczba w watch robi sie ujemna i rosnie w nieskonczonosc.
 // Jak go zatrzymac albo odbic, to temat lekcji 02 (instrukcja if).
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {
 
@@ -43,4 +43,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(wizytowka, "Wizytowka", "Lekcja 01: zmienne i figury")
+CONSOLE_ADD_GAME(wizytowka, "Wizytowka", "Lekcja 01: zmienne i figury")

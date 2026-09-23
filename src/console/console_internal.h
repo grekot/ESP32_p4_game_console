@@ -1,4 +1,4 @@
-// Stan srodowiska uruchomieniowego Lake - wspolny dla funkcji API (lake_runtime.cpp)
+// Stan srodowiska uruchomieniowego Console - wspolny dla funkcji API (console_runtime.cpp)
 // i adaptera SimpleGame. Nie dla ucznia.
 #pragma once
 
@@ -9,7 +9,7 @@
 #include "gfx/canvas.h"
 #include "input/pad.h"
 
-namespace lake::detail {
+namespace console::detail {
 
 constexpr int MAX_WATCH   = 8;
 constexpr int WATCH_NAME  = 12;
@@ -40,15 +40,18 @@ struct Runtime {
     // Mapa kafelkow (API poziom 2, lekcja 12) i znaki uznawane za stale.
     engine::TileMap map;
     char            solid_chars[32] = {};
+
+    // Identyfikator biezacej gry (z CONSOLE_ADD_GAME) - katalog jej plikow: assets/<game_id>/
+    char game_id[32] = {};
 };
 
 Runtime& rt();
 
 // Wolane przez SimpleGame.
-void reset(gfx::Canvas& c);                                 // przed setup()
+void reset(gfx::Canvas& c, const char* game_id);            // przed setup()
 void begin_update(float dt, const input::PadState& pad);    // co klatke, przed frame()
 void begin_render(gfx::Canvas& c);                          // ustawia plotno, czysci watch
 void end_render();                                          // panel watch, licznik klatek
 void format_debug_line(char* buf, size_t n);                // "F=12 t=0.20 x=100 ..."
 
-}  // namespace lake::detail
+}  // namespace console::detail

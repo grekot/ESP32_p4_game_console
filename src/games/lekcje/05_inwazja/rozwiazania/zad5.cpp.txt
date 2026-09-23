@@ -1,5 +1,5 @@
 // ROZWIAZANIE zadan 1-5 z lekcji 05 (plik .txt - najpierw sprobuj sam!).
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {
 
@@ -92,4 +92,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(inwazja, "Inwazja", "Lekcja 05: petla for")
+CONSOLE_ADD_GAME(inwazja, "Inwazja", "Lekcja 05: petla for")

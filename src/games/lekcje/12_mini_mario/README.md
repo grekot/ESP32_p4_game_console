@@ -64,7 +64,7 @@ Kolejność w `frame()` jest ważna i taka sama jak w Lake Mario: **wejście →
 Po zadaniu 3 gracz idący w prawo zbiera dwie monety leżące na trawie (kolumny 8 i 12):
 
 ```
-lake_sim.exe --game mini_mario --hold RIGHT 0 200 --frames 201 --trace 50
+console_sim.exe --game mini_mario --hold RIGHT 0 200 --frames 201 --trace 50
 ```
 
 W ostatniej linii `coins=2`.

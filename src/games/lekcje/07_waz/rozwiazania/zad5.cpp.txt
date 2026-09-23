@@ -1,5 +1,5 @@
 // ROZWIAZANIE zadan 1-5 z lekcji 07 (plik .txt - najpierw sprobuj sam!). Wariant: smierc na scianie.
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {
 
@@ -118,4 +118,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(waz, "Waz", "Lekcja 07: tablice jako listy")
+CONSOLE_ADD_GAME(waz, "Waz", "Lekcja 07: tablice jako listy")

@@ -1,6 +1,6 @@
 // Dotyk pojemnosciowy GT911 (do 5 punktow) przez I2C.
 // Wspolrzedne zwracane sa w LOGICZNYM ukladzie ekranu gry (poziom, SCREEN_W x SCREEN_H),
-// zgodnie z LAKE_DISPLAY_ROTATION. Przeliczenie na wspolrzedne plotna robi platform_esp.cpp.
+// zgodnie z CONSOLE_DISPLAY_ROTATION. Przeliczenie na wspolrzedne plotna robi platform_esp.cpp.
 #pragma once
 
 #include <stdint.h>

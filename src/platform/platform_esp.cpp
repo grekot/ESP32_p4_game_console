@@ -5,7 +5,11 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_heap_caps.h"
+#include "esp_spiffs.h"
 #include "esp_timer.h"
+
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "board/buttons.h"
 #include "board/display.h"
@@ -19,23 +23,46 @@ namespace platform {
 
 namespace {
 const char* TAG = "platform";
+bool s_assets_mounted = false;
+
+// Partycja `assets` (SPIFFS, ~12 MB, partitions.csv) pod /assets. Pierwsze montowanie pustej partycji
+// formatuje ja (kilka sekund). Brak partycji albo blad montowania nie zatrzymuje konsoli - gry po prostu
+// nie dostana plikow (load_image zwroci pusty obrazek). Zawartosc: katalog assets/ w repo, pio run -t uploadfs.
+void mount_assets()
+{
+    esp_vfs_spiffs_conf_t conf = {};
+    conf.base_path              = "/assets";
+    conf.partition_label        = "assets";
+    conf.max_files              = 4;
+    conf.format_if_mount_failed = true;
+    const esp_err_t err = esp_vfs_spiffs_register(&conf);
+    if (err != ESP_OK) {
+        CONSOLE_LOGW(TAG, "partycja assets niedostepna (%s) - bez plikow PNG", esp_err_to_name(err));
+        return;
+    }
+    size_t total = 0, used = 0;
+    esp_spiffs_info("assets", &total, &used);
+    CONSOLE_LOGI(TAG, "assets: %u kB uzyte z %u kB", (unsigned)(used / 1024), (unsigned)(total / 1024));
+    s_assets_mounted = true;
 }
+}  // namespace
 
 bool init()
 {
     if (board::display::init() != ESP_OK) {
-        LAKE_LOGE(TAG, "ekran nie wystartowal");
+        CONSOLE_LOGE(TAG, "ekran nie wystartowal");
         return false;
     }
+    mount_assets();
     if (board::touch::init() != ESP_OK) {
-        LAKE_LOGW(TAG, "dotyk niedostepny - zostaje klawiatura");
+        CONSOLE_LOGW(TAG, "dotyk niedostepny - zostaje klawiatura");
     }
     board::buttons::init();
     if (board::keypad::init() != ESP_OK) {
-        LAKE_LOGW(TAG, "klawiatura niedostepna - zostaje dotyk");
+        CONSOLE_LOGW(TAG, "klawiatura niedostepna - zostaje dotyk");
     }
     if (board::joystick::init() != ESP_OK) {
-        LAKE_LOGW(TAG, "galka analogowa niedostepna - zostaje krzyzak");
+        CONSOLE_LOGW(TAG, "galka analogowa niedostepna - zostaje krzyzak");
     }
     return true;
 }
@@ -62,7 +89,7 @@ uint16_t* alloc_pixels(size_t pixel_count, bool fast)
     if (fast) {
         void* p = heap_caps_aligned_alloc(128, bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
         if (p) return static_cast<uint16_t*>(p);
-        LAKE_LOGW(TAG, "brak %u B w SRAM - probuje PSRAM", (unsigned)bytes);
+        CONSOLE_LOGW(TAG, "brak %u B w SRAM - probuje PSRAM", (unsigned)bytes);
     }
     return static_cast<uint16_t*>(heap_caps_aligned_alloc(128, bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
 }
@@ -114,6 +141,37 @@ input::PadState controller()
 bool should_run()
 {
     return true;
+}
+
+uint8_t* read_file(const char* path, size_t& size)
+{
+    size = 0;
+    if (!path || !*path || !s_assets_mounted) return nullptr;
+    char full[128];
+    snprintf(full, sizeof(full), "/assets/%s", path);
+    FILE* f = fopen(full, "rb");
+    if (!f) {
+        CONSOLE_LOGW(TAG, "brak pliku %s", full);
+        return nullptr;
+    }
+    fseek(f, 0, SEEK_END);
+    const long len = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    if (len <= 0) { fclose(f); return nullptr; }
+    // Zawartosc pliku w PSRAM - PNG bywaja duze, a SRAM jest cenny.
+    uint8_t* buf = static_cast<uint8_t*>(heap_caps_malloc((size_t)len, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+    if (!buf) buf = static_cast<uint8_t*>(malloc((size_t)len));
+    if (!buf) { fclose(f); return nullptr; }
+    const size_t got = fread(buf, 1, (size_t)len, f);
+    fclose(f);
+    if (got != (size_t)len) { free(buf); return nullptr; }
+    size = got;
+    return buf;
+}
+
+void free_file(uint8_t* data)
+{
+    free(data);
 }
 
 }  // namespace platform

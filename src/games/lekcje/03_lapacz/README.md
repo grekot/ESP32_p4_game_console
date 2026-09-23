@@ -76,7 +76,7 @@ Zauważ: kod „nowa piłka" (dwie linie) jest w programie **dwa razy**. Na nast
 Po zadaniu 2 przytrzymaj strzałkę w lewo przez 5 sekund – paletka ma się zatrzymać na `paddle_x = 0`:
 
 ```
-lake_sim.exe --game lapacz --hold LEFT 0 300 --frames 301 --trace 60
+console_sim.exe --game lapacz --hold LEFT 0 300 --frames 301 --trace 60
 ```
 
 Bez `clamp` liczba spada poniżej zera i leci dalej w minus.

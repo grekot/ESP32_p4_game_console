@@ -1,6 +1,6 @@
 // LEKCJA 01 - WIZYTOWKA: zmienne, stale i wspolrzedne na ekranie.
 // Zadania i wyjasnienia sa w README.md obok tego pliku.
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {   // pudelko na twoja gre - nie usuwaj
 
@@ -43,4 +43,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(wizytowka, "Wizytowka", "Lekcja 01: zmienne i figury")
+CONSOLE_ADD_GAME(wizytowka, "Wizytowka", "Lekcja 01: zmienne i figury")

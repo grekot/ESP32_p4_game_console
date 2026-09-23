@@ -64,7 +64,7 @@ Rury w tablicy: gdy jedna wyjedzie za lewą krawędź, wraca za ostatnią (`x + 
 Po zadaniu 2: start na 5. klatce, trzy machnięcia co 40 klatek (ptak unosi się około 2 sekund), potem spada i rozbija się:
 
 ```
-lake_sim.exe --game flappy_pelny --hold A 5 6 --hold A 30 31 --hold A 70 71 --hold A 110 111 --frames 300 --trace 50
+console_sim.exe --game flappy_pelny --hold A 5 6 --hold A 30 31 --hold A 70 71 --hold A 110 111 --frames 300 --trace 50
 ```
 
 W ostatniej linii `state=GAME_OVER` i `time` co najmniej 1. Bez machania ptak ginie po pół sekundy i `time` zostaje 0 –

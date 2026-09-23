@@ -1,5 +1,5 @@
 // ROZWIAZANIE zadania 5 z lekcji 02: grawitacja z tlumieniem.
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {
 
@@ -65,4 +65,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(pilka, "Pilka", "Lekcja 02: instrukcja if")
+CONSOLE_ADD_GAME(pilka, "Pilka", "Lekcja 02: instrukcja if")

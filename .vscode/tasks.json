@@ -4,7 +4,7 @@
         {
             "label": "LEKCJA: Uruchom gre z otwartego pliku",
             "type": "shell",
-            "command": "${workspaceFolder}/sim/build/lake_sim.exe",
+            "command": "${workspaceFolder}/sim/build/console_sim.exe",
             "args": ["--game", "${relativeFileDirname}"],
             "dependsOrder": "sequence",
             "dependsOn": ["SIM: Zamknij emulator", "SIM: Build"],
@@ -16,7 +16,7 @@
         {
             "label": "LEKCJA: Zrzut ekranu (po 120 klatkach)",
             "type": "shell",
-            "command": "${workspaceFolder}/sim/build/lake_sim.exe",
+            "command": "${workspaceFolder}/sim/build/console_sim.exe",
             "args": ["--game", "${relativeFileDirname}", "--frames", "120", "--shot", "${fileDirname}/zrzut.bmp"],
             "dependsOrder": "sequence",
             "dependsOn": ["SIM: Zamknij emulator", "SIM: Build"],
@@ -26,7 +26,7 @@
         {
             "label": "LEKCJA: Slad (trace co 30 klatek)",
             "type": "shell",
-            "command": "${workspaceFolder}/sim/build/lake_sim.exe",
+            "command": "${workspaceFolder}/sim/build/console_sim.exe",
             "args": ["--game", "${relativeFileDirname}", "--frames", "300", "--trace", "30"],
             "dependsOrder": "sequence",
             "dependsOn": ["SIM: Zamknij emulator", "SIM: Build"],
@@ -49,7 +49,7 @@
             "label": "SIM: Zamknij emulator",
             "type": "shell",
             "command": "powershell",
-            "args": ["-NoProfile", "-Command", "Stop-Process -Name lake_sim -Force -ErrorAction SilentlyContinue; exit 0"],
+            "args": ["-NoProfile", "-Command", "Stop-Process -Name console_sim -Force -ErrorAction SilentlyContinue; exit 0"],
             "problemMatcher": [],
             "presentation": { "reveal": "silent", "close": true },
             "detail": "Windows nie pozwala nadpisac dzialajacego exe - bez tego build konczy sie bledem linkera"
@@ -74,7 +74,7 @@
         {
             "label": "SIM: Run",
             "type": "shell",
-            "command": "${workspaceFolder}/sim/build/lake_sim.exe",
+            "command": "${workspaceFolder}/sim/build/console_sim.exe",
             "dependsOrder": "sequence",
             "dependsOn": ["SIM: Zamknij emulator", "SIM: Build"],
             "problemMatcher": [],
@@ -83,7 +83,7 @@
         {
             "label": "SIM: Lista gier",
             "type": "shell",
-            "command": "${workspaceFolder}/sim/build/lake_sim.exe --list",
+            "command": "${workspaceFolder}/sim/build/console_sim.exe --list",
             "problemMatcher": [],
             "detail": "Numer, id i nazwa kazdej gry (Lake Mario + lekcje z lista.h)"
         },

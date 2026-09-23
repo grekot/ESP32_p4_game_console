@@ -1,0 +1,8 @@
+TRACE    0 TITLE ship=120,240 score=0 lives=3 asteroids=0 bullets=0
+TRACE   50 PLAY  ship=120,135 score=0 lives=3 asteroids=1 bullets=4
+TRACE  100 PLAY  ship=120,0 score=0 lives=3 asteroids=2 bullets=5
+TRACE  150 PLAY  ship=120,155 score=20 lives=3 asteroids=4 bullets=5
+TRACE  200 PLAY  ship=120,400 score=30 lives=3 asteroids=6 bullets=5
+TRACE  250 PLAY  ship=120,400 score=30 lives=3 asteroids=7 bullets=5
+TRACE  300 PLAY  ship=120,400 score=30 lives=3 asteroids=8 bullets=5
+TRACE  350 PLAY  ship=120,400 score=30 lives=3 asteroids=9 bullets=4

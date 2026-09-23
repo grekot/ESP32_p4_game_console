@@ -1,5 +1,5 @@
 // ROZWIAZANIE zadan 4-5 z lekcji 03: przyspieszanie, zycia, GAME OVER, restart.
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {
 
@@ -79,4 +79,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(lapacz, "Lapacz", "Lekcja 03: klawisze i warunki")
+CONSOLE_ADD_GAME(lapacz, "Lapacz", "Lekcja 03: klawisze i warunki")

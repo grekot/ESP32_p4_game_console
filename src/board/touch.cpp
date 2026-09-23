@@ -19,7 +19,7 @@ esp_lcd_touch_handle_t s_tp = nullptr;
 // Odwrotnosc obrotu wykonywanego w display::present().
 inline void map_point(uint16_t px, uint16_t py, int16_t& x, int16_t& y)
 {
-#if LAKE_DISPLAY_ROTATION == 90
+#if CONSOLE_DISPLAY_ROTATION == 90
     x = (int16_t)(display::SCREEN_W - 1 - py);
     y = (int16_t)px;
 #else

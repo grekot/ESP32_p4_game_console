@@ -1,5 +1,5 @@
 // ROZWIAZANIE zadan 1-3 z lekcji 03 (plik .txt - najpierw sprobuj sam!).
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {
 
@@ -64,4 +64,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(lapacz, "Lapacz", "Lekcja 03: klawisze i warunki")
+CONSOLE_ADD_GAME(lapacz, "Lapacz", "Lekcja 03: klawisze i warunki")

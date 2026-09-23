@@ -15,7 +15,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$Exe  = Join-Path $Root "sim\build\lake_sim.exe"
+$Exe  = Join-Path $Root "sim\build\console_sim.exe"
 if (-not (Test-Path $Exe)) {
     Write-Host "BLAD: brak $Exe - najpierw zbuduj emulator (cmake --build sim/build)" -ForegroundColor Red
     exit 1
@@ -79,7 +79,7 @@ function Test-Mario {
         }
         elseif ($kind -eq "shot") {
             $expFile = Join-Path $expDir "$name.bmp"
-            $tmp = Join-Path $env:TEMP "lake_test_$name.bmp"
+            $tmp = Join-Path $env:TEMP "console_test_$name.bmp"
             $r = Run-Sim ($args + @("--shot", $tmp))
             if ($r.Code -ne 0 -or -not (Test-Path $tmp)) { Report $name $false "emulator nie zapisal zrzutu (kod $($r.Code))"; continue }
             if ($Update) { Copy-Item $tmp $expFile -Force; Report $name $true ""; continue }

@@ -54,7 +54,7 @@ void start_game(int index)
         // 192 kB - probujemy szybkiej pamieci wewnetrznej, gra pixel-art rysuje tu co klatke.
         s_small_pixels = platform::alloc_pixels((size_t)engine::PIXEL_CANVAS_W * engine::PIXEL_CANVAS_H, /*fast=*/true);
         if (!s_small_pixels) {
-            LAKE_LOGE(TAG, "brak pamieci na plotno pixel-art - gra dostaje pelne plotno");
+            CONSOLE_LOGE(TAG, "brak pamieci na plotno pixel-art - gra dostaje pelne plotno");
             s_scale = 1;
         } else {
             static gfx::Canvas small(s_small_pixels, engine::PIXEL_CANVAS_W, engine::PIXEL_CANVAS_H);
@@ -64,7 +64,7 @@ void start_game(int index)
     }
     s_game->init(s_scale == 2 ? *s_small_canvas : *s_canvas);
     s_state = State::Playing;
-    LAKE_LOGI(TAG, "start gry: %s (plotno %s)", s_game_name, s_scale == 2 ? "400x240 x2" : "800x480");
+    CONSOLE_LOGI(TAG, "start gry: %s (plotno %s)", s_game_name, s_scale == 2 ? "400x240 x2" : "800x480");
 }
 
 void back_to_menu()
@@ -74,7 +74,7 @@ void back_to_menu()
     ui::menu::show();
     s_game  = nullptr;
     s_state = State::Menu;
-    LAKE_LOGI(TAG, "powrot do menu");
+    CONSOLE_LOGI(TAG, "powrot do menu");
 }
 
 }  // namespace
@@ -84,7 +84,7 @@ bool init()
     // 768 kB - w PSRAM (SRAM ma ~300 kB); dla gier pixel-art jest osobne male plotno w SRAM (start_game).
     s_pixels = platform::alloc_pixels((size_t)engine::CANVAS_W * engine::CANVAS_H, /*fast=*/false);
     if (!s_pixels) {
-        LAKE_LOGE(TAG, "brak pamieci na plotno %dx%d", engine::CANVAS_W, engine::CANVAS_H);
+        CONSOLE_LOGE(TAG, "brak pamieci na plotno %dx%d", engine::CANVAS_W, engine::CANVAS_H);
         return false;
     }
     static gfx::Canvas canvas(s_pixels, engine::CANVAS_W, engine::CANVAS_H);
@@ -94,12 +94,12 @@ bool init()
     // Bufor na zamrozona klatke gry - tlo dla ekranu pauzy rysowanego w LVGL.
     s_frozen = platform::alloc_pixels((size_t)engine::CANVAS_W * engine::CANVAS_H, /*fast=*/false);
     if (!s_frozen) {
-        LAKE_LOGE(TAG, "brak pamieci na bufor pauzy");
+        CONSOLE_LOGE(TAG, "brak pamieci na bufor pauzy");
         return false;
     }
 
     if (!ui::init(s_pixels)) {
-        LAKE_LOGE(TAG, "LVGL nie wystartowal");
+        CONSOLE_LOGE(TAG, "LVGL nie wystartowal");
         return false;
     }
     ui::menu::show();

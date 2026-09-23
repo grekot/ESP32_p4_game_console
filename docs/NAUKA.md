@@ -1,7 +1,7 @@
-# Nauka C++ na konsoli Lake – przewodnik dla rodzica
+# Nauka C++ na konsoli – przewodnik dla rodzica
 
 Konsola i emulator służą jako platforma do nauki programowania: uczeń (11–13 lat, po Scratchu) pisze małe gry
-w C++ przez uproszczone API `lake`, a silnik, LVGL, platforma i pętla konsoli zostają po stronie rodzica.
+w C++ przez uproszczone API `console`, a silnik, LVGL, platforma i pętla konsoli zostają po stronie rodzica.
 Instrukcja dla ucznia: [DLA_UCZNIA.md](DLA_UCZNIA.md).
 
 ## Założenia
@@ -22,8 +22,8 @@ Instrukcja dla ucznia: [DLA_UCZNIA.md](DLA_UCZNIA.md).
 
 | warstwa | gdzie | kto rusza |
 |---|---|---|
-| API ucznia | `src/lake/lake_api.h` (deklaracje z opisami), `lake_runtime.cpp` (implementacja), `simple_game.*` (adapter na `engine::Game`) | rodzic |
-| rejestracja | `LAKE_GAME(id, "Nazwa", "opis")` na końcu `gra.cpp` + `LEKCJA(id)` w `src/games/lekcje/lista.h` | uczeń (jedna linia) |
+| API ucznia | `src/console/console_api.h` (deklaracje z opisami), `console_runtime.cpp` (implementacja), `simple_game.*` (adapter na `engine::Game`) | rodzic |
+| rejestracja | `CONSOLE_ADD_GAME(id, "Nazwa", "opis")` na końcu `gra.cpp` + `LEKCJA(id)` w `src/games/lekcje/lista.h` | uczeń (jedna linia) |
 | lekcje | `src/games/lekcje/NN_nazwa/` – `gra.cpp`, `README.md`, `testy.txt`, `rozwiazania/*.cpp.txt` | uczeń: `gra.cpp` |
 | testy | `tools/testy.ps1`, `tests/scenarios.txt` (regresja Lake Mario), `testy.txt` w lekcjach | rodzic |
 
@@ -97,9 +97,37 @@ powershell -File tools/testy.ps1 src/games/lekcje/03_lapacz      # jedna lekcja
 Pisząc test: użyj `--hold KLAWISZ od do` do zasymulowania gracza, `--frames N --trace N-1` do odczytu ostatniej klatki,
 a w regexie nazw z `watch()`. Przykład z lekcji 03: `--hold LEFT 0 300 --frames 301 --trace 300 | paddle_x=0( |$)`.
 
+## Obrazki PNG (`assets/`)
+
+Uczeń może rysować grafikę w Piskelu/Paincie i wczytywać ją przez `load_image("plik.png")`. Pliki leżą w `assets/<id gry>/`
+(id z `CONSOLE_ADD_GAME`), przykłady w `assets/bohater/`. Emulator czyta katalog `assets/` prosto z repozytorium.
+Na płytce ten katalog jest obrazem partycji `assets` (SPIFFS, ~12 MB, `platformio.ini`: `data_dir = assets`):
+
+```
+pio run -t uploadfs        # wgrywa caly katalog assets/ na partycje; powtarzac po kazdej zmianie obrazkow
+```
+
+Dekoder PNG (lodepng, `src/gfx/lodepng/`) działa na PC i płytce; przezroczystość z kanału alfa, bez półprzezroczystości.
+**Nie sprawdzone bez sprzętu:** montowanie SPIFFS przy pierwszym starcie (formatowanie pustej partycji trwa kilka sekund)
+i czas dekodowania większych PNG na P4 (lista w `docs/HARDWARE.md`).
+
+## Dokumenty w PDF
+
+`docs/pdf/` zawiera PDF-y wygenerowane z Markdown: `API.pdf` (opis wszystkich funkcji, [API.md](API.md)), `DLA_UCZNIA.pdf`
+i `lekcja_NN_nazwa.pdf` dla każdej lekcji – do wydruku albo na tablet. Po każdej zmianie w README lekcji odśwież je:
+
+```
+python tools/md2pdf.py                 # wszystkie (Markdown -> HTML -> PDF przez Edge w trybie headless, ok. 40 s)
+python tools/md2pdf.py docs/API.md     # jeden plik
+```
+
+Wymaga pakietu `markdown` dla pythona Windows (`python -m pip install --user markdown`); Edge jest w każdym Windows 10/11.
+Plakat z figurami w API.md to zrzut gry **Plakat API** (`src/games/lekcje/99_api_demo/`, ostatnia w menu):
+`console_sim.exe --game api_demo --hold X 0 1 --frames 5 --shot docs/images/api_plakat.bmp` + `tools/bmp2png.ps1`.
+
 ## Jak dodać lekcję
 
-1. Skopiuj `00_szablon` do `NN_nazwa`, zmień `LAKE_GAME(nazwa, "Nazwa", "Lekcja NN: ...")`, dopisz `LEKCJA(nazwa)` w `lista.h`.
+1. Skopiuj `00_szablon` do `NN_nazwa`, zmień `CONSOLE_ADD_GAME(nazwa, "Nazwa", "Lekcja NN: ...")`, dopisz `LEKCJA(nazwa)` w `lista.h`.
 2. README wg [lekcje/SZABLON_README.md](lekcje/SZABLON_README.md): jedna koncepcja, analogia do Scratcha, zadania ★/★★/★★★, „Sprawdź sam".
 3. Rozwiązania w `rozwiazania/zadN.cpp.txt` (rozszerzenie `.txt`, żeby się nie kompilowały). Zbuduj je raz podmieniając `gra.cpp` –
    test musi na nich przechodzić.

@@ -1,4 +1,4 @@
-# Scenariusze regresji emulatora. Format: rodzaj | nazwa | argumenty lake_sim.exe
+# Scenariusze regresji emulatora. Format: rodzaj | nazwa | argumenty console_sim.exe
 #   trace - porownuje linie ^TRACE z tests/expected/<nazwa>.trace (dokladnie, bajt w bajt)
 #   shot  - porownuje zrzut BMP z tests/expected/<nazwa>.bmp (dokladnie)
 # Uruchamianie: powershell -File tools/testy.ps1 mario   (--update nadpisuje wzorce)
@@ -12,3 +12,9 @@ trace | mario_pause     | --game 0 --pause-at 20 --frames 40 --trace 5
 shot  | mario_title     | --game 0 --frames 5
 shot  | mario_play      | --game 0 --hold B 3 4 --hold RIGHT 20 90 --frames 90
 shot  | menu            | --frames 5
+shot  | api_demo        | --game api_demo --hold X 0 1 --frames 5
+# Gry pokazowe (23.09.2026): Labirynt 3D (raycasting, PNG) i Kosmos (PNG, paralaksa). Kosmos losuje - w --frames ziarno stale.
+trace | labirynt_route  | --game labirynt3d --hold A 3 4 --hold RIGHT 10 49 --hold UP 50 119 --hold LEFT 120 159 --hold UP 160 321 --hold LEFT 322 361 --hold UP 362 431 --hold RIGHT 432 471 --hold UP 472 640 --frames 640 --trace 40
+shot  | labirynt_door   | --game labirynt3d --hold A 3 4 --hold RIGHT 10 49 --hold UP 50 119 --hold LEFT 120 159 --hold UP 160 321 --frames 215
+trace | kosmos_play     | --game kosmos --hold B 3 4 --hold A 10 400 --hold UP 30 90 --hold DOWN 120 200 --frames 400 --trace 50
+shot  | kosmos_play     | --game kosmos --hold B 3 4 --hold A 10 400 --hold UP 30 90 --hold DOWN 120 200 --frames 230

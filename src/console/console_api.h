@@ -1,10 +1,10 @@
-// Lake - proste API do pisania gier na konsole (lekcje w src/games/lekcje/).
+// Console - proste API do pisania gier na konsole (lekcje w src/games/lekcje/).
 //
 // Gra to dwie funkcje: setup() wykonuje sie raz na starcie, frame() 60 razy na sekunde.
 // Wszystko rysuje sie na plotnie 800x480 pikseli; (0,0) to lewy gorny rog, x rosnie w prawo,
 // y rosnie W DOL. Plotno nie czysci sie samo - frame() zwykle zaczyna od clear(kolor).
 //
-// Ten naglowek jest wlaczany przez lake/lake.h (ktory dodaje "using namespace lake" i makro LAKE_GAME).
+// Ten naglowek jest wlaczany przez console/console.h (ktory dodaje "using namespace console" i makro CONSOLE_ADD_GAME).
 // Nazwy po angielsku, jak w kazdym kursie C++; komentarze po polsku.
 #pragma once
 
@@ -15,7 +15,7 @@
 #include "gfx/palette.h"
 #include "input/keys.h"
 
-namespace lake {
+namespace console {
 
 // ------------------------------------------------------------------ kolory
 // Silny typ: rect(x, y, RED, 5, 5) to blad kompilacji, a nie dziwny obrazek.
@@ -86,6 +86,13 @@ Sprite load_sprite(const char* const (&rows)[H])
 {
     return detail::build_sprite(rows, H);
 }
+
+// Obrazek z pliku PNG. Pliki gry leza w katalogu assets/<id>/ (id z CONSOLE_ADD_GAME), np. gra `bohater`
+// woła load_image("hero.png") i dostaje assets/bohater/hero.png. Nazwa ze znakiem '/' liczy sie od katalogu
+// assets/ ("wspolne/moneta.png"). Przezroczystosc z kanalu alfa PNG (twarde krawedzie, bez polprzezroczystosci).
+// Na plytce pliki sa na partycji assets (wgrywanie: pio run -t uploadfs). Wolaj w setup(); brak pliku = pusty
+// obrazek (nic sie nie rysuje) i komunikat w terminalu.
+Sprite load_image(const char* filename);
 
 // flip_x = odbicie lustrzane; scale = powiekszenie (2 albo 3 - na ekranie 800x480 obrazek 16x16 jest maly).
 // Rozmiar na ekranie: s.w * scale, s.h * scale.
@@ -187,4 +194,4 @@ void print(const char* label, int value);
 void print(const char* label, float value);
 void print(const char* label, const char* value);
 
-}  // namespace lake
+}  // namespace console

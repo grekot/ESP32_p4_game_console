@@ -1,5 +1,5 @@
 // ROZWIAZANIE zadan 1-5 z lekcji 04 (plik .txt - najpierw sprobuj sam!).
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {
 
@@ -151,4 +151,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(pong, "Pong", "Lekcja 04: funkcje")
+CONSOLE_ADD_GAME(pong, "Pong", "Lekcja 04: funkcje")

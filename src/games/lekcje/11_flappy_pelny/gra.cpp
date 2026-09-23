@@ -1,5 +1,5 @@
 // LEKCJA 11 - FLAPPY PELNY: stan gry (enum), switch, ekran tytulowy, HUD, rekord. Zadania w README.md.
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {   // pudelko na twoja gre - nie usuwaj
 
@@ -144,4 +144,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(flappy_pelny, "Flappy pelny", "Lekcja 11: stan gry, enum")
+CONSOLE_ADD_GAME(flappy_pelny, "Flappy pelny", "Lekcja 11: stan gry, enum")

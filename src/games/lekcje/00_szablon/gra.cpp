@@ -2,10 +2,10 @@
 //
 // Jak zrobic z niego nowa gre:
 //   1. Skopiuj caly katalog 00_szablon i nadaj kopii nazwe, np. 05_moja_gra.
-//   2. W ostatniej linii zmien  LAKE_GAME(szablon, ...)  na  LAKE_GAME(moja_gra, "Moja gra", "opis").
+//   2. W ostatniej linii zmien  CONSOLE_ADD_GAME(szablon, ...)  na  CONSOLE_ADD_GAME(moja_gra, "Moja gra", "opis").
 //   3. W pliku src/games/lekcje/lista.h dopisz linie  LEKCJA(moja_gra).
 //   4. Otworz gra.cpp i wcisnij F6 (albo Ctrl+Shift+B) - gra pojawi sie w oknie i w menu konsoli.
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {   // pudelko na twoja gre - nie usuwaj tej linii ani zamykajacej klamry na dole
 
@@ -26,4 +26,4 @@ void frame()
 
 }  // namespace - koniec pudelka
 
-LAKE_GAME(szablon, "Szablon", "Pusta gra do skopiowania")
+CONSOLE_ADD_GAME(szablon, "Szablon", "Pusta gra do skopiowania")

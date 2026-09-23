@@ -94,7 +94,7 @@ bool init(uint16_t* canvas_buf)
     const size_t buf_pixels = (size_t)engine::CANVAS_W * LVGL_BUF_ROWS;
     s_lvgl_buf = platform::alloc_pixels(buf_pixels, /*fast=*/false);
     if (!s_lvgl_buf) {
-        LAKE_LOGE(TAG, "brak pamieci na bufor roboczy LVGL");
+        CONSOLE_LOGE(TAG, "brak pamieci na bufor roboczy LVGL");
         return false;
     }
 
@@ -103,7 +103,7 @@ bool init(uint16_t* canvas_buf)
 
     s_disp = lv_display_create(engine::CANVAS_W, engine::CANVAS_H);
     if (!s_disp) {
-        LAKE_LOGE(TAG, "lv_display_create nie powiodlo sie");
+        CONSOLE_LOGE(TAG, "lv_display_create nie powiodlo sie");
         return false;
     }
     lv_display_set_color_format(s_disp, LV_COLOR_FORMAT_RGB565);
@@ -125,7 +125,7 @@ bool init(uint16_t* canvas_buf)
     lv_indev_set_display(s_keydev, s_disp);
     lv_indev_set_group(s_keydev, s_group);
 
-    LAKE_LOGI(TAG, "LVGL %d.%d.%d, ekran %dx%d RGB565, bufor %d wierszy",
+    CONSOLE_LOGI(TAG, "LVGL %d.%d.%d, ekran %dx%d RGB565, bufor %d wierszy",
               LVGL_VERSION_MAJOR, LVGL_VERSION_MINOR, LVGL_VERSION_PATCH,
               engine::CANVAS_W, engine::CANVAS_H, LVGL_BUF_ROWS);
     return true;

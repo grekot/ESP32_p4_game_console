@@ -7,4 +7,4 @@ include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 # wspoldzielona z emulatorem na Windows (sim/).
 idf_build_set_property(COMPILE_OPTIONS "-I${CMAKE_CURRENT_LIST_DIR}/src/ui" APPEND)
 
-project(LakeMarioGame)
+project(Console)

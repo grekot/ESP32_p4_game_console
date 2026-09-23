@@ -12,14 +12,14 @@
 #include "core/log.h"
 #include "platform/platform.h"
 
-static const char* TAG = "lake";
+static const char* TAG = "console";
 
 namespace {
 
 void console_task(void*)
 {
     if (!app::init()) {
-        LAKE_LOGE(TAG, "inicjalizacja konsoli nie powiodla sie");
+        CONSOLE_LOGE(TAG, "inicjalizacja konsoli nie powiodla sie");
         vTaskDelete(nullptr);
         return;
     }
@@ -31,8 +31,8 @@ void console_task(void*)
 
 extern "C" void app_main(void)
 {
-    LAKE_LOGI(TAG, "LakeMarioGame start");
-    LAKE_LOGI(TAG, "Heap: wewnetrzny %u B, PSRAM %u B",
+    CONSOLE_LOGI(TAG, "Console start");
+    CONSOLE_LOGI(TAG, "Heap: wewnetrzny %u B, PSRAM %u B",
               (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
               (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 
@@ -45,12 +45,12 @@ extern "C" void app_main(void)
     ESP_ERROR_CHECK(err);
 
     if (!platform::init()) {
-        LAKE_LOGE(TAG, "sprzet nie wystartowal - stop");
+        CONSOLE_LOGE(TAG, "sprzet nie wystartowal - stop");
         return;
     }
 
     // Petla konsoli na rdzeniu 1 (rdzen 0 zostaje dla systemu i przyszlego Wi-Fi/audio).
     // 16 kB stosu: LVGL potrafi glebiej schodzic przy skladaniu widgetow.
     xTaskCreatePinnedToCore(console_task, "console", 16384, nullptr, 5, nullptr, 1);
-    LAKE_LOGI(TAG, "Konsola uruchomiona");
+    CONSOLE_LOGI(TAG, "Konsola uruchomiona");
 }

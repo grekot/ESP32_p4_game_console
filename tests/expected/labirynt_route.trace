@@ -1,0 +1,16 @@
+TRACE    0 TITLE x=1.50 y=1.50 ang=0.00 coins=0/16 doors=0 time=0.0
+TRACE   40 PLAY  x=1.50 y=1.50 ang=1.24 coins=0/16 doors=0 time=0.6
+TRACE   80 PLAY  x=1.51 y=2.84 ang=1.56 coins=0/16 doors=0 time=1.3
+TRACE  120 PLAY  x=1.53 y=4.49 ang=1.52 coins=0/16 doors=0 time=1.9
+TRACE  160 PLAY  x=1.58 y=4.49 ang=-0.00 coins=0/16 doors=0 time=2.6
+TRACE  200 PLAY  x=3.31 y=4.49 ang=-0.00 coins=0/16 doors=0 time=3.3
+TRACE  240 PLAY  x=5.04 y=4.49 ang=-0.00 coins=0/16 doors=0 time=3.9
+TRACE  280 PLAY  x=6.78 y=4.49 ang=-0.00 coins=0/16 doors=1 time=4.6
+TRACE  320 PLAY  x=8.51 y=4.49 ang=-0.00 coins=0/16 doors=1 time=5.3
+TRACE  360 PLAY  x=8.51 y=4.49 ang=-1.56 coins=0/16 doors=1 time=6.0
+TRACE  400 PLAY  x=8.53 y=2.80 ang=-1.56 coins=0/16 doors=1 time=6.6
+TRACE  440 PLAY  x=8.54 y=1.50 ang=-1.20 coins=0/16 doors=1 time=7.3
+TRACE  480 PLAY  x=8.93 y=1.50 ang=0.00 coins=0/16 doors=1 time=8.0
+TRACE  520 PLAY  x=10.66 y=1.50 ang=0.00 coins=0/16 doors=1 time=8.6
+TRACE  560 PLAY  x=12.40 y=1.50 ang=0.00 coins=0/16 doors=1 time=9.3
+TRACE  600 PLAY  x=14.13 y=1.50 ang=0.00 coins=1/16 doors=1 time=10.0

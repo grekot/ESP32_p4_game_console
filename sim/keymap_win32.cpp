@@ -126,7 +126,7 @@ bool load_file(const char* path)
 
         char* eq = strchr(p, '=');
         if (!eq) {
-            LAKE_LOGW(TAG, "%s:%d: brak znaku '=' - pomijam", path, lineno);
+            CONSOLE_LOGW(TAG, "%s:%d: brak znaku '=' - pomijam", path, lineno);
             continue;
         }
         *eq = '\0';
@@ -135,19 +135,19 @@ bool load_file(const char* path)
 
         input::Key key;
         if (!input::key_from_name(left, key)) {
-            LAKE_LOGW(TAG, "%s:%d: nieznany klawisz konsoli '%s'", path, lineno, left);
+            CONSOLE_LOGW(TAG, "%s:%d: nieznany klawisz konsoli '%s'", path, lineno, left);
             continue;
         }
         const int vk = vk_from_name(right);
         if (vk < 0) {
-            LAKE_LOGW(TAG, "%s:%d: nieznany klawisz PC '%s'", path, lineno, right);
+            CONSOLE_LOGW(TAG, "%s:%d: nieznany klawisz PC '%s'", path, lineno, right);
             continue;
         }
         s_vk[(int)key] = vk;
         ++applied;
     }
     fclose(f);
-    LAKE_LOGI(TAG, "wczytano %s (%d wpisow)", path, applied);
+    CONSOLE_LOGI(TAG, "wczytano %s (%d wpisow)", path, applied);
     return true;
 }
 
@@ -161,7 +161,7 @@ void keymap_load(const char* explicit_path)
     bool ok = false;
     if (explicit_path && *explicit_path) {
         ok = load_file(explicit_path);
-        if (!ok) LAKE_LOGE(TAG, "nie moge otworzyc %s - zostaje mapowanie domyslne", explicit_path);
+        if (!ok) CONSOLE_LOGE(TAG, "nie moge otworzyc %s - zostaje mapowanie domyslne", explicit_path);
     } else {
         // Obok pliku wykonywalnego, potem typowe miejsca przy uruchamianiu z katalogu projektu.
         char exe[MAX_PATH] = {};
@@ -176,11 +176,11 @@ void keymap_load(const char* explicit_path)
         }
         if (!ok) ok = load_file("sim/keymap.cfg");
         if (!ok) ok = load_file("keymap.cfg");
-        if (!ok) LAKE_LOGI(TAG, "brak keymap.cfg - mapowanie domyslne");
+        if (!ok) CONSOLE_LOGI(TAG, "brak keymap.cfg - mapowanie domyslne");
     }
 
     for (int i = 0; i < input::KEY_COUNT; ++i) {
-        LAKE_LOGI(TAG, "  %-11s <- %s", input::key_name((input::Key)i), name_from_vk(s_vk[i]));
+        CONSOLE_LOGI(TAG, "  %-11s <- %s", input::key_name((input::Key)i), name_from_vk(s_vk[i]));
     }
 }
 

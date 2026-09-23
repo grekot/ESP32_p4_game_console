@@ -1,5 +1,5 @@
 // Wspolna paleta konsoli: 19 kolorow ze staly znakami do ASCII-artu ('.' = przezroczysty).
-// Uzywa jej Lake Mario (mario_assets.cpp), API ucznia (lake) i make_sprite() bez podanej palety.
+// Uzywa jej Lake Mario (mario_assets.cpp), API ucznia (console) i make_sprite() bez podanej palety.
 // Jedno miejsce z wartosciami RGB - kolory w grach ucznia i w Mario sa identyczne.
 #pragma once
 

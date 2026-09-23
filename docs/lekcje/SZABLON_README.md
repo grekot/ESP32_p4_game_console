@@ -41,7 +41,7 @@ Gwiazdki = trudność. „(test N)" = który wiersz `testy.txt` sprawdza zadanie
 Co widać na ekranie po zadaniach albo komenda i oczekiwany wynik:
 
 ```
-lake_sim.exe --game nazwa --frames 120 --trace 30
+console_sim.exe --game nazwa --frames 120 --trace 30
 ```
 
 ## Dla ciekawych

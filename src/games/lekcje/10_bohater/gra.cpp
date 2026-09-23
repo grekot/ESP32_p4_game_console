@@ -1,5 +1,5 @@
 // LEKCJA 10 - BOHATER: wlasna grafika (sprite z liter), powiekszenie, odbicie lustrzane, animacja. Zadania w README.md.
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {   // pudelko na twoja gre - nie usuwaj
 
@@ -88,4 +88,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(bohater, "Bohater", "Lekcja 10: wlasna grafika")
+CONSOLE_ADD_GAME(bohater, "Bohater", "Lekcja 10: wlasna grafika")

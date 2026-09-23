@@ -1,5 +1,5 @@
 // LEKCJA 09 - BREAKOUT: tablica struktur. Zadania w README.md.
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {   // pudelko na twoja gre - nie usuwaj
 
@@ -110,4 +110,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(breakout, "Breakout", "Lekcja 09: tablica struktur")
+CONSOLE_ADD_GAME(breakout, "Breakout", "Lekcja 09: tablica struktur")

@@ -1,5 +1,5 @@
 // LEKCJA 05 - INWAZJA: petla for. Zadania w README.md.
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {   // pudelko na twoja gre - nie usuwaj
 
@@ -61,4 +61,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(inwazja, "Inwazja", "Lekcja 05: petla for")
+CONSOLE_ADD_GAME(inwazja, "Inwazja", "Lekcja 05: petla for")

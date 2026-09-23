@@ -118,12 +118,12 @@ główny `CMakeLists.txt` ESP-IDF.
 (bez `launch.json`, który generuje PlatformIO). pioarduino IDE na liście niechcianych.
 **Konsekwencje.** IntelliSense pochodzi z PlatformIO, więc pliki `sim/` podkreślają `<windows.h>` — kosmetyka.
 
-## 15. Warstwa `lake` dla ucznia zamiast uproszczania `engine::Game` (23.09.2026)
+## 15. Warstwa `console` dla ucznia zamiast uproszczania `engine::Game` (23.09.2026)
 
 **Kontekst.** Konsola ma być platformą do nauki C++ dla 11–13-latka po Scratchu. `engine::Game` wymaga klasy,
 `override`, referencji, `float dt` i RGB565 — za dużo na pierwszą lekcję.
-**Decyzja.** Osobny katalog `src/lake/`: funkcje globalne w stylu Arduino/Processing (`setup()`/`frame()`, `rect`, `held`,
-`random`, `watch`), silny typ `Color`, matematyka całkowita przy stałych 60 FPS. Adapter `lake::SimpleGame` opakowuje
+**Decyzja.** Osobny katalog `src/console/`: funkcje globalne w stylu Arduino/Processing (`setup()`/`frame()`, `rect`, `held`,
+`random`, `watch`), silny typ `Color`, matematyka całkowita przy stałych 60 FPS. Adapter `console::SimpleGame` opakowuje
 funkcje ucznia w `engine::Game`, więc pętla konsoli, menu, pauza i `--trace` działają bez zmian. Nazwy API po angielsku
 (jak w każdym kursie), komentarze po polsku. `frame()` zamiast `loop()` (dzieci piszą wtedy `while(true)`) i zamiast
 `draw()` (w tej funkcji też się porusza obiektami).
@@ -134,7 +134,7 @@ wejściami z menu — wartości startowe nadaje `setup()`. Sprite'y ucznia idą 
 ## 16. Rejestracja lekcji: X-makro `lista.h`, nie samorejestracja
 
 **Kontekst.** Uczeń ma dodać grę jedną linią. Kuszące jest `static` z konstruktorem rejestrującym.
-**Decyzja.** `LAKE_GAME(id, ...)` definiuje `extern const engine::GameEntry lake_entry_id`, a `registry.cpp` włącza
+**Decyzja.** `CONSOLE_ADD_GAME(id, ...)` definiuje `extern const engine::GameEntry console_entry_id`, a `registry.cpp` włącza
 `lista.h` dwa razy (deklaracje i elementy `GAMES[]`). Jawna lista, bo ESP-IDF linkuje komponent jako bibliotekę
 statyczną: obiekt bez odwołań wypada z programu razem ze swoim inicjalizatorem. Do tego `GameEntry::id` i `find_game()`:
 `--game pilka`, `--game src/games/lekcje/02_pilka` (zadanie VS Code z `${relativeFileDirname}`).
@@ -146,7 +146,7 @@ Brak klamry = czytelny błąd linkera `multiple definition of 'setup()'`, opisan
 **Kontekst.** Lekcje potrzebują losowości, a testy `--frames` muszą być powtarzalne.
 **Decyzja.** `engine::rng()`; `app::start_game` ustawia ziarno stałe przy stałym `dt` (tryb testowy) i z zegara w oknie.
 Nie `rand()` — różne implementacje na PC i ESP.
-**Konsekwencje.** Mario nie losuje, więc jego ślady bez zmian. `lake::random(int,int)` nie koliduje z `random(void)`
+**Konsekwencje.** Mario nie losuje, więc jego ślady bez zmian. `console::random(int,int)` nie koliduje z `random(void)`
 z newlib (inna arność) — sprawdzone na `pio run`.
 
 ## 18. Siatka regresji przed refaktorem: ślady i zrzuty bajt w bajt
@@ -174,9 +174,69 @@ UI w 800x480, gry zostawić w 400x240; użytkownik wybrał **wszystko w 800x480*
 `Game::canvas_scale() == 2` — dostaje pod-płótno 400x240 w SRAM, a konsola powiększa klatkę x2 (`blit_upscale2x`);
 tak działa Lake Mario, którego grafiki 16x16 są pixel-artem z założenia. Tekst w grach ucznia i etykiety wirtualnego pada
 rysuje `gfx/text.h` z glifów Montserrat LVGL (A8 mieszane z RGB565). Menu i pauza przeprojektowane (`ui/theme.h`: paleta
-slate, karty 64 px, pasek przewijania, panel z cieniem). W `lake`: `sprite(..., scale)`, kafelek 32 px; wszystkie lekcje
+slate, karty 64 px, pasek przewijania, panel z cieniem). W `console`: `sprite(..., scale)`, kafelek 32 px; wszystkie lekcje
 przeliczone (rozmiary, prędkości, testy).
 **Konsekwencje.** Płótno 768 kB w PSRAM (było 192 kB w SRAM) — na płytce do zmierzenia czas klatki gier 800x480
 (rysowanie CPU do PSRAM) i koszt powiększenia x2 dla Mario (~1 ms szacunkowo; w razie potrzeby PPA). Ślady Mario bez zmian,
 zrzuty regresji to dokładne powiększenie x2 starych. Emulator 1:1, zrzuty 1,15 MB. Czcionka 5x7 zostaje tylko w HUD Mario.
 Po drodze: `LV_ASSERT_HANDLER abort()` w `lv_conf.h`, bo domyślne `while(1)` LVGL zawiesiło emulator bez komunikatu.
+
+## 21. Nazwa konsoli: „Console", nie „Lake" (23.09.2026)
+
+**Kontekst.** Nazwa „Lake" pochodziła z nazwy projektu `LakeMarioGame` i przeszła bez ustalenia na menu („Lake Console"),
+emulator (`lake_sim.exe`), makra (`LAKE_*`) oraz — w tej sesji — na warstwę ucznia (`lake::`, `LAKE_GAME`). Użytkownik
+uznał ją za mylącą markę i nie chce jej ani w interfejsie, ani w kodzie ucznia.
+**Decyzja.** Podstawowa nazwa to **Console**: menu „Console", `console_sim.exe`, `src/console/` z `console.h`,
+przestrzeń `console::`, makro `CONSOLE_ADD_GAME`, `CONSOLE_LOG*`, `CONSOLE_HOST_BUILD`, `CONSOLE_DISPLAY_ROTATION`, klasa okna
+`ConsoleSim`, projekt CMake `Console`. Bez zmian: gra „Lake Mario", katalog `LakeMarioGame` i adres repozytorium
+(decyzja użytkownika), ziarno RNG `0x4C414B45` (zmiana zmieniłaby wyniki testów lekcji).
+**Konsekwencje.** Mechaniczna zamiana w ~60 plikach, regresja Mario bez zmian, wzorzec zrzutu menu nagrany na nowo (tytuł).
+Nazwy w kodzie, dokumentach i interfejsie ustalać z użytkownikiem przed użyciem — zwłaszcza te, które zobaczy uczeń.
+Na prośbę użytkownika makro rejestrujące dostało czasownik: `CONSOLE_ADD_GAME` („konsola, dodaj grę"), nie `CONSOLE_GAME`.
+
+## 22. Obrazki PNG dekodowane w grze z partycji SPIFFS (23.09.2026)
+
+**Kontekst.** Użytkownik chce grafiki z plików PNG (Piskel/Paint) zamiast ASCII-artu. Dwie drogi: A — konwersja PNG na
+tablice C przy budowaniu (bez systemu plików, bez ryzyka na sprzęcie), B — dekodowanie w trakcie gry z partycji plików.
+Rekomendacja brzmiała A; użytkownik wybrał **B**.
+**Decyzja.** `platform::read_file(path)`: emulator czyta `assets/<path>` (od katalogu roboczego, potem od exe), płytka czyta
+`/assets/<path>` z partycji `assets` (SPIFFS, 0xBF0000 w `partitions.csv`), montowanej przy starcie z formatowaniem przy
+pierwszym uruchomieniu. Dekoder lodepng (`src/gfx/lodepng/`, licencja zlib, kompilowany bez enkodera i dysku).
+`gfx::load_png` → RGB565 z kolorem-kluczem (alfa < 128 = przezroczyste). W API ucznia `load_image("plik.png")` szuka
+w `assets/<id gry>/` — id z `CONSOLE_ADD_GAME` trafia do adaptera `SimpleGame`. Arena obrazków 64 kB → 256 kB (PSRAM).
+Wgrywanie: `data_dir = assets` w `platformio.ini`, `pio run -t uploadfs`. `CONFIG_SPIFFS_OBJ_NAME_LEN=64`.
+**Konsekwencje.** Na PC działa od razu (plakat API rysuje PNG, scenariusz `api_demo` w regresji). Na płytce niesprawdzone:
+montowanie/formatowanie SPIFFS, `uploadfs` z pioarduino, czas dekodowania. Firmware większy o dekoder i komponent spiffs.
+Półprzezroczystość jest tracona (RGB565 bez alfy) — krawędzie w PNG rysować twardo.
+
+## 23. „Gra 3D": raycasting zamiast wielokątów (23.09.2026)
+
+**Kontekst.** Użytkownik poprosił o przykład gry z ładną grafiką i o ocenę, czy da się zrobić grę 3D. ESP32-P4 nie ma GPU;
+ma 2 rdzenie RISC-V 360 MHz, FPU pojedynczej precyzji, PPA (skalowanie/obrót) i 2D-DMA. Pełne 3D z wielokątami
+(transformacje, Z-bufor, teksturowanie perspektywiczne) dla 800x480 przy 60 FPS to setki milionów operacji na sekundę —
+poza zasięgiem; nawet 400x240 z kilkuset trójkątami wypadłoby poniżej 20 FPS i zjadłoby cały projekt.
+**Decyzja.** Pseudo-3D metodą raycastingu (Wolfenstein 3D): jeden promień na kolumnę ekranu po mapie kafelków z liter,
+ściany jako pionowe paski tekstury, przedmioty jako sprite'y skalowane odległością z buforem głębi na kolumnę.
+Gra „Labirynt 3D" (`src/games/labirynt3d/`) na płótnie 400x240 (`canvas_scale()==2`): 400 promieni na klatkę.
+Drugi przykład, „Kosmos" (`src/games/kosmos/`), pokazuje pełne 800x480 z PNG, paralaksą i wybuchami klatkowymi.
+Grafika obu gier to PNG generowane skryptem `tools/gen_demo_assets.py` (czysty Python, deterministyczne) — łatwe
+do podmienienia na własne rysunki.
+**Konsekwencje.** Na PC raycasting kosztuje ok. 0,1 ms ponad tło (`--bench`), szacunek na P4: 2-4 ms z 16,7 ms.
+Mapa labiryntu ma 32x24 kafelki — więcej niż `engine::TileMap::MAX_ROWS` (16), więc gra trzyma własną tablicę;
+podniesienie limitu w `TileMap` zwiększyłoby RAM każdej instancji (Mario, runtime ucznia). Drzwi otwierają się
+(znikają) przy podejściu — najprostsza wersja, bez animacji. Sprawdzone BFS-em: wyjście i wszystkie 16 monet są
+osiągalne. Alternatywy na przyszłość, jeśli syn zechce „więcej 3D": pseudo-3D droga (Outrun), izometria, siatka
+wireframe.
+
+## 24. Ziarno losowości ustawiane przed startem gry w trybie `--frames` (23.09.2026)
+
+**Kontekst.** Kosmos losuje asteroidy; dwa identyczne uruchomienia `--frames` dawały różne ślady. Przyczyna:
+`sim/main.cpp` wołało `app::start_game_by_index()` przed `app::set_fixed_dt()`, a to `start_game()` wybiera ziarno
+(stałe przy stałym kroku, z zegara w oknie) — ziarno szło z zegara. Lekcje z `random()` przechodziły testy tylko dlatego,
+że sprawdzają regexem zakresy, nie dokładne wartości.
+**Decyzja.** `set_fixed_dt` przed startem gry. Dodatkowo `--bench` (średni/maksymalny czas `app::frame()`) i limit
+`--hold` podniesiony z 8 do 12 (trasa w labiryncie potrzebuje 9 odcinków).
+**Konsekwencje.** Ślady Mario bez zmian (Mario nie losuje). Scenariusze z losowością (`kosmos_play`) są w regresji.
+Przy okazji naprawiony błąd w Kosmosie: `spawn_asteroid()` przy rozpadzie mogło zająć slot właśnie niszczonej
+asteroidy i odczytać jej **nowy** rozmiar (`size-1-1 = -1` → sprite spoza tablicy, na ekranie „statek-widmo") —
+dane potrzebne po zwolnieniu slotu kopiować do zmiennych lokalnych wcześniej.

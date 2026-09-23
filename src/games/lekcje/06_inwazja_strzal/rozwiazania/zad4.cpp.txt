@@ -1,5 +1,5 @@
 // ROZWIAZANIE zadan 1-4 z lekcji 06 (plik .txt - najpierw sprobuj sam!).
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {
 
@@ -139,4 +139,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(inwazja_strzal, "Inwazja: strzal", "Lekcja 06: tablice")
+CONSOLE_ADD_GAME(inwazja_strzal, "Inwazja: strzal", "Lekcja 06: tablice")

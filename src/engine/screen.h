@@ -1,7 +1,7 @@
 // Rozmiar plotna konsoli - wspolny dla plytki i emulatora.
 //
 // Plotno 800x480 to pelna, natywna rozdzielczosc logicznego ekranu (panel 480x800 obrocony
-// o LAKE_DISPLAY_ROTATION; w emulatorze okno 1:1). Menu, pauza i gry ucznia rysuja w niej wprost -
+// o CONSOLE_DISPLAY_ROTATION; w emulatorze okno 1:1). Menu, pauza i gry ucznia rysuja w niej wprost -
 // czcionki sa gladkie, bez schodkow po skalowaniu. Gra, ktora chce wygladu pixel-art (Lake Mario,
 // sprite'y 16x16), deklaruje engine::Game::canvas_scale() == 2: rysuje na 400x240, a konsola
 // powieksza klatke najblizszym sasiadem.

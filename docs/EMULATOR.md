@@ -19,7 +19,7 @@ wymaga wgrywania firmware — kompilacja emulatora trwa sekundy.
 - **CMake** 3.20+ i **Ninja**
 
 Żadnych bibliotek zewnętrznych: backend to czyste Win32 GDI, LVGL buduje się ze źródeł.
-Gotowy plik `lake_sim.exe` jest linkowany statycznie, więc działa bez DLL-i z MSYS2.
+Gotowy plik `console_sim.exe` jest linkowany statycznie, więc działa bez DLL-i z MSYS2.
 
 ## Budowanie
 
@@ -32,7 +32,7 @@ cmake --build sim/build
 ```
 
 ```bash
-./sim/build/lake_sim.exe
+./sim/build/console_sim.exe
 ```
 
 W VS Code te same kroki są pod Ctrl+Shift+B jako zadania `SIM: Configure`, `SIM: Build`, `SIM: Run`.
@@ -78,7 +78,7 @@ Plik jest szukany kolejno: obok pliku wykonywalnego (kopiowany tam przy budowani
 `sim/keymap.cfg`, potem `keymap.cfg`. Własny plik wskazuje się tak:
 
 ```bash
-./sim/build/lake_sim.exe --keymap moje.cfg
+./sim/build/console_sim.exe --keymap moje.cfg
 ```
 
 Poza tym: **lewy przycisk myszy** działa jak palec na ekranie dotykowym (wybór gry w menu,
@@ -91,19 +91,19 @@ zatwierdzają, `B` albo `SELECT` cofają.
 ## Tryby pomocnicze
 
 ```bash
-./sim/build/lake_sim.exe --list
-./sim/build/lake_sim.exe --game 0
-./sim/build/lake_sim.exe --game pilka
-./sim/build/lake_sim.exe --game src/games/lekcje/02_pilka
+./sim/build/console_sim.exe --list
+./sim/build/console_sim.exe --game 0
+./sim/build/console_sim.exe --game pilka
+./sim/build/console_sim.exe --game src/games/lekcje/02_pilka
 ```
 
 `--list` wypisuje gry (numer, id, nazwa). `--game` wchodzi od razu do gry — po numerze, po `id`
-(pole `GameEntry::id`, dla lekcji nazwa z `LAKE_GAME`), po nazwie z menu albo po ścieżce katalogu lekcji
+(pole `GameEntry::id`, dla lekcji nazwa z `CONSOLE_ADD_GAME`), po nazwie z menu albo po ścieżce katalogu lekcji
 (ostatni segment bez numeru `NN_`). Dzięki temu zadanie VS Code może uruchomić grę z otwartego pliku.
 Nieznana gra: komunikat, lista dostępnych i kod wyjścia 2, jeszcze przed otwarciem okna.
 
 ```bash
-./sim/build/lake_sim.exe --game 0 --pause-at 20 --frames 40 --shot pauza.bmp
+./sim/build/console_sim.exe --game 0 --pause-at 20 --frames 40 --shot pauza.bmp
 ```
 
 Przelicza podaną liczbę klatek bez interakcji, opcjonalnie wciska START w wskazanej klatce,
@@ -113,10 +113,10 @@ sprawdzania, czy zmiana w UI albo w grafice nie popsuła wyglądu.
 ## Testy skryptowane
 
 ```bash
-./sim/build/lake_sim.exe --game 0 --hold B 3 4 --hold RIGHT 20 90 --frames 90 --trace 15
+./sim/build/console_sim.exe --game 0 --hold B 3 4 --hold RIGHT 20 90 --frames 90 --trace 15
 ```
 
-`--hold KLAWISZ OD DO` trzyma klawisz konsoli od klatki OD do DO (można podać do ośmiu wpisów),
+`--hold KLAWISZ OD DO` trzyma klawisz konsoli od klatki OD do DO (można podać do dwunastu wpisów),
 a `--trace K` co K klatek wypisuje linię stanu gry: pozycję, prędkości, podłoże, wynik, monety, życia,
 czas i najbliższego przeciwnika. Razem dają powtarzalne testy mechanik bez udziału człowieka.
 Przykład powyżej sprawdza, że postać po 20 klatkach chodu ma prędkość 100 px/s. Gra dostarcza tę linię
@@ -125,6 +125,27 @@ przez `engine::Game::debug_line()`, więc każda kolejna gra może mieć własn�
 W trybie `--frames` krok czasu jest stały (1/60 s), generator losowy dostaje stałe ziarno, a emulator nie czeka
 na 60 FPS (600 klatek liczy się w ułamku sekundy) — ten sam skrypt daje zawsze identyczny wynik, niezależnie od
 obciążenia komputera. W trybie okienkowym emulator liczy czas rzeczywisty i losuje z zegara, tak jak płytka.
+Stały krok jest ustawiany **przed** startem gry — inaczej ziarno byłoby brane z zegara (tak było do 23.09; gry
+z `random()` dawały wtedy różne ślady przy identycznych argumentach).
+
+### Pomiar czasu klatki
+
+```bash
+./sim/build/console_sim.exe --game labirynt3d --hold A 3 4 --hold UP 10 600 --frames 600 --bench
+```
+
+`--bench` wypisuje `BENCH klatek=590 srednio=… ms max=…` — czas `app::frame()` (logika + render + kopia do okna GDI)
+bez 10 pierwszych klatek. To liczba z PC, nie z płytki; służy do porównania gier między sobą. Pomiar z 23.09:
+
+| gra | średnio | uwagi |
+|---|---|---|
+| pilka (lekcja, prawie nic nie rysuje) | 0,52 ms | koszt samej kopii okna |
+| Lake Mario | 0,54 ms | |
+| Kosmos | 0,54 ms | |
+| Labirynt 3D | 0,62 ms | raycasting 400 kolumn + tekstury: ok. 0,1 ms ponad tło |
+
+Skala na P4 (360 MHz, bez SIMD) jest szacunkowo 20-40 razy wolniejsza — raycasting kosztowałby 2-4 ms z 16,7 ms
+budżetu. **Do zmierzenia na sprzęcie** (`engine::stats`).
 
 ### Zestaw regresji i testy lekcji
 
@@ -134,8 +155,9 @@ powershell -File tools/testy.ps1                # to samo + testy.txt każdej le
 powershell -File tools/testy.ps1 mario -Update  # nagraj wzorce od nowa (po świadomej zmianie fizyki/wyglądu)
 ```
 
-Scenariusze Mario są w [tests/scenarios.txt](../tests/scenarios.txt), wzorce w `tests/expected/`. Refaktoring silnika
-ma zostawić je bez zmian. Testy lekcji (`testy.txt`: `argumenty | regex`) czytają wartości z `watch()` w linii `TRACE` —
+Scenariusze są w [tests/scenarios.txt](../tests/scenarios.txt), wzorce w `tests/expected/`: 6 śladów i 3 zrzuty Lake Mario,
+zrzut plakatu API oraz (od 23.09) trasa w Labiryncie 3D (skręty, drzwi, moneta) i rozgrywka w Kosmosie (ślad + zrzut).
+Refaktoring silnika ma zostawić je bez zmian. Testy lekcji (`testy.txt`: `argumenty | regex`) czytają wartości z `watch()` w linii `TRACE` —
 szczegóły w [NAUKA.md](NAUKA.md).
 
 Uwaga: przed przebudową zamknij działający emulator. Windows nie pozwala nadpisać uruchomionego
@@ -157,7 +179,7 @@ Tag jest ten sam, który jest przypięty w [src/idf_component.yml](../src/idf_co
 Własną kopię LVGL wskazuje się tak:
 
 ```bash
-cmake -S sim -B sim/build -G Ninja -DLAKE_LVGL_DIR=C:/sciezka/do/lvgl
+cmake -S sim -B sim/build -G Ninja -DCONSOLE_LVGL_DIR=C:/sciezka/do/lvgl
 ```
 
 Konfiguracja LVGL ([src/ui/lv_conf.h](../src/ui/lv_conf.h)) jest jednym plikiem wspólnym dla obu

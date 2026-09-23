@@ -19,16 +19,16 @@ constexpr uint32_t TEXT_FAINT = 0x64748b;
 constexpr uint32_t DANGER     = 0xef4444;
 
 // czcionki (Montserrat wbudowane w LVGL; tylko ASCII - bez polskich liter w UI)
-#define LAKE_UI_FONT_TITLE      (&lv_font_montserrat_32)
-#define LAKE_UI_FONT_CARD_TITLE (&lv_font_montserrat_24)
-#define LAKE_UI_FONT_BODY       (&lv_font_montserrat_16)
-#define LAKE_UI_FONT_SMALL      (&lv_font_montserrat_14)
-#define LAKE_UI_FONT_BUTTON     (&lv_font_montserrat_20)
-inline const lv_font_t* const FONT_TITLE      = LAKE_UI_FONT_TITLE;
-inline const lv_font_t* const FONT_CARD_TITLE = LAKE_UI_FONT_CARD_TITLE;
-inline const lv_font_t* const FONT_BODY       = LAKE_UI_FONT_BODY;
-inline const lv_font_t* const FONT_SMALL      = LAKE_UI_FONT_SMALL;
-inline const lv_font_t* const FONT_BUTTON     = LAKE_UI_FONT_BUTTON;
+#define CONSOLE_UI_FONT_TITLE      (&lv_font_montserrat_32)
+#define CONSOLE_UI_FONT_CARD_TITLE (&lv_font_montserrat_24)
+#define CONSOLE_UI_FONT_BODY       (&lv_font_montserrat_16)
+#define CONSOLE_UI_FONT_SMALL      (&lv_font_montserrat_14)
+#define CONSOLE_UI_FONT_BUTTON     (&lv_font_montserrat_20)
+inline const lv_font_t* const FONT_TITLE      = CONSOLE_UI_FONT_TITLE;
+inline const lv_font_t* const FONT_CARD_TITLE = CONSOLE_UI_FONT_CARD_TITLE;
+inline const lv_font_t* const FONT_BODY       = CONSOLE_UI_FONT_BODY;
+inline const lv_font_t* const FONT_SMALL      = CONSOLE_UI_FONT_SMALL;
+inline const lv_font_t* const FONT_BUTTON     = CONSOLE_UI_FONT_BUTTON;
 
 // wymiary
 constexpr int MARGIN   = 32;    // margines boczny ekranu

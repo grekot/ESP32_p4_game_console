@@ -63,7 +63,7 @@ w górę o 12 px, poza ekranem znika. `pressed(A) && !bullet_active` – strzela
 Po zadaniu 2 strzał trafia. Trzy strzały bez ruszania statkiem – blok przechodzi nad nim, więc co najmniej jeden trafi:
 
 ```
-lake_sim.exe --game inwazja_strzal --hold A 10 11 --hold A 120 121 --hold A 240 241 --frames 400 --trace 100
+console_sim.exe --game inwazja_strzal --hold A 10 11 --hold A 120 121 --hold A 240 241 --frames 400 --trace 100
 ```
 
 W ostatniej linii `score` ma być większe od 0. Zadanie **LEKCJA: Sprawdz zadania** robi to samo.

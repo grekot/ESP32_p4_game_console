@@ -11,12 +11,13 @@ dokumentacja w `docs/`, README i ten plik z polskimi znakami.
 
 - **Płytka jeszcze nie dotarła** (zamówiona 22.09.2026, dostawa ok. 27.09-01.10). Cały kod powstał bez
   sprzętu. Po przyjściu płytki zacząć od listy „Do zweryfikowania na sprzęcie" w `docs/HARDWARE.md`.
-- Firmware kompiluje się (23.09 wieczorem, płótno 800x480, warstwa `lake`, 13 lekcji): **1 115 kB flash (26,6 % z 4 MB)**,
-  45,9 kB RAM statycznie. Wzrost z 832 kB to czcionki Montserrat 24/32/40/48 (~280 kB) — jeśli flash zacznie brakować,
-  wyłączyć 40 i 48 w `lv_conf.h` (używa ich tylko `lake::text` w rozmiarze 4 i etykiety pada). Emulator kompiluje się i działa.
+- Firmware kompiluje się (23.09 późnym wieczorem, z grami pokazowymi Labirynt 3D i Kosmos): **1 208 kB flash
+  (28,8 % z 4 MB)**, 54,2 kB RAM statycznie (labirynt: zbuf 1,6 kB + gradienty 1 kB + mapa; kosmos: pule obiektów).
+  Przed grami pokazowymi: 1 186 kB / 46,0 kB. Dekoder PNG i komponent spiffs to ~70 kB. Wzrost z 832 kB to czcionki Montserrat 24/32/40/48 (~280 kB) — jeśli flash zacznie brakować,
+  wyłączyć 40 i 48 w `lv_conf.h` (używa ich tylko `console::text` w rozmiarze 4 i etykiety pada). Emulator kompiluje się i działa.
 - Wszystkie mechaniki Lake Mario zweryfikowane skryptami w emulatorze (lista niżej). Bez testu skryptowego,
   tylko przegląd kodu: meta `F`, śmierć w przepaści, koniec czasu.
-- **Platforma nauki C++ dla syna (11-13 lat, po Scratchu) — gotowa 23.09:** warstwa `src/lake/`, 13 lekcji
+- **Platforma nauki C++ dla syna (11-13 lat, po Scratchu) — gotowa 23.09:** warstwa `src/console/`, 13 lekcji
   w `src/games/lekcje/` (00 szablon … 12 mini mario, 13 własny projekt) z README, `testy.txt` i rozwiązaniami; każda
   sprawdzona: kod startowy pada, rozwiązanie przechodzi. Regresja Mario (`tools/testy.ps1 mario`) 9/9 po refaktorze
   silnika (math2d, palette, ParticlePool, TileMap wycięte z `mario_game.cpp`: 641 -> 538 linii). Dokumentacja:
@@ -26,23 +27,32 @@ dokumentacja w `docs/`, README i ten plik z polskimi znakami.
   schodków, nowy design menu/pauzy (`ui/theme.h`), wygładzony tekst w grach (`gfx/text.h`), Mario jako pixel-art x2 przez
   `canvas_scale()`, lekcje przeliczone; regresja Mario 9/9 (ślady identyczne, zrzuty 800x480 = x2 starych), 12 lekcji
   zweryfikowanych (start pada, rozwiązanie przechodzi). Emulator: okno 1:1, zrzuty 800x480 (1,15 MB BMP).
+- **Gry pokazowe (23.09 wieczorem, na prośbę „przykład z fajną grafiką" + pytanie o 3D):** `src/games/labirynt3d/`
+  (raycasting 400 kolumn, tekstury PNG 64x64, drzwi otwierane podejściem, monety/portal jako sprite'y z z-buforem,
+  mini-mapa; płótno 400x240 x2) i `src/games/kosmos/` (800x480, PNG, 3 warstwy gwiazd, asteroidy rozpadające się,
+  wybuchy 4 klatki PNG). Grafika z `python tools/gen_demo_assets.py` (deterministyczne PNG do `assets/`). Pełne 3D
+  odrzucone (DECYZJE 23). Regresja 14/14 (`tests/scenarios.txt`: + `labirynt_route`, `labirynt_door`, `kosmos_play` x2).
+  `--bench`: labirynt 0,62 ms/klatkę na PC vs 0,52 ms pusta gra; szacunek na P4 2-4 ms — **do zmierzenia na sprzęcie**.
 - Repozytorium: **https://github.com/grekot/ESP32_p4_game_console.git**, gałąź `main`, pierwszy commit 23.09.2026.
   Commit i push tylko na wyraźne polecenie użytkownika. `.gitattributes` wymusza LF w repozytorium.
   Uwaga historyczna: repozytorium bez żadnego commita wywala build ESP-IDF (woła `git describe`).
-- Około 7750 linii własnego kodu (bez sterownika ST7701 producenta), w tym ~1500 w `src/lake` + lekcjach + `tools/`.
+- Około 11 000 linii własnego kodu (bez sterownika ST7701 i lodepng), w tym ~1500 w `src/console` + lekcje + `tools/` oraz ~1100 w grach pokazowych.
 
 ## Komendy
 
 ```bash
 pio run                              # firmware (pierwszy raz ~15 min: pobiera ESP-IDF i toolchain); po nowych plikach: pio run -t clean
 pio run -t upload -t monitor         # wgranie + logi 115200
+pio run -t uploadfs                  # katalog assets/ (PNG gier) -> partycja assets (SPIFFS); po kazdej zmianie obrazkow
 cmake -S sim --preset mingw          # konfiguracja emulatora (raz; nowe .cpp wykrywa sam build - CONFIGURE_DEPENDS)
-cmake --build sim/build              # emulator (kilka sekund) - ZAMKNIJ dzialajacy lake_sim.exe!
-./sim/build/lake_sim.exe             # emulator okienkowy
-./sim/build/lake_sim.exe --list      # gry: numer, id, nazwa
-./sim/build/lake_sim.exe --game pilka --hold RIGHT 10 70 --frames 90 --trace 15      # po id/nazwie/katalogu lekcji
-./sim/build/lake_sim.exe --game 0 --hold B 3 4 --hold RIGHT 20 90 --frames 90 --trace 15   # test skryptowany
-powershell -File tools/testy.ps1 mario                       # regresja Lake Mario: 6 sladow + 3 zrzuty bajt w bajt (3,5 s)
+cmake --build sim/build              # emulator (kilka sekund) - ZAMKNIJ dzialajacy console_sim.exe!
+./sim/build/console_sim.exe             # emulator okienkowy
+./sim/build/console_sim.exe --list      # gry: numer, id, nazwa
+./sim/build/console_sim.exe --game pilka --hold RIGHT 10 70 --frames 90 --trace 15      # po id/nazwie/katalogu lekcji
+./sim/build/console_sim.exe --game 0 --hold B 3 4 --hold RIGHT 20 90 --frames 90 --trace 15   # test skryptowany
+./sim/build/console_sim.exe --game labirynt3d --hold A 3 4 --hold UP 10 600 --frames 600 --bench   # sredni/max czas klatki (PC)
+python tools/gen_demo_assets.py                              # PNG dla labirynt3d i kosmos (assets/), deterministyczne
+powershell -File tools/testy.ps1 mario                       # regresja: 8 sladow + 6 zrzutow bajt w bajt (Mario, api_demo, labirynt, kosmos)
 powershell -File tools/testy.ps1 src/games/lekcje/02_pilka   # testy zadan jednej lekcji (kod startowy PADA, rozwiazanie przechodzi)
 powershell -File tools/testy.ps1 mario -Update               # nowe wzorce - tylko po swiadomej zmianie (np. menu po nowej lekcji)
 ```
@@ -62,13 +72,13 @@ Ninja w `C:\Prg\ninja-win`. Z Git Basha: `export PATH="/c/msys64/mingw64/bin:$PA
 | czas | `esp_timer` | `QueryPerformanceCounter`; w trybie `--frames` stały krok 1/60 s |
 
 Zasada: **nic nad `platform::` nie może zawierać `#include "esp_*"` ani FreeRTOS.** Logowanie przez
-`core/log.h` (`LAKE_LOGI/W/E`), nie `ESP_LOGx`. Sprawdzenie: `grep -rn "esp_\|freertos" src/app src/engine
+`core/log.h` (`CONSOLE_LOGI/W/E`), nie `ESP_LOGx`. Sprawdzenie: `grep -rn "esp_\|freertos" src/app src/engine
 src/gfx src/input src/ui --include=*.h --include=*.cpp | grep include` ma nic nie zwracać.
 
 ## Struktura
 
 ```
-platformio.ini          firmware: platforma pioarduino 55.03.312 (ESP-IDF 5.5.5), board esp32-p4, LAKE_DISPLAY_ROTATION
+platformio.ini          firmware: platforma pioarduino 55.03.312 (ESP-IDF 5.5.5), board esp32-p4, CONSOLE_DISPLAY_ROTATION
 CMakeLists.txt          projekt ESP-IDF; dodaje src/ui (lv_conf.h) do include WSZYSTKICH komponentów
 sdkconfig.defaults      ESP-IDF: rewizja P4, PSRAM HEX, flash 16 MB DIO, LVGL (CONF_SKIP=n, bez dem/przykładów)
 partitions.csv          nvs, phy, factory 4 MB @0x10000, assets (spiffs) ~12 MB
@@ -78,7 +88,7 @@ src/board/              sterowniki płytki: pins.h, display (DSI+PPA), touch (GT
 src/core/log.h          logowanie zależne od celu
 src/gfx/                Canvas RGB565 (blit, blit_scaled, blit_upscale2x, line, circle), Sprite z ASCII-artu (make_sprite, domyślna paleta),
                         text.h (wygładzony tekst Montserrat 12-48 px z glifów LVGL - menu i gry ucznia),
-                        palette.h (19 kolorów gfx::pal::* + DEFAULT_PALETTE, wspólna dla Mario i lake), czcionka 5x7 (wielkie+małe)
+                        palette.h (19 kolorów gfx::pal::* + DEFAULT_PALETTE, wspólna dla Mario i console), czcionka 5x7 (wielkie+małe)
 src/input/              keys.h (14 klawiszy), pad.h (PadState + osie, held/pressed), virtual_pad (dotyk + klawisze -> PadState, zbocza)
 src/engine/             Game (init/update/render/canvas_scale/debug_line), screen.h (800x480 + PIXEL_CANVAS 400x240), stats, game_registry (GameEntry{id,name,desc,create},
                         find_game), rng (xorshift32, seed_rng), math2d.h, particles.h (ParticlePool<N>), tilemap (TileMap: ASCII,
@@ -86,15 +96,26 @@ src/engine/             Game (init/update/render/canvas_scale/debug_line), scree
 src/ui/                 lv_conf.h (WSPÓLNY), lvgl_glue (PARTIAL, flush do płótna, indev dotyk+klawisze, grupa), menu (36 px/pozycja,
                         4 widoczne, pasek przewijania), pause
 src/app/                maszyna stanów konsoli Menu -> Playing -> Paused; set_fixed_dt; debug_line; seed_rng przy starcie gry
-src/lake/               API dla ucznia: lake.h (using namespace lake + makro LAKE_GAME), lake_api.h (deklaracje z opisami),
-                        lake_runtime.cpp (implementacja, arena sprite'ów 64 kB, watch, mapa poziom 2), simple_game (adapter -> engine::Game)
-src/games/registry.cpp  lista gier: Mario + lekcje z lekcje/lista.h (X-makro)
+src/console/               API dla ucznia: console.h (using namespace console + makro CONSOLE_ADD_GAME), console_api.h (deklaracje z opisami),
+                        console_runtime.cpp (implementacja, arena sprite'ów 64 kB, watch, mapa poziom 2), simple_game (adapter -> engine::Game)
+src/games/registry.cpp  lista gier: Mario, Labirynt 3D, Kosmos + lekcje z lekcje/lista.h (X-makro)
 src/games/mario/        assets (sprite'y ASCII na wspólnej palecie), level (6 segmentów 25x15), game (fizyka, HUD; mapa = engine::TileMap)
+src/games/labirynt3d/   raycasting (DDA po mapie 32x24 z liter, własna tablica - TileMap ma max 16 wierszy), tekstury/sprite'y PNG,
+                        zbuf_[400], gradient sufit/podłoga, drzwi 'D' znikają przy podejściu; debug_line: x y ang coins doors time
+src/games/kosmos/       strzelanka 800x480: pule Bullet/Asteroid/Boom/Spark, gwiazdy 3 warstwy, PNG z assets/kosmos/; debug_line:
+                        ship score lives asteroids bullets
+assets/                 PNG gier: bohater/, api_demo/, labirynt3d/ (brick stone door exit coin portal), kosmos/ (ship asteroid_s/m/l
+                        bullet boom0-3) - generowane przez tools/gen_demo_assets.py, podmiana pliku = nowa grafika
 src/games/lekcje/       lista.h (LEKCJA(id) na lekcję) + 00_szablon … 13_twoja_gra: gra.cpp, README.md, testy.txt, rozwiazania/*.cpp.txt
 sim/                    emulator: CMakeLists (LVGL: managed_components → third_party/lvgl → FetchContent zip), CMakePresets,
-                        platform_win32 (set_unthrottled), keymap_win32 + keymap.cfg, gamepad_win32 (winmm), main (--list, --game id)
-tests/                  scenarios.txt + expected/ (ślady i BMP Lake Mario nagrane 23.09 przed refaktorem)
-tools/                  testy.ps1 (regresja + testy lekcji), setup_kid_pc.ps1 (PC ucznia), fetch_lvgl.ps1, bmp2png.ps1
+                        platform_win32 (set_unthrottled), keymap_win32 + keymap.cfg, gamepad_win32 (winmm), main (--list, --game id,
+                        --bench, --hold do 12 wpisów; set_fixed_dt PRZED start_game = stałe ziarno)
+tests/                  scenarios.txt + expected/ (ślady i BMP: Mario nagrane 23.09 przed refaktorem; api_demo, labirynt, kosmos 23.09 wieczorem)
+tools/                  testy.ps1 (regresja + testy lekcji), setup_kid_pc.ps1 (PC ucznia), fetch_lvgl.ps1, bmp2png.ps1,
+                        md2pdf.py (Markdown -> PDF przez Edge headless; python Windows + pakiet markdown),
+                        gen_demo_assets.py (PNG gier pokazowych, czysty Python/zlib)
+docs/API.md             opis wszystkich funkcji console dla ucznia + plakat docs/images/api_plakat.png (gra 99_api_demo)
+docs/pdf/               PDF-y z md2pdf.py: API, DLA_UCZNIA, kazda lekcja (odswiezac po zmianie README)
 third_party/            (gitignore) LVGL z fetch_lvgl.ps1 na komputerze bez PlatformIO
 docs/HARDWARE.md        płytka, pinout, JP1, kontroler, kalibracja gałki, lista do sprawdzenia na sprzęcie, źródła
 docs/EMULATOR.md        budowanie, sterowanie, keymap, tryby CLI, testy skryptowane, źródła LVGL
@@ -102,7 +123,7 @@ docs/VSCODE.md          rozszerzenia, zadania (LEKCJA:/SIM:/PIO:), debug, na co 
 docs/NAUKA.md           nauka C++ (dla rodzica): założenia, program 13 lekcji, testy zadań, komputer ucznia, git
 docs/DLA_UCZNIA.md      instrukcja dla ucznia: start, klawisze, ściągawka API, czytanie błędów, zasady
 docs/lekcje/SZABLON_README.md  wzór README lekcji
-docs/DECYZJE.md         dziennik decyzji projektowych z uzasadnieniami (wpisy 15-19: warstwa lake, rejestracja, RNG, regresja, LVGL)
+docs/DECYZJE.md         dziennik decyzji projektowych z uzasadnieniami (wpisy 15-19: warstwa console, rejestracja, RNG, regresja, LVGL)
 .vscode/                settings (CMake Tools -> sim/), tasks (LEKCJA:/SIM:/PIO:; domyślne = LEKCJA: Uruchom), extensions;
                         c_cpp_properties i launch GENERUJE PlatformIO
 ```
@@ -135,7 +156,7 @@ docs/DECYZJE.md         dziennik decyzji projektowych z uzasadnieniami (wpisy 15
   katalogu; gdy 23.09 przemianowałem `managed_components` na czas testu ścieżek LVGL emulatora, a w tle szedł `pio run`,
   komponent `lvgl__lvgl` został uznany za uszkodzony i wyczyszczony (zostały `tests/` i `zephyr/`). Naprawa: `rm -rf
   managed_components/lvgl__lvgl` i `pio run` (pobiera wg `dependencies.lock`). Testy ścieżek LVGL emulatora robić przy
-  zatrzymanym PlatformIO albo przez `-DLAKE_LVGL_DIR=`.
+  zatrzymanym PlatformIO albo przez `-DCONSOLE_LVGL_DIR=`.
 - Skrypty PowerShell w `tools/` są pod Windows PowerShell 5.1 (bez `&&`, bez `?:`); składnię sprawdza
   `[System.Management.Automation.Language.Parser]::ParseFile`.
 
@@ -164,7 +185,7 @@ docs/DECYZJE.md         dziennik decyzji projektowych z uzasadnieniami (wpisy 15
   (wcześniej 400x240 skalowane x2, co dawało schodki na czcionkach; decyzja użytkownika: „nowocześnie, nie retro").
   Panel jest pionowy 480x800; `display::present()` obraca przez **PPA** (skala 1) do tylnego z dwóch buforów DPI,
   `esp_lcd_panel_draw_bitmap` z adresem własnego bufora sterownika przełącza bufory bez kopiowania, czekamy na
-  `on_frame_buf_complete`. `LAKE_DISPLAY_ROTATION` (90/270) steruje obrotem i mapowaniem dotyku jednocześnie.
+  `on_frame_buf_complete`. `CONSOLE_DISPLAY_ROTATION` (90/270) steruje obrotem i mapowaniem dotyku jednocześnie.
   `display::present()` nadal obsługuje dowolną całkowitą skalę, więc powrót do 400x240 to zmiana w `engine/screen.h`.
 - **Gry pixel-art** (Lake Mario, sprite'y 16x16) deklarują `engine::Game::canvas_scale() == 2`: `app.cpp` daje im pod-płótno
   `PIXEL_CANVAS_W x H` = 400x240 (192 kB, SRAM) i po `render()` powiększa x2 na płótno (`Canvas::blit_upscale2x`, CPU).
@@ -172,11 +193,18 @@ docs/DECYZJE.md         dziennik decyzji projektowych z uzasadnieniami (wpisy 15
   Menu, pauza, gry ucznia rysują natywnie w 800x480.
 - **Tekst w grach:** `gfx/text.h` (`draw_text_px`, `text_width_px`, `text_height_px`) miesza glify A8 z czcionek Montserrat
   LVGL (`lv_font_get_glyph_bitmap` do własnego `lv_draw_buf_t` przez `lv_draw_buf_init` — bez tego LVGL zatrzymuje się
-  na asercji). `lake::text(..., scale)` mapuje 1..4 -> 16/24/32/48 px. Czcionka 5x7 (`gfx/font.h`) zostaje dla HUD Mario
+  na asercji). `console::text(..., scale)` mapuje 1..4 -> 16/24/32/48 px. Czcionka 5x7 (`gfx/font.h`) zostaje dla HUD Mario
   i innych gier pixel-art. UI: `ui/theme.h` (paleta slate, czcionki, wymiary), menu z kartami 64 px, pauza z panelem.
-- `lake`: `sprite(s, x, y, flip, scale)` (16x16 rysuje się x3), kafelek mapy `TILE = 32` (15 wierszy = 480 px, 25 kolumn =
+- `console`: `sprite(s, x, y, flip, scale)` (16x16 rysuje się x3), kafelek mapy `TILE = 32` (15 wierszy = 480 px, 25 kolumn =
   ekran), `draw_tiles` powiększa sprite do kafelka. Lekcje przeliczone na 800x480 (rozmiary i prędkości x2), testy
   zaktualizowane (np. `square_x=241`).
+- **Pliki i PNG (decyzja użytkownika: dekodowanie w grze, nie konwersja przy budowaniu):** `platform::read_file(path)` —
+  emulator: `assets/<path>` (cwd, potem `<exe>/../../assets`, `<exe>/assets`); płytka: `/assets/<path>` z partycji `assets`
+  (SPIFFS, montowana w `platform::init`, `format_if_mount_failed`, `CONFIG_SPIFFS_OBJ_NAME_LEN=64`). Dekoder lodepng
+  w `src/gfx/lodepng/` (flagi `LODEPNG_NO_COMPILE_ENCODER/DISK/ANCILLARY_CHUNKS/CPP` w obu buildach), `gfx::load_png`
+  → RGB565, alfa < 128 = TRANSPARENT. Uczeń: `load_image("hero.png")` → `assets/<id gry>/hero.png` (id z `CONSOLE_ADD_GAME`
+  przez `SimpleGame`), nazwa z `/` = od `assets/`. Arena obrazków 256 kB. Wgrywanie na płytkę: `pio run -t uploadfs`
+  (`data_dir = assets`). Regresja: scenariusz `api_demo` (zrzut z PNG). **Na sprzęcie niesprawdzone.**
 - Kontroler: krzyżak + gałka analogowa + A/B/X/Y + START (układ jak w padzie Switch). Płytka: przełączniki
   wprost na GPIO, odkłócanie 8 ms w zadaniu 1 kHz (`board/keypad.cpp`); gałka na ADC2 z kalibracją środka przy
   starcie, strefa martwa 25 %, próg kierunku 0,5 (`board/joystick.cpp`). Jedno wejście: `platform::controller()`
@@ -189,26 +217,32 @@ docs/DECYZJE.md         dziennik decyzji projektowych z uzasadnieniami (wpisy 15
 - Menu i pauza mają nawigację klawiszami przez grupę LVGL (`ui::nav_group()`, `mark_focusable`).
 - `engine::Game`: init/update/render + `debug_line()` (linia stanu do `--trace`). Rejestr gier w `games/registry.cpp`:
   `GameEntry{id, name, description, create}`; `find_game()` rozumie numer, id, nazwę i ścieżkę katalogu lekcji (`NN_id`).
-- **Warstwa `lake` (nauka C++ syna, 11-13 lat, po Scratchu):** uczeń pisze `setup()`/`frame()` w `namespace {}` i kończy plik
-  `LAKE_GAME(id, "Nazwa", "opis")`; jedna linia `LEKCJA(id)` w `games/lekcje/lista.h` (X-makro w `registry.cpp`, jawnie —
+- **Warstwa `console` (nauka C++ syna, 11-13 lat, po Scratchu):** uczeń pisze `setup()`/`frame()` w `namespace {}` i kończy plik
+  `CONSOLE_ADD_GAME(id, "Nazwa", "opis")`; jedna linia `LEKCJA(id)` w `games/lekcje/lista.h` (X-makro w `registry.cpp`, jawnie —
   ESP-IDF linkuje komponent statycznie, samorejestracja by przepadła). API po angielsku (`rect`, `held(LEFT)`, `random`,
   `watch`, `load_sprite`, `load_map`/`move_box`), komentarze po polsku, matematyka całkowita przy 60 FPS. Adapter
-  `lake::SimpleGame` -> `engine::Game`, więc menu, pauza, `--trace` działają bez zmian. START/SELECT dla ucznia zawsze false.
+  `console::SimpleGame` -> `engine::Game`, więc menu, pauza, `--trace` działają bez zmian. START/SELECT dla ucznia zawsze false.
   Zmienne globalne ucznia żyją między wejściami z menu — wartości startowe nadaje `setup()`. `watch()` (max 8) rysuje panel
   w rogu i trafia do `debug_line` → testy zadań w `testy.txt` (`argumenty | regex`) czytają je z linii TRACE.
 - Losowość: `engine::rng()` (xorshift32); `app::start_game` seeduje stałą przy `s_fixed_dt > 0`, zegarem w oknie. Nie `rand()`.
 - Sprite'y i czcionka to ASCII-art zamieniany na bitmapy przy starcie (`gfx::make_sprite`), kolor-klucz magenta.
   Wspólna paleta 19 kolorów w `gfx/palette.h` (litery k w e E r R o y Y g G b B t s u U p P); sprite'y ucznia idą do areny 64 kB
   zerowanej przy `setup()` (`platform::alloc_pixels(fast=false)` = PSRAM).
+- **Pule obiektów (Kosmos, nauczka):** funkcja `spawn_*` szukająca wolnego slotu może zająć slot, który właśnie zwolniliśmy
+  w tej samej iteracji — wszystko, co jest potrzebne po `alive = false` (rozmiar, pozycja), skopiować do lokalnych
+  zmiennych **przed** spawnowaniem. Objaw był: „statek-widmo" (indeks -1 w tablicy sprite'ów) i niedeterministyczny ślad.
+- Labirynt 3D: mapa 32x24 w własnej tablicy (`TileMap::MAX_ROWS` = 16; podniesienie limitu = więcej RAM w każdej instancji).
+  Po zmianie mapy sprawdzić osiągalność BFS-em (skrypt jednorazowy; 4 zamknięte pokoje wyszły przy pierwszej wersji).
 - Struktury ESP-IDF inicjalizować przez `= {}` + przypisania pól (kolejność pól w makrach IDF bywa niezgodna z C++).
 - Duże bufory jawnie w PSRAM (`platform::alloc_pixels(..., fast=false)`), wyrównane do 128 B (PPA/cache).
   Płótno 192 kB próbuje najpierw SRAM. Bez wyjątków C++: nieudany `new` = abort.
 
 ## Weryfikacja gier w emulatorze (bez człowieka)
 
-`lake_sim.exe --game N --hold KLAWISZ OD DO ... --frames M --trace K` (do 8 wpisów `--hold`; także `--pause-at`,
-`--shot plik.bmp`, `--keymap`). W trybie `--frames` krok czasu jest stały (`app::set_fixed_dt(1/60)`), więc ten sam
-skrypt daje **identyczny** ślad. Na ekranie tytułowym najpierw wcisnąć B (`--hold B 3 4`), bo tytuł nie reaguje na START.
+`console_sim.exe --game N --hold KLAWISZ OD DO ... --frames M --trace K` (do 12 wpisów `--hold`; także `--pause-at`,
+`--shot plik.bmp`, `--keymap`, `--bench`). W trybie `--frames` krok czasu jest stały (`app::set_fixed_dt(1/60)`) i ustawiany
+**przed** startem gry (stałe ziarno RNG), więc ten sam skrypt daje **identyczny** ślad także w grach losujących.
+Sprawdzenie determinizmu: dwa uruchomienia `| grep TRACE | md5sum` muszą dać ten sam skrót. Na ekranie tytułowym najpierw wcisnąć B (`--hold B 3 4`), bo tytuł nie reaguje na START.
 
 Zweryfikowane 23.09.2026 (Lake Mario): podłoże stabilne co klatkę; chód 100 px/s; bieg 165 px/s; ściana x=0;
 skok: tap 28 px, 3 klatki 40 px, pełny 52 px, bufor 120 ms działa, poza oknem nie; uderzenie `?` (+200, moneta)
@@ -216,10 +250,11 @@ i rozbicie `B` (+50); przeskok nad przeciwnikiem; zadeptanie (+100, odbicie, prz
 przeciwnika -> respawn z lives-1; 4 śmierci -> GAME OVER -> nowa gra; monety na platformie; pauza konsoli
 i powrót (czas dalej liczy); START na tytule nie startuje gry. **Zmieniając fizykę, powtórz te scenariusze.**
 
-**Siatka regresji (od 23.09 po południu):** `tests/scenarios.txt` = 6 śladów (chód, skok tap/pełny, bieg, 600 klatek,
+**Siatka regresji (od 23.09 po południu):** `tests/scenarios.txt` = 6 śladów Mario (chód, skok tap/pełny, bieg, 600 klatek,
 pauza) + 3 zrzuty BMP (tytuł, gra, menu), wzorce w `tests/expected/` nagrane z binarki **sprzed** refaktoru silnika
-(math2d, palette, ParticlePool, TileMap). `tools/testy.ps1 mario` musi dać 9/9 po każdej zmianie w `src/engine`, `src/gfx`,
-`src/games/mario`. Zrzut `menu` zmienia się po dodaniu lekcji — wtedy `-Update`. Testy lekcji: kod startowy w `gra.cpp`
+(math2d, palette, ParticlePool, TileMap); od wieczora także `api_demo` (zrzut), `labirynt_route` (ślad 640 klatek: skręty,
+drzwi, moneta), `labirynt_door` (zrzut), `kosmos_play` (ślad + zrzut, losowość ze stałym ziarnem). `tools/testy.ps1 mario`
+musi dać 14/14 po każdej zmianie w `src/engine`, `src/gfx`, `src/games/*`. Zrzut `menu` zmienia się po dodaniu lekcji — wtedy `-Update`. Testy lekcji: kod startowy w `gra.cpp`
 **ma padać**, `rozwiazania/zadN.cpp.txt` skopiowane do `gra.cpp` **ma przechodzić** (sprawdzone dla 01-12).
 
 ## Lake Mario - fizyka i poziom
@@ -261,9 +296,10 @@ pauza) + 3 zrzuty BMP (tytuł, gra, menu), wzorce w `tests/expected/` nagrane z 
 2. Płytka: uruchomienie wg listy w `docs/HARDWARE.md` (koniec ramki DPI co klatkę, kierunek obrotu vs USB,
    mapowanie dotyku, rewizja krzemu, kalibracja gałki, odkłócanie klawiszy). Lekcje pojawią się w menu konsoli.
 3. Testy skryptowe brakujących mechanik Mario: meta `F` (LevelClear), przepaść, koniec czasu (dopisać do `tests/scenarios.txt`).
+   Labirynt 3D: scenariusz dojścia do portalu (stan WON).
 4. Zrzuty lekcji do README (`LEKCJA: Zrzut ekranu` + `tools/bmp2png.ps1`), ewentualnie `docs/images/lekcje/`.
 5. Dźwięk: ES8311 przez I2S (`espressif/esp_codec_dev`, adres 8-bitowy 0x30, I2S stereo slot mimo mono, jedna instancja IN_OUT);
-   dla ucznia `lake::beep()`.
+   dla ucznia `console::beep()`.
 6. Assety z partycji SPIFFS (narzędzie PNG -> RGB565) zamiast ASCII-artu.
 7. Ekran ustawień, wyniki w NVS (rekordy lekcji), ekran „o konsoli".
 8. IntelliSense dla plików `sim/` (dziś pokazuje błąd na `<windows.h>` — tylko kosmetyka).
@@ -280,4 +316,4 @@ pauza) + 3 zrzuty BMP (tytuł, gra, menu), wzorce w `tests/expected/` nagrane z 
 - Lekcje: kod startowy ma być grywalny od pierwszej sekundy i **celowo** pozbawiony jednej mechaniki, którą uczeń dopisuje;
   jedna nowa koncepcja na lekcję; README wg `docs/lekcje/SZABLON_README.md`; test w `testy.txt` czyta `watch()`;
   rozwiązanie w `rozwiazania/*.cpp.txt` zbudować raz (podmiana `gra.cpp`) i przywrócić kod startowy. Nazwy zmiennych ucznia
-  nie mogą kolidować z libc (`time`, `random`, `abs` — `abs`/`min`/`max` są w `lake`, unikać `time`).
+  nie mogą kolidować z libc (`time`, `random`, `abs` — `abs`/`min`/`max` są w `console`, unikać `time`).

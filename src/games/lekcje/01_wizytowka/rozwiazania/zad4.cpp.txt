@@ -1,6 +1,6 @@
 // ROZWIAZANIE zadan 1-4 z lekcji 01 (plik .txt, zeby sie nie kompilowal - najpierw sprobuj sam!).
 // Zeby sprawdzic: skopiuj tresc do gra.cpp.
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {
 
@@ -41,4 +41,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(wizytowka, "Wizytowka", "Lekcja 01: zmienne i figury")
+CONSOLE_ADD_GAME(wizytowka, "Wizytowka", "Lekcja 01: zmienne i figury")

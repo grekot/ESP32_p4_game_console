@@ -183,10 +183,10 @@ $env:Path = "C:\msys64\mingw64\bin;" + $env:Path
 if ($LASTEXITCODE -ne 0) { Fail "konfiguracja CMake nie powiodla sie (patrz wyzej)" }
 & cmake --build sim/build
 if ($LASTEXITCODE -ne 0) { Fail "kompilacja emulatora nie powiodla sie (patrz wyzej)" }
-$exe = Join-Path $Dir "sim\build\lake_sim.exe"
+$exe = Join-Path $Dir "sim\build\console_sim.exe"
 & $exe --list
 if ($LASTEXITCODE -ne 0) { Fail "emulator nie startuje" }
-Ok "lake_sim.exe dziala"
+Ok "console_sim.exe dziala"
 Pop-Location
 
 # ------------------------------------------------------------------ 6. skrot na pulpicie

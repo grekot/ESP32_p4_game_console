@@ -4,13 +4,14 @@
 
 #include "engine/game.h"
 
-namespace lake {
+namespace console {
 
 class SimpleGame final : public engine::Game {
 public:
     using Fn = void (*)();
 
-    SimpleGame(Fn setup, Fn frame) : setup_(setup), frame_(frame) {}
+    // id: identyfikator z CONSOLE_ADD_GAME - wyznacza katalog plikow gry (assets/<id>/).
+    SimpleGame(Fn setup, Fn frame, const char* id) : setup_(setup), frame_(frame), id_(id) {}
 
     void init(gfx::Canvas& canvas) override;
     void update(float dt, const input::PadState& pad) override;
@@ -18,8 +19,9 @@ public:
     void debug_line(char* buf, size_t n) const override;
 
 private:
-    Fn setup_;
-    Fn frame_;
+    Fn          setup_;
+    Fn          frame_;
+    const char* id_;
 };
 
-}  // namespace lake
+}  // namespace console

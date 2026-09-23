@@ -63,7 +63,7 @@ if (pipe.x + PIPE_W < 0) new_pipe();                              // za ekranem 
 Po zadaniu 2, bez klawiszy, ptak spada i uderza w ziemię przed 200. klatką:
 
 ```
-lake_sim.exe --game flappy --frames 200 --trace 40
+console_sim.exe --game flappy --frames 200 --trace 40
 ```
 
 W ostatniej linii `dead=true`.

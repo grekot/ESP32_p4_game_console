@@ -1,12 +1,12 @@
-#include "lake/simple_game.h"
+#include "console/simple_game.h"
 
-#include "lake/lake_internal.h"
+#include "console/console_internal.h"
 
-namespace lake {
+namespace console {
 
 void SimpleGame::init(gfx::Canvas& canvas)
 {
-    detail::reset(canvas);
+    detail::reset(canvas, id_);
     if (setup_) setup_();
 }
 
@@ -32,4 +32,4 @@ void SimpleGame::debug_line(char* buf, size_t n) const
     detail::format_debug_line(buf, n);
 }
 
-}  // namespace lake
+}  // namespace console

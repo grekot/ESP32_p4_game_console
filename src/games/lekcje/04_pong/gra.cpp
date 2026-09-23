@@ -1,6 +1,6 @@
 // LEKCJA 04 - PONG: funkcje (wlasne klocki). Zadania w README.md.
 // Gracz 1 (lewa paletka): UP / DOWN.  Gracz 2 (prawa): X (gora) / B (dol).  W emulatorze X = klawisz S, B = klawisz X.
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {   // pudelko na twoja gre - nie usuwaj
 
@@ -109,4 +109,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(pong, "Pong", "Lekcja 04: funkcje")
+CONSOLE_ADD_GAME(pong, "Pong", "Lekcja 04: funkcje")

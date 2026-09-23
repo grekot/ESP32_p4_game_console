@@ -16,7 +16,7 @@ struct Rng {
     float    unit();                 // 0..1
 };
 
-// Globalny generator konsoli - z niego korzystaja gry (lake::random).
+// Globalny generator konsoli - z niego korzystaja gry (console::random).
 Rng& rng();
 
 // Ustawia ziarno (0 jest zamieniane na stala, xorshift nie moze startowac od zera).

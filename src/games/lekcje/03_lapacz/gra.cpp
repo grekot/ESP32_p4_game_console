@@ -1,5 +1,5 @@
 // LEKCJA 03 - LAPACZ: sterowanie klawiszami, warunki zlozone (&&, ||), else, losowanie. Zadania w README.md.
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {   // pudelko na twoja gre - nie usuwaj
 
@@ -62,4 +62,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(lapacz, "Lapacz", "Lekcja 03: klawisze i warunki")
+CONSOLE_ADD_GAME(lapacz, "Lapacz", "Lekcja 03: klawisze i warunki")

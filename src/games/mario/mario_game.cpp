@@ -71,7 +71,7 @@ void MarioGame::init(gfx::Canvas&)
     mario::load_assets();
     map_.set_solid_fn(mario::tile_is_solid);
     new_game();
-    LAKE_LOGI(TAG, "poziom: %d kolumn, %d przeciwnikow", map_.cols(), enemy_count_);
+    CONSOLE_LOGI(TAG, "poziom: %d kolumn, %d przeciwnikow", map_.cols(), enemy_count_);
 }
 
 void MarioGame::new_game()
@@ -503,7 +503,7 @@ void MarioGame::draw_hud(gfx::Canvas& c) const
                           time_left_ < 30.f && ((int)(anim_t_ * 4.f) & 1) ? gfx::rgb565(255, 80, 80) : HUD_COLOR,
                           HUD_SHADOW);
 
-#ifdef LAKE_SHOW_FPS
+#ifdef CONSOLE_SHOW_FPS
     snprintf(buf, sizeof(buf), "%.0f FPS", (double)engine::current_fps());
     gfx::draw_text_shadow(c, VIEW_W - 6 - gfx::text_width(buf), 14, buf, gfx::rgb565(180, 255, 180), HUD_SHADOW);
 #endif

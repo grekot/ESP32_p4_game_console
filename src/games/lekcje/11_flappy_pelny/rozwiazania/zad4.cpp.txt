@@ -1,5 +1,5 @@
 // ROZWIAZANIE zadan 1-4 z lekcji 11 (plik .txt - najpierw sprobuj sam!).
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {
 
@@ -167,4 +167,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(flappy_pelny, "Flappy pelny", "Lekcja 11: stan gry, enum")
+CONSOLE_ADD_GAME(flappy_pelny, "Flappy pelny", "Lekcja 11: stan gry, enum")

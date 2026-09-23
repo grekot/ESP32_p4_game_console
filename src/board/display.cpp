@@ -48,7 +48,7 @@ void rotate_scale_cpu(const uint16_t* src, int src_w, int src_h, int scale, uint
         uint16_t* drow = dst + (size_t)py * PANEL_W;
         for (int px = 0; px < PANEL_W; ++px) {
             // (px, py) w panelu -> (lx, ly) w obrazie poziomym SCREEN_W x SCREEN_H
-#if LAKE_DISPLAY_ROTATION == 90
+#if CONSOLE_DISPLAY_ROTATION == 90
             int lx = SCREEN_W - 1 - py;
             int ly = px;
 #else
@@ -133,7 +133,7 @@ esp_err_t init()
     s_back = 1;
     gpio_set_level(pins::LCD_BACKLIGHT, 1);
     ESP_LOGI(TAG, "ST7701 %dx%d gotowy, 2 bufory ramki, rotacja %d, PPA %s",
-             PANEL_W, PANEL_H, LAKE_DISPLAY_ROTATION, s_ppa ? "on" : "off");
+             PANEL_W, PANEL_H, CONSOLE_DISPLAY_ROTATION, s_ppa ? "on" : "off");
     return ESP_OK;
 }
 
@@ -167,7 +167,7 @@ esp_err_t present(const uint16_t* src, int src_w, int src_h)
         op.out.block_offset_y = 0;
         op.out.srm_cm         = PPA_SRM_COLOR_MODE_RGB565;
 
-#if LAKE_DISPLAY_ROTATION == 90
+#if CONSOLE_DISPLAY_ROTATION == 90
         op.rotation_angle = PPA_SRM_ROTATION_ANGLE_90;
 #else
         op.rotation_angle = PPA_SRM_ROTATION_ANGLE_270;

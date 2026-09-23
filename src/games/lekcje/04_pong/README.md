@@ -71,7 +71,7 @@ i `frame()` – komputer musi je poznać, zanim ktoś ich użyje. `frame()` czyt
 Po zadaniu 5 prawa paletka rusza się sama. Uruchom bez klawiszy:
 
 ```
-lake_sim.exe --game pong --frames 301 --trace 60
+console_sim.exe --game pong --frames 301 --trace 60
 ```
 
 `right_y` ma być różne od 192 (startowe) i podążać za `ball_y`. Bez zadania 5 zostaje 192.

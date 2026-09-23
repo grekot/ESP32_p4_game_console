@@ -58,7 +58,7 @@ jedzenie), rysowanie w pętli po wszystkich segmentach. `if (i == 0)` – głowa
 Po zadaniu 2, bez klawiszy, wąż jedzie w prawo od kratki 10 i po 30 ruchach (240 klatek) uderza w ścianę:
 
 ```
-lake_sim.exe --game waz --frames 301 --trace 60
+console_sim.exe --game waz --frames 301 --trace 60
 ```
 
 W ostatniej linii `dead=true`, a `head_x` zatrzymane na 40.

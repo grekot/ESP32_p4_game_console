@@ -1,5 +1,5 @@
 // ROZWIAZANIE zadan 2-4 z lekcji 12 (plik .txt - najpierw sprobuj sam!).
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {
 
@@ -119,4 +119,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(mini_mario, "Mini Mario", "Lekcja 12: mapa kafelkow")
+CONSOLE_ADD_GAME(mini_mario, "Mini Mario", "Lekcja 12: mapa kafelkow")

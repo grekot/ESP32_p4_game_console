@@ -59,7 +59,7 @@ Dlaczego `screen_width() - RADIUS`, a nie `screen_width()`? Bo `ball_x` to **śr
 Po zadaniu 2 uruchom na 5 sekund i patrz na `y`:
 
 ```
-lake_sim.exe --game pilka --frames 301 --trace 60
+console_sim.exe --game pilka --frames 301 --trace 60
 ```
 
 W **każdej** linii `y` musi być między 0 a 479. Bez zadania 2 po sekundzie `y` przekracza 480 i dalej rośnie.

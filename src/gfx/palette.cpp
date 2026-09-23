@@ -21,7 +21,7 @@ uint16_t default_palette_lookup(char key)
     for (int i = 0; i < DEFAULT_PALETTE_N; ++i) {
         if (DEFAULT_PALETTE[i].key == key) return DEFAULT_PALETTE[i].color;
     }
-    LAKE_LOGW("palette", "brak koloru '%c' w palecie domyslnej", key);
+    CONSOLE_LOGW("palette", "brak koloru '%c' w palecie domyslnej", key);
     return TRANSPARENT;
 }
 

@@ -158,15 +158,22 @@ a próg zamiany wychylenia na kierunek cyfrowy to 50 procent.
    `esp_lcd_panel_draw_bitmap` z adresem tego bufora przełącza bufory bez kopiowania. Czekamy na
    zdarzenie `on_frame_buf_complete` (koniec wysyłania ramki) - stąd naturalne 60 FPS.
 
-Orientacja: panel jest pionowy, gra działa poziomo. `LAKE_DISPLAY_ROTATION` (90/270) w `platformio.ini`
+Orientacja: panel jest pionowy, gra działa poziomo. `CONSOLE_DISPLAY_ROTATION` (90/270) w `platformio.ini`
 steruje jednocześnie obrotem obrazu i mapowaniem współrzędnych dotyku.
 
 ## Do zweryfikowania na sprzęcie (płytka jeszcze nie dotarła)
 
 - Czy zdarzenie końca ramki odpala się co klatkę (licznik `display::vsync_timeouts()` powinien stać na 0).
-- Kierunek obrotu PPA vs. położenie złączy USB (jeśli obraz do góry nogami: `LAKE_DISPLAY_ROTATION=270`).
+- Kierunek obrotu PPA vs. położenie złączy USB (jeśli obraz do góry nogami: `CONSOLE_DISPLAY_ROTATION=270`).
 - Czy dotyk pokrywa się z obrazem (jeśli lustrzany: sprawdź `flags.mirror_x/mirror_y` w `touch.cpp`).
 - Rewizja krzemu: `CONFIG_ESP32P4_SELECTS_REV_LESS_V3=y` jest kluczowe; zły wybór = crash w bootloaderze.
+- Partycja `assets` (SPIFFS, 0xBF0000): pierwsze montowanie formatuje pustą partycję (log `assets: 0 kB uzyte z ...`,
+  może trwać kilka sekund); `pio run -t uploadfs` musi wgrać katalog `assets/` (sprawdzić, że pioarduino wybiera
+  partycję po podtypie `spiffs`, nie po nazwie); po wgraniu gra „Plakat API" ma pokazać postać z `hero32.png`.
+  Zmierzyć czas `load_image` dla PNG 64×64 i 128×128 (dekodowanie lodepng na P4).
+- Czas klatki gier pokazowych (`engine::stats`, log FPS): Labirynt 3D (raycasting 400 kolumn, szacunek 2-4 ms) i Kosmos
+  (800x480, ~30 sprite'ów PNG). Jeśli labirynt nie trzyma 60 FPS: zmniejszyć liczbę promieni (co druga kolumna x2) albo
+  tekstury 64→32 px.
 
 ## Wi-Fi (nieużywane w grze)
 

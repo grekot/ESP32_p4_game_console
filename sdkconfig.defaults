@@ -76,3 +76,6 @@ CONFIG_LV_BUILD_DEMOS=n
 # --- Logowanie ---
 CONFIG_LOG_DEFAULT_LEVEL_INFO=y
 CONFIG_LOG_COLORS=n
+
+# --- Partycja assets (SPIFFS): dluzsze nazwy plikow, np. "bohater/hero.png" ---
+CONFIG_SPIFFS_OBJ_NAME_LEN=64

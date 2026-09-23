@@ -1,5 +1,5 @@
 // LEKCJA 02 - PILKA: instrukcja warunkowa if. Zadania w README.md.
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {   // pudelko na twoja gre - nie usuwaj
 
@@ -48,4 +48,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(pilka, "Pilka", "Lekcja 02: instrukcja if")
+CONSOLE_ADD_GAME(pilka, "Pilka", "Lekcja 02: instrukcja if")

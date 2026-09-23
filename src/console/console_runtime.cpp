@@ -1,5 +1,5 @@
-#include "lake/lake_api.h"
-#include "lake/lake_internal.h"
+#include "console/console_api.h"
+#include "console/console_internal.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -7,16 +7,17 @@
 
 #include "core/log.h"
 #include "engine/rng.h"
+#include "gfx/png.h"
 #include "gfx/text.h"
 #include "platform/platform.h"
 
-namespace lake {
+namespace console {
 
 namespace {
 
 const char* TAG = "lekcja";
 
-constexpr size_t ARENA_PIXELS = 32768;   // 64 kB - ok. 128 sprite'ow 16x16
+constexpr size_t ARENA_PIXELS = 131072;   // 256 kB (PSRAM): ok. 500 sprite'ow 16x16 albo kilkanascie PNG 64x64
 
 // Litery ASCII-artu -> kolory: wspolna paleta konsoli (gfx/palette.h), ta sama co w Lake Mario.
 uint16_t palette_lookup(char ch)
@@ -27,7 +28,7 @@ uint16_t palette_lookup(char ch)
 inline gfx::Canvas* canvas()
 {
     gfx::Canvas* c = detail::rt().canvas;
-    if (!c) LAKE_LOGW(TAG, "rysowanie poza frame() nie ma efektu (brak plotna)");
+    if (!c) CONSOLE_LOGW(TAG, "rysowanie poza frame() nie ma efektu (brak plotna)");
     return c;
 }
 
@@ -138,11 +139,11 @@ Sprite build_sprite(const char* const* rows, int h)
     if (!r.arena) {
         r.arena     = platform::alloc_pixels(ARENA_PIXELS, /*fast=*/false);
         r.arena_cap = r.arena ? ARENA_PIXELS : 0;
-        if (!r.arena) LAKE_LOGE(TAG, "brak pamieci na sprite'y");
+        if (!r.arena) CONSOLE_LOGE(TAG, "brak pamieci na sprite'y");
     }
     const size_t need = (size_t)w * h;
     if (r.arena_used + need > r.arena_cap) {
-        LAKE_LOGE(TAG, "za duzo sprite'ow (%dx%d nie miesci sie w %u px) - load_sprite wolaj w setup(), nie w frame()",
+        CONSOLE_LOGE(TAG, "za duzo sprite'ow (%dx%d nie miesci sie w %u px) - load_sprite wolaj w setup(), nie w frame()",
                   w, h, (unsigned)r.arena_cap);
         return s;
     }
@@ -164,6 +165,35 @@ Sprite build_sprite(const char* const* rows, int h)
 }
 
 }  // namespace detail
+
+Sprite load_image(const char* filename)
+{
+    Sprite s;
+    if (!filename || !*filename) return s;
+    detail::Runtime& r = detail::rt();
+
+    // Nazwa z '/' = sciezka od assets/, bez '/' = plik w katalogu gry assets/<id>/
+    char path[96];
+    if (strchr(filename, '/')) {
+        snprintf(path, sizeof(path), "%s", filename);
+    } else {
+        snprintf(path, sizeof(path), "%s/%s", r.game_id, filename);
+    }
+
+    if (!r.arena) {
+        r.arena     = platform::alloc_pixels(ARENA_PIXELS, /*fast=*/false);
+        r.arena_cap = r.arena ? ARENA_PIXELS : 0;
+        if (!r.arena) CONSOLE_LOGE(TAG, "brak pamieci na obrazki");
+    }
+    // Dekodujemy prosto do wolnej czesci areny; gfx::load_png sprawdza, czy sie miesci.
+    s = gfx::load_png(path, r.arena + r.arena_used, r.arena_cap - r.arena_used);
+    if (s.px) {
+        r.arena_used += (size_t)s.w * s.h;
+    } else {
+        CONSOLE_LOGW(TAG, "load_image(\"%s\"): nie udalo sie wczytac assets/%s", filename, path);
+    }
+    return s;
+}
 
 void sprite(const Sprite& s, int x, int y, bool flip_x, int scale)
 {
@@ -231,7 +261,7 @@ void load_map_rows(const char* const* rows, int h, const char* solid_chars)
         if (len > w) w = len;
     }
     if (h > engine::TileMap::MAX_ROWS || w > engine::TileMap::MAX_COLS) {
-        LAKE_LOGW(TAG, "mapa %dx%d przycieta do %dx%d kafelkow", w, h, engine::TileMap::MAX_COLS, engine::TileMap::MAX_ROWS);
+        CONSOLE_LOGW(TAG, "mapa %dx%d przycieta do %dx%d kafelkow", w, h, engine::TileMap::MAX_COLS, engine::TileMap::MAX_ROWS);
     }
     r.map.reset(w, h, TILE, ' ');
     r.map.set_solid_fn(solid_by_chars);
@@ -328,10 +358,10 @@ void watch(const char* name, double value)      { watch(name, (float)value); }
 void watch(const char* name, bool value)        { add_watch(name, value ? "true" : "false"); }
 void watch(const char* name, const char* value) { add_watch(name, value); }
 
-void print(const char* s)                          { LAKE_LOGI(TAG, "%s", s ? s : ""); }
-void print(const char* label, int value)           { LAKE_LOGI(TAG, "%s %d", label ? label : "", value); }
-void print(const char* label, float value)         { LAKE_LOGI(TAG, "%s %.2f", label ? label : "", (double)value); }
-void print(const char* label, const char* value)   { LAKE_LOGI(TAG, "%s %s", label ? label : "", value ? value : ""); }
+void print(const char* s)                          { CONSOLE_LOGI(TAG, "%s", s ? s : ""); }
+void print(const char* label, int value)           { CONSOLE_LOGI(TAG, "%s %d", label ? label : "", value); }
+void print(const char* label, float value)         { CONSOLE_LOGI(TAG, "%s %.2f", label ? label : "", (double)value); }
+void print(const char* label, const char* value)   { CONSOLE_LOGI(TAG, "%s %s", label ? label : "", value ? value : ""); }
 
 // ------------------------------------------------------------------ srodowisko (dla SimpleGame)
 
@@ -343,9 +373,10 @@ Runtime& rt()
     return r;
 }
 
-void reset(gfx::Canvas& c)
+void reset(gfx::Canvas& c, const char* game_id)
 {
     Runtime& r     = rt();
+    snprintf(r.game_id, sizeof(r.game_id), "%s", game_id ? game_id : "");
     r.canvas       = &c;
     r.pad          = input::PadState{};
     r.prev         = input::PadState{};
@@ -417,4 +448,4 @@ void format_debug_line(char* buf, size_t n)
 
 }  // namespace detail
 
-}  // namespace lake
+}  // namespace console

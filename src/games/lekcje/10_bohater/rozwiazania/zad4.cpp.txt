@@ -1,5 +1,5 @@
 // ROZWIAZANIE zadan 1-4 z lekcji 10 (plik .txt - najpierw sprobuj sam!).
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {
 
@@ -153,4 +153,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(bohater, "Bohater", "Lekcja 10: wlasna grafika")
+CONSOLE_ADD_GAME(bohater, "Bohater", "Lekcja 10: wlasna grafika")

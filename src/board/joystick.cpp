@@ -88,12 +88,12 @@ esp_err_t init()
     s_center_y = (abs(cy - ADC_MID) <= CALIB_MAX_OFFSET) ? cy : ADC_MID;
 
     if (s_center_x != cx || s_center_y != cy) {
-        LAKE_LOGW(TAG, "srodek poza zakresem (X=%d Y=%d) - galka trzymana przy starcie albo "
+        CONSOLE_LOGW(TAG, "srodek poza zakresem (X=%d Y=%d) - galka trzymana przy starcie albo "
                        "niepodlaczona; biore polowe zakresu", cx, cy);
     }
 
     s_available = true;
-    LAKE_LOGI(TAG, "galka na ADC2: srodek X=%d Y=%d, strefa martwa %d%%",
+    CONSOLE_LOGI(TAG, "galka na ADC2: srodek X=%d Y=%d, strefa martwa %d%%",
               s_center_x, s_center_y, (int)(DEAD_ZONE * 100));
     return ESP_OK;
 }

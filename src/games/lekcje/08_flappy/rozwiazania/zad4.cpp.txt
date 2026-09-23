@@ -1,5 +1,5 @@
 // ROZWIAZANIE zadan 1-4 z lekcji 08 (plik .txt - najpierw sprobuj sam!).
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {
 
@@ -120,4 +120,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(flappy, "Flappy", "Lekcja 08: struktury")
+CONSOLE_ADD_GAME(flappy, "Flappy", "Lekcja 08: struktury")

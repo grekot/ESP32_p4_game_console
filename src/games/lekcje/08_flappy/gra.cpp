@@ -1,5 +1,5 @@
 // LEKCJA 08 - FLAPPY: struktury (struct). Zadania w README.md. Skrzydla: A (klawisz Z w emulatorze).
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {   // pudelko na twoja gre - nie usuwaj
 
@@ -81,4 +81,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(flappy, "Flappy", "Lekcja 08: struktury")
+CONSOLE_ADD_GAME(flappy, "Flappy", "Lekcja 08: struktury")

@@ -1,4 +1,4 @@
-# Dla ucznia: jak pisać gry na konsolę Lake
+# Dla ucznia: jak pisać gry na konsolę
 
 Masz przed sobą małą konsolę do gier i jej **emulator** – program, który udaje konsolę na komputerze.
 Gry piszesz w języku **C++**, w tym samym, w którym pisze się prawdziwe gry na Nintendo czy PlayStation.
@@ -33,7 +33,7 @@ Lewy przycisk myszy = palec na ekranie dotykowym. Prostokąty na dole ekranu to 
 ## Jak wygląda gra
 
 ```cpp
-#include "lake/lake.h"      // funkcje do rysowania i sterowania
+#include "console/console.h"      // funkcje do rysowania i sterowania
 
 namespace {                 // "pudelko" na twoja gre - nie ruszaj
 
@@ -55,12 +55,15 @@ void frame()                // 60 razy na sekunde
 
 }  // namespace             // koniec pudelka - nie ruszaj
 
-LAKE_GAME(moja, "Moja gra", "Opis w menu")   // rejestracja
+CONSOLE_ADD_GAME(moja, "Moja gra", "Opis w menu")   // rejestracja
 ```
 
 Ekran ma **800 × 480** punktów (pikseli). `(0, 0)` to lewy górny róg. `x` rośnie w prawo, `y` rośnie **w dół**.
 
 ## Ściągawka: co możesz wywołać
+
+Pełny opis każdej funkcji z przykładami i plakatem: [API.md](API.md) (także jako `docs/pdf/API.pdf`).
+W menu konsoli jest też gra **Plakat API** – pokazuje wszystkie figury na jednym ekranie z podpisami.
 
 | co | jak |
 |---|---|
@@ -80,6 +83,7 @@ Ekran ma **800 × 480** punktów (pikseli). `(0, 0)` to lewy górny róg. `x` ro
 | szerokość / wysokość ekranu | `screen_width()` / `screen_height()` |
 | numer klatki, sekundy | `frame_count()`, `seconds()` |
 | obrazek z liter | `Sprite s = load_sprite(rysunek);` potem `sprite(s, x, y, false, 3)` – 3 = powiększenie (lekcja 10) |
+| obrazek z pliku PNG | `Sprite s = load_image("hero.png");` – plik w `assets/<id gry>/`, przezroczyste tło działa (lekcja 10) |
 | mapa z liter | `load_map(MAPA, "#=B")`, `map_tile(col, row)`, `map_set(...)`, `draw_tiles('#', KOLOR, cam_x)` (lekcja 12) |
 | ruch z kolizjami z mapą | `MoveResult r = move_box(x, y, w, h, vx, vy);` → `r.on_ground` (lekcja 12) |
 | zacznij grę od nowa | `restart()` |
@@ -142,11 +146,11 @@ Wysyłaniem do internetu (push) zajmuje się rodzic.
 | objaw | co zrobić |
 |---|---|
 | F6 nic nie robi | kliknij najpierw w plik `gra.cpp` – zadanie uruchamia grę **z otwartego pliku** |
-| `nie ma gry "..."` | nazwa w `LAKE_GAME(...)` w `gra.cpp` i w `lista.h` muszą być takie same |
+| `nie ma gry "..."` | nazwa w `CONSOLE_ADD_GAME(...)` w `gra.cpp` i w `lista.h` muszą być takie same |
 | gra się nie zmieniła po edycji | plik niezapisany? (biała kropka na karcie); VS Code zapisuje sam po chwili |
 | błąd `collect2` / `Permission denied` | okno emulatora jest otwarte – zamknij Esc |
 | czerwone podkreślenia w edytorze, a kompiluje się | to tylko podpowiedzi; jeśli VS Code zapyta o „IntelliSense provider", wybierz **Yes** |
-| Windows „chronił komputer" przy starcie `lake_sim.exe` | kliknij „Więcej informacji" → „Uruchom mimo to"; to twój własny, świeżo skompilowany program |
+| Windows „chronił komputer" przy starcie `console_sim.exe` | kliknij „Więcej informacji" → „Uruchom mimo to"; to twój własny, świeżo skompilowany program |
 
 ## Lekcje
 

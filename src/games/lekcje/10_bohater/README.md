@@ -56,10 +56,32 @@ dolną krawędź obrazka na trawie.
 Po zadaniu 3 bohater idący w prawo przez 5 sekund przechodzi przez monetę i ją zbiera:
 
 ```
-lake_sim.exe --game bohater --hold RIGHT 0 300 --frames 301 --trace 60
+console_sim.exe --game bohater --hold RIGHT 0 300 --frames 301 --trace 60
 ```
 
 W ostatniej linii `coins` większe od 0.
+
+## Obrazek z pliku PNG
+
+Literki są dobre na start, ale prawdziwą grafikę rysuje się w programie graficznym (Paint, Piskel w przeglądarce, Aseprite).
+Zapisz rysunek jako PNG z przezroczystym tłem i wrzuć do katalogu `assets/bohater/` (nazwa katalogu = pierwsze słowo
+z `CONSOLE_ADD_GAME` na końcu `gra.cpp`). Są tam już przykłady: `hero.png` (16×16) i `coin.png` (8×8).
+
+```cpp
+Sprite hero_png;
+
+void setup()
+{
+    hero_png = load_image("hero.png");     // assets/bohater/hero.png
+}
+// w frame(): sprite(hero_png, hero_x, GROUND_Y - hero_png.h * SCALE, facing_left, SCALE);
+```
+
+6. ★★ Narysuj własnego bohatera w Piskelu (piskelapp.com, rozmiar 32×32, eksport PNG) i zamień `hero` na `load_image("moj.png")`.
+   Pamiętaj: rozmiar na ekranie to `s.w * SCALE`, więc przy 32×32 wystarczy `SCALE = 2`. Przezroczystość z PNG działa,
+   ale bez półprzezroczystych krawędzi – w Piskelu nie używaj wygładzania.
+
+Na komputerze emulator czyta pliki prosto z `assets/`. Na prawdziwej konsoli obrazki trzeba wgrać osobno (`pio run -t uploadfs`) – to zadanie dla rodzica.
 
 ## Dla ciekawych
 
@@ -73,5 +95,6 @@ Ta sama paleta, ten sam sposób.
 | rysunek z liter | `const char* const NAZWA[wysokosc] = { "...", ... };` |
 | zamień rysunek na obrazek | `Sprite s = load_sprite(NAZWA);` (w `setup`) |
 | narysuj obrazek | `sprite(s, x, y, odbicie, powiekszenie)` |
+| obrazek z pliku PNG | `Sprite s = load_image("plik.png");` (plik w `assets/<id gry>/`) |
 | rozmiar obrazka | `s.w`, `s.h` |
 | co któraś klatka | `(frame_count() / N) % 2` |

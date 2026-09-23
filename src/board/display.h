@@ -9,11 +9,11 @@
 #include <stdint.h>
 #include "esp_err.h"
 
-#ifndef LAKE_DISPLAY_ROTATION
-#define LAKE_DISPLAY_ROTATION 90   // 90 albo 270
+#ifndef CONSOLE_DISPLAY_ROTATION
+#define CONSOLE_DISPLAY_ROTATION 90   // 90 albo 270
 #endif
-#if LAKE_DISPLAY_ROTATION != 90 && LAKE_DISPLAY_ROTATION != 270
-#error "LAKE_DISPLAY_ROTATION musi byc 90 albo 270"
+#if CONSOLE_DISPLAY_ROTATION != 90 && CONSOLE_DISPLAY_ROTATION != 270
+#error "CONSOLE_DISPLAY_ROTATION musi byc 90 albo 270"
 #endif
 
 namespace board::display {

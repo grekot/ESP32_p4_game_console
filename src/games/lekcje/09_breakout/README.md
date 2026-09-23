@@ -51,7 +51,7 @@ i piłką (struktura `Ball`), odbija ją, a na końcu **jedną pętlą** rysuje 
 Po zadaniu 2 piłka startuje z paletki w górę i po chwili zbija pierwszą cegiełkę – bez dotykania klawiszy:
 
 ```
-lake_sim.exe --game breakout --frames 301 --trace 60
+console_sim.exe --game breakout --frames 301 --trace 60
 ```
 
 W ostatniej linii `score` większe od 0.

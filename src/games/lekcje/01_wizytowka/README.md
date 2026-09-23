@@ -68,7 +68,7 @@ Cała funkcja `frame()` wykonuje się 60 razy na sekundę. Za każdym razem rysu
 Po zadaniu 4 kwadrat startuje w `x = 120` i co klatkę przesuwa się o 1. Uruchom grę na 121 klatek i wypisuj wartości co 30:
 
 ```
-lake_sim.exe --game wizytowka --frames 121 --trace 30
+console_sim.exe --game wizytowka --frames 121 --trace 30
 ```
 
 Ostatnia linia to klatka numer **120**, ale komputer liczy klatki **od zera** (0, 1, 2, ... 120), więc `frame()` wykonało się 121 razy

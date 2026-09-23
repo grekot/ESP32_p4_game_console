@@ -7,7 +7,7 @@ Poznać, jak wygląda plik gry i co w nim wolno zmieniać. To także katalog, kt
 ## Jak wygląda plik gry
 
 ```cpp
-#include "lake/lake.h"     // 1. bierzemy funkcje do rysowania i sterowania
+#include "console/console.h"     // 1. bierzemy funkcje do rysowania i sterowania
 
 namespace {                // 2. "pudelko" na twoja gre - nie ruszaj tej linii
 
@@ -25,10 +25,10 @@ void frame()               // 4. wykonuje sie 60 razy na sekunde - rysuje jedna 
 
 }  // namespace            // 5. koniec pudelka - nie ruszaj
 
-LAKE_GAME(szablon, "Szablon", "Pusta gra do skopiowania")   // 6. rejestracja gry w konsoli
+CONSOLE_ADD_GAME(szablon, "Szablon", "Pusta gra do skopiowania")   // 6. rejestracja gry w konsoli
 ```
 
-Zmieniasz **tylko** to, co jest między `namespace {` a `}  // namespace`, oraz ostatnią linię `LAKE_GAME`.
+Zmieniasz **tylko** to, co jest między `namespace {` a `}  // namespace`, oraz ostatnią linię `CONSOLE_ADD_GAME`.
 
 ## Uruchom
 
@@ -39,11 +39,11 @@ Zmieniasz **tylko** to, co jest między `namespace {` a `}  // namespace`, oraz 
 ## Jak zrobić własną grę
 
 1. Skopiuj katalog `00_szablon` i nazwij kopię, np. `05_moja_gra` (numer, podkreślnik, nazwa bez polskich znaków i spacji).
-2. W ostatniej linii `gra.cpp` zmień `LAKE_GAME(szablon, "Szablon", ...)` na `LAKE_GAME(moja_gra, "Moja gra", "Opis")`.
+2. W ostatniej linii `gra.cpp` zmień `CONSOLE_ADD_GAME(szablon, "Szablon", ...)` na `CONSOLE_ADD_GAME(moja_gra, "Moja gra", "Opis")`.
 3. Otwórz `src/games/lekcje/lista.h` i dopisz linię `LEKCJA(moja_gra)`.
 4. Otwórz swoje `gra.cpp` i wciśnij Ctrl+Shift+B.
 
-Jeśli emulator napisze `nie ma gry "..."`, to znaczy, że nazwa w `LAKE_GAME` i w `lista.h` się nie zgadzają.
+Jeśli emulator napisze `nie ma gry "..."`, to znaczy, że nazwa w `CONSOLE_ADD_GAME` i w `lista.h` się nie zgadzają.
 
 ## Słowniczek
 

@@ -56,7 +56,7 @@
 // Domyslna obsluga asercji LVGL to while(1) - emulator "wisi" bez slowa. abort() daje kod wyjscia i stos w gdb.
 #define LV_ASSERT_HANDLER_INCLUDE <stdlib.h>
 #define LV_ASSERT_HANDLER abort();
-#if defined(LAKE_HOST_BUILD)
+#if defined(CONSOLE_HOST_BUILD)
 #define LV_USE_ASSERT_NULL      1
 #define LV_USE_ASSERT_MALLOC    1
 #define LV_USE_ASSERT_OBJ       1

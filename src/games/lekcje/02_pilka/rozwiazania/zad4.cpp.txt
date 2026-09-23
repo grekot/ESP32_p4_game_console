@@ -1,5 +1,5 @@
 // ROZWIAZANIE zadan 1-4 z lekcji 02 (plik .txt - najpierw sprobuj sam!).
-#include "lake/lake.h"
+#include "console/console.h"
 
 namespace {
 
@@ -63,4 +63,4 @@ void frame()
 
 }  // namespace
 
-LAKE_GAME(pilka, "Pilka", "Lekcja 02: instrukcja if")
+CONSOLE_ADD_GAME(pilka, "Pilka", "Lekcja 02: instrukcja if")

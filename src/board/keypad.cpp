@@ -87,12 +87,12 @@ esp_err_t init()
 
     // Priorytet wyzszy niz petla gry (5), zeby odpytywanie bylo rownomierne.
     if (xTaskCreatePinnedToCore(scan_task, "keypad", 2560, nullptr, 6, nullptr, 0) != pdPASS) {
-        LAKE_LOGE(TAG, "nie udalo sie utworzyc zadania odpytujacego");
+        CONSOLE_LOGE(TAG, "nie udalo sie utworzyc zadania odpytujacego");
         return ESP_ERR_NO_MEM;
     }
 
     s_available = true;
-    LAKE_LOGI(TAG, "klawiatura: %d z %d klawiszy podlaczonych, odklocanie 8 ms",
+    CONSOLE_LOGI(TAG, "klawiatura: %d z %d klawiszy podlaczonych, odklocanie 8 ms",
               wired, input::KEY_COUNT);
     return ESP_OK;
 }

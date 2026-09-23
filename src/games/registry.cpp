@@ -2,7 +2,7 @@
 // dlatego jest w przestrzeni engine, choc lezy w games/.
 //
 // Lekcje (src/games/lekcje/) trafiaja tu automatycznie z listy lista.h: kazdy wpis LEKCJA(id)
-// odpowiada makru LAKE_GAME(id, ...) na koncu pliku lekcji. Jawna lista zamiast "samorejestracji"
+// odpowiada makru CONSOLE_ADD_GAME(id, ...) na koncu pliku lekcji. Jawna lista zamiast "samorejestracji"
 // przez statyczne inicjalizatory, bo ESP-IDF linkuje komponent jako biblioteke statyczna
 // i plik, do ktorego nikt sie nie odwoluje, wypadlby z programu razem ze swoja gra.
 #include "engine/game_registry.h"
@@ -10,10 +10,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "games/kosmos/kosmos_game.h"
+#include "games/labirynt3d/labirynt_game.h"
 #include "games/mario/mario_game.h"
 
-// Deklaracje wpisow lekcji (definicje sa w plikach lekcji, przez LAKE_GAME).
-#define LEKCJA(id) extern const engine::GameEntry lake_entry_##id;
+// Deklaracje wpisow lekcji (definicje sa w plikach lekcji, przez CONSOLE_ADD_GAME).
+#define LEKCJA(id) extern const engine::GameEntry console_entry_##id;
 #include "games/lekcje/lista.h"
 #undef LEKCJA
 
@@ -24,6 +26,18 @@ namespace {
 Game* create_mario()
 {
     static mario::MarioGame game;
+    return &game;
+}
+
+Game* create_labirynt()
+{
+    static labirynt::LabiryntGame game;
+    return &game;
+}
+
+Game* create_kosmos()
+{
+    static kosmos::KosmosGame game;
     return &game;
 }
 
@@ -43,7 +57,9 @@ bool equal_ignore_case(const char* a, const char* b)
 
 const GameEntry GAMES[] = {
     { "mario", "Lake Mario", "Platformowka 2D", create_mario },
-#define LEKCJA(id) lake_entry_##id,
+    { "labirynt3d", "Labirynt 3D", "Raycasting: tekstury PNG, mini-mapa", create_labirynt },
+    { "kosmos", "Kosmos", "Strzelanka 2D: PNG, paralaksa, wybuchy", create_kosmos },
+#define LEKCJA(id) console_entry_##id,
 #include "games/lekcje/lista.h"
 #undef LEKCJA
 };
