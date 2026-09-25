@@ -15,7 +15,7 @@ $build = Join-Path $root "sim\build-release"
 
 $env:PATH = "C:\msys64\mingw64\bin;C:\Prg\ninja-win;C:\Program Files\CMake\bin;" + $env:PATH
 
-& cmake -S (Join-Path $root "sim") -B $build -G Ninja -DCMAKE_BUILD_TYPE=Release `
+& cmake -S (Join-Path $root "sim") -B $build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCONSOLE_GUI=ON `
     -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ "-DCONSOLE_VERSION=$Version"
 if ($LASTEXITCODE -ne 0) { throw "cmake: konfiguracja nie powiodla sie" }
 & cmake --build $build

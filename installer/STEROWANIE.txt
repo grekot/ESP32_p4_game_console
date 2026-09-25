@@ -23,5 +23,10 @@ a w pauzie można wrócić do menu.
 Klawisze można zmienić w pliku keymap.cfg w katalogu konsoli:
   %LOCALAPPDATA%\Programs\KotarbaConsole\keymap.cfg
 
+Brak obrazków albo okna "odmowa dostępu"? To antywirus blokuje nieznany program.
+Avast: Menu > Ustawienia > Ogólne > Wyjątki > Dodaj wyjątek i wpisz:
+  %LOCALAPPDATA%\Programs\KotarbaConsole\*
+a potem uruchom instalator konsoli jeszcze raz. Szczegóły błędów: log.txt w katalogu konsoli.
+
 Aktualizacje: przy starcie konsola sprawdza, czy na GitHubie jest nowsza wersja,
 i pyta, czy ją zainstalować. Bez internetu uruchamia się normalnie.

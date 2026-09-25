@@ -13,6 +13,7 @@
 //   console_sim.exe --game 0 --pause-at 20 --frames 40 --shot pauza.bmp
 //                                             - wejdz w gre, w 20. klatce wcisnij START (pauza)
 //   console_sim.exe --keymap moje.cfg            - wlasne przypisanie klawiszy PC do klawiszy konsoli
+//   console_sim.exe --log log.txt                - logi do pliku (tak startuje wersja instalowana)
 //   console_sim.exe --game 0 --frames 120 --trace 10
 //                                             - co 10 klatek wypisz linie stanu gry (pozycja, predkosc,
 //                                               podloze, wynik...) - do weryfikacji mechanik liczbami
@@ -48,6 +49,25 @@ static void print_games(FILE* out)
 
 int main(int argc, char** argv)
 {
+    // --log plik: logi do pliku (wersja instalowana nie ma okna konsoli - KotarbaConsole.exe podaje log.txt
+    // obok exe). Gdy tam nie wolno pisac (np. antywirus), probujemy %TEMP%. Musi byc przed pierwszym logiem.
+    for (int i = 1; i + 1 < argc; ++i) {
+        if (strcmp(argv[i], "--log") != 0) continue;
+        char tmp[512];
+        const char* t = getenv("TEMP");
+        snprintf(tmp, sizeof(tmp), "%s/KotarbaConsole-log.txt", t ? t : ".");
+        const char* path = argv[i + 1];
+        FILE* probe = fopen(path, "w");                  // obciecie starego logu, test zapisu
+        if (!probe) { path = tmp; probe = fopen(path, "w"); }
+        if (probe) {
+            fclose(probe);
+            // Oba strumienie w trybie dopisywania do jednego pliku - kolejnosc wpisow zostaje zachowana.
+            // (Aplikacja okienkowa nie ma deskryptora stderr, samo _dup2 nie wystarcza.)
+            freopen(path, "a", stdout);
+            freopen(path, "a", stderr);
+        }
+        break;
+    }
     setvbuf(stdout, nullptr, _IONBF, 0);   // logi widoczne od razu, takze po przekierowaniu
     setvbuf(stderr, nullptr, _IONBF, 0);
 
@@ -92,6 +112,8 @@ int main(int argc, char** argv)
             }
             hold[hold_count++] = { k, atoi(argv[i + 2]), atoi(argv[i + 3]) };
             i += 3;
+        } else if (strcmp(argv[i], "--log") == 0 && i + 1 < argc) {
+            ++i;                                   // obsluzone na poczatku main
         } else {
             CONSOLE_LOGW(TAG, "nieznany argument: %s", argv[i]);
         }

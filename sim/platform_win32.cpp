@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <string.h>
 
 #include "core/log.h"
@@ -443,10 +444,14 @@ FILE* open_asset(const char* path)
     snprintf(from_exe, sizeof(from_exe), "%s/assets/", exe);
     prefixes[1] = from_repo;
     prefixes[2] = from_exe;
+    // Blad z proby obok exe (wersja instalowana) - odroznia brak pliku (ENOENT) od blokady, np. antywirusa (EACCES).
+    int err_exe = 0;
     for (const char* prefix : prefixes) {
         snprintf(candidate, sizeof(candidate), "%s%s", prefix, path);
         if (FILE* f = fopen(candidate, "rb")) return f;
+        if (prefix == from_exe) err_exe = errno;
     }
+    CONSOLE_LOGW(TAG, "brak pliku assets/%s (%s: %s)", path, from_exe, strerror(err_exe));
     return nullptr;
 }
 
@@ -457,10 +462,7 @@ uint8_t* read_file(const char* path, size_t& size)
     size = 0;
     if (!path || !*path) return nullptr;
     FILE* f = open_asset(path);
-    if (!f) {
-        CONSOLE_LOGW(TAG, "brak pliku assets/%s", path);
-        return nullptr;
-    }
+    if (!f) return nullptr;   // open_asset zapisal powod w logu
     fseek(f, 0, SEEK_END);
     const long len = ftell(f);
     fseek(f, 0, SEEK_SET);

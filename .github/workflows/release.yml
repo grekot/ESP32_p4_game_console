@@ -38,9 +38,9 @@ jobs:
       - name: Build emulatora (Release)
         shell: msys2 {0}
         run: |
-          cmake -S sim -B sim/build-release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCONSOLE_VERSION="$VERSION"
+          cmake -S sim -B sim/build-release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCONSOLE_GUI=ON -DCONSOLE_VERSION="$VERSION"
           cmake --build sim/build-release
-          ./sim/build-release/console_sim.exe --list
+          ./sim/build-release/console_sim.exe --list --log list.txt; cat list.txt
 
       - name: Inno Setup
         shell: pwsh

@@ -100,6 +100,13 @@ add_executable(console_sim
     ${CMAKE_CURRENT_LIST_DIR}/main.cpp
     ${CONSOLE_RC})
 
+# Wersja instalowana: aplikacja okienkowa (bez okna konsoli); logi ida do pliku przez --log.
+# Build deweloperski zostaje konsolowy - testy i zadania VS Code czytaja stdout.
+option(CONSOLE_GUI "console_sim.exe bez okna konsoli (instalator)" OFF)
+if(CONSOLE_GUI)
+    set_target_properties(console_sim PROPERTIES WIN32_EXECUTABLE ON)
+endif()
+
 target_include_directories(console_sim PRIVATE ${CONSOLE_SRC} ${CONSOLE_SRC}/ui ${CMAKE_CURRENT_LIST_DIR})
 
 # keymap.cfg obok pliku wykonywalnego - emulator szuka go tam w pierwszej kolejnosci.

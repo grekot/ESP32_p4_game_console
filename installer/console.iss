@@ -69,12 +69,13 @@ Name: "{autodesktop}\{#AppName}";             Filename: "{app}\{#AppExe}"; Tasks
 
 [Run]
 ; zwykla instalacja: pole "Uruchom" na ostatniej stronie
-Filename: "{app}\{#AppExe}"; Parameters: "--no-update"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
-; aktualizacja z programu startowego (/SILENT /RELAUNCH): uruchom konsole od razu
+Filename: "{app}\{#AppExe}"; Parameters: "--no-update"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent; Check: not IsRelaunch
+; aktualizacja z programu startowego (/RELAUNCH): uruchom konsole od razu, bez pola wyboru
 Filename: "{app}\{#AppExe}"; Parameters: "--no-update"; Flags: nowait; Check: IsRelaunch
 
 [UninstallDelete]
 Type: files; Name: "{app}\save_*.bin"
+Type: files; Name: "{app}\log.txt"
 Type: dirifempty; Name: "{app}"
 
 [Code]

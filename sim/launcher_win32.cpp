@@ -3,9 +3,10 @@
 // 1. Sprawdza najnowsze wydanie na GitHubie (api.github.com/repos/.../releases/latest, limit 4 s).
 //    Brak internetu, blad albo wersja "dev" = cicho pomijamy i uruchamiamy gre.
 // 2. Gdy wydanie jest nowsze niz CONSOLE_VERSION: pyta, pobiera instalator KotarbaConsole-*-setup.exe
-//    do %TEMP%, sprawdza SHA-256 (pole "digest" z API, jesli jest), uruchamia go z /SILENT /RELAUNCH
+//    do %TEMP%, sprawdza SHA-256 (pole "digest" z API, jesli jest), uruchamia zwykly kreator z /RELAUNCH
 //    i konczy sie. Instalator po skonczeniu sam uruchamia konsole ponownie (sekcja [Run], IsRelaunch).
-// 3. Uruchamia console_sim.exe z tego samego katalogu bez okna konsoli (CREATE_NO_WINDOW).
+// 3. Sprawdza, czy grafika (assets/) jest na dysku i da sie ja czytac - jesli nie, mowi, co zrobic (antywirus).
+// 4. Uruchamia console_sim.exe (w wersji instalowanej aplikacja okienkowa, CONSOLE_GUI) z --log log.txt.
 //
 // Argumenty: --no-update (bez sprawdzania; tak startuje instalator), reszta idzie do console_sim.exe.
 // Instalacja jest per uzytkownik (bez praw administratora), wiec aktualizacja nie wywoluje UAC.
@@ -291,10 +292,30 @@ bool check_for_update()
     printf("pobrano %ls, sha256 %s\n", file.c_str(), r.sha256.empty() ? "brak w API" : "zgodny");
     return true;
 #endif
-    // /SILENT: tylko pasek postepu, bez pytan; /RELAUNCH: instalator uruchomi konsole po zakonczeniu.
-    const INT_PTR rc = (INT_PTR)ShellExecuteW(nullptr, L"open", file.c_str(),
-                                              L"/SILENT /SUPPRESSMSGBOXES /NORESTART /RELAUNCH", nullptr, SW_SHOWNORMAL);
+    // Zwykly kreator (bez /SILENT): cicha instalacja pobranego exe to wzorzec, na ktory antywirusy (Avast) reaguja
+    // najostrzej. /RELAUNCH: instalator uruchomi konsole po zakonczeniu.
+    const INT_PTR rc = (INT_PTR)ShellExecuteW(nullptr, L"open", file.c_str(), L"/RELAUNCH", nullptr, SW_SHOWNORMAL);
     return rc > 32;
+}
+
+const wchar_t* AV_HINT =
+    L"Najcz\u0119\u015bciej to antywirus (np. Avast) blokuje nieznany program. Dodaj katalog konsoli do wyj\u0105tk\u00f3w "
+    L"antywirusa (Avast: Menu > Ustawienia > Og\u00f3lne > Wyj\u0105tki > Dodaj wyj\u0105tek) i zainstaluj konsol\u0119 ponownie.";
+
+// Grafika gier lezy w assets/. Gdy jej brak albo nie da sie jej czytac, gra uruchomi sie bez obrazkow -
+// lepiej od razu powiedziec dlaczego (zgloszenie 25.09: Avast, menu bez okladek).
+void check_assets(const std::wstring& dir)
+{
+    const std::wstring probe = dir + L"\\assets\\covers\\mario.png";
+    HANDLE f = CreateFileW(probe.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+    if (f != INVALID_HANDLE_VALUE) { CloseHandle(f); return; }
+    const DWORD err = GetLastError();
+    wchar_t msg[1024];
+    swprintf(msg, 1024, L"%ls (b\u0142\u0105d %lu)\n\n%ls\n\nKatalog konsoli:\n%ls",
+             err == ERROR_ACCESS_DENIED ? L"Brak dost\u0119pu do plik\u00f3w z grafik\u0105 gier."
+                                        : L"Brakuje plik\u00f3w z grafik\u0105 gier (katalog assets).",
+             (unsigned long)err, AV_HINT, dir.c_str());
+    MessageBoxW(nullptr, msg, APP_TITLE, MB_OK | MB_ICONWARNING);
 }
 
 // Reszta wiersza polecen za nazwa programu, bez --no-update.
@@ -322,13 +343,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     if (!no_update && check_for_update()) return 0;
 
     const std::wstring dir = exe_dir();
-    std::wstring cmd = L"\"" + dir + L"\\console_sim.exe\"" + args;
+    check_assets(dir);
+    // Log gry obok exe (console_sim.exe --log; gdy tam nie wolno pisac - %TEMP%\KotarbaConsole-log.txt).
+    std::wstring cmd = L"\"" + dir + L"\\console_sim.exe\" --log \"" + dir + L"\\log.txt\"" + args;
     STARTUPINFOW si = {};
     si.cb = sizeof(si);
     PROCESS_INFORMATION pi = {};
-    if (!CreateProcessW(nullptr, &cmd[0], nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, dir.c_str(), &si, &pi)) {
-        MessageBoxW(nullptr, L"Nie mog\u0119 uruchomi\u0107 console_sim.exe. Zainstaluj konsol\u0119 ponownie.",
-                    APP_TITLE, MB_OK | MB_ICONERROR);
+    if (!CreateProcessW(nullptr, &cmd[0], nullptr, nullptr, FALSE, 0, nullptr, dir.c_str(), &si, &pi)) {
+        wchar_t msg[512];
+        swprintf(msg, 512, L"Nie mog\u0119 uruchomi\u0107 console_sim.exe (b\u0142\u0105d %lu).\n\n%ls",
+                 (unsigned long)GetLastError(), GetLastError() == ERROR_ACCESS_DENIED ? AV_HINT : L"Zainstaluj konsol\u0119 ponownie.");
+        MessageBoxW(nullptr, msg, APP_TITLE, MB_OK | MB_ICONERROR);
         return 1;
     }
     CloseHandle(pi.hThread);

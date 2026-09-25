@@ -212,6 +212,18 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
+Wersja instalowana (od 1.0.1): `console_sim.exe` jest aplikacją okienkową (`-DCONSOLE_GUI=ON`), logi idą do
+`log.txt` obok exe (`--log`; gdy nie wolno tam pisać – `%TEMP%\KotarbaConsole-log.txt`), a program startowy przed
+uruchomieniem gry sprawdza, czy `assets\covers\mario.png` da się otworzyć – brak (błąd 3) albo odmowa (błąd 5) =
+komunikat z instrukcją dla antywirusa. Aktualizacja uruchamia zwykły kreator (nie `/SILENT` – cicha instalacja
+pobranego exe to wzorzec, na który Avast reaguje najostrzej).
+
+**Avast** (zgłoszenie 25.09: menu bez okładek, Snake bez grafiki, okna „odmowa dostępu”): nieznany, niepodpisany
+program ma zablokowany zapis przy instalacji albo odczyt plików. Log mówi, które z nich: `No such file` = pliki nie
+trafiły na dysk, `Permission denied` = odczyt zablokowany. Rozwiązanie: Avast → Menu → Ustawienia → Ogólne →
+Wyjątki → Dodaj wyjątek → `%LOCALAPPDATA%\Programs\KotarbaConsole\*`, potem instalator jeszcze raz. Trwałe
+rozwiązanie to podpis cyfrowy exe albo zgłoszenie fałszywego alarmu do Avasta.
+
 GitHub Actions (`.github/workflows/release.yml`) zbuduje instalator i opublikuje wydanie w kilka minut. Lokalnie:
 `powershell -File tools/build_installer.ps1 -Version 1.0.0` → `dist/` (wymaga Inno Setup 6). Build `dev` (bez `-Version`)
 nie sprawdza aktualizacji.
