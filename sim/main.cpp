@@ -112,6 +112,9 @@ int main(int argc, char** argv)
     CONSOLE_LOGI(TAG, "Console - emulator");
     sim::keymap_load(keymap);
 
+    // Tryb skryptowany: bez okna (nie zabiera fokusu osobie pracujacej przy komputerze) i bez prawdziwej klawiatury.
+    if (frames > 0) sim::set_ignore_real_input(true);
+
     if (!platform::init()) {
         CONSOLE_LOGE(TAG, "nie udalo sie otworzyc okna");
         return 1;

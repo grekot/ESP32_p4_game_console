@@ -231,7 +231,71 @@ def sprite_boom(frame, size=48):
     return img
 
 
+# ------------------------------------------------------------------ lekcja 14 (obrazki): sad z gory
+
+def sprite_hero_top(step):
+    """Bohater widziany z gory/przodu, 16x16; step 0/1 = klatki chodu (nogi na przemian)."""
+    img = Img(16, 16)
+    skin, hair, shirt, pants, shoe = (255, 205, 160), (120, 70, 30), (40, 120, 220), (40, 50, 110), (60, 40, 20)
+    img.rect(5, 1, 6, 3, hair)                 # wlosy
+    img.rect(5, 4, 6, 4, skin)                 # twarz
+    img.set(6, 5, (30, 30, 40)); img.set(9, 5, (30, 30, 40))   # oczy
+    img.rect(4, 8, 8, 4, shirt)                # koszulka
+    img.rect(3, 8, 1, 3, skin); img.rect(12, 8, 1, 3, skin)    # rece
+    if step == 0:
+        img.rect(5, 12, 2, 3, pants); img.rect(9, 12, 2, 3, pants)
+        img.rect(5, 15, 2, 1, shoe); img.rect(9, 15, 2, 1, shoe)
+    else:
+        img.rect(4, 12, 2, 2, pants); img.rect(10, 12, 2, 3, pants)
+        img.rect(4, 14, 2, 1, shoe); img.rect(10, 15, 2, 1, shoe)
+    return img
+
+
+def sprite_apple():
+    img = Img(8, 8)
+    img.circle(3.5, 4.5, 3.2, (210, 40, 40))
+    img.circle(2.5, 3.5, 1.0, (250, 120, 120))            # blik
+    img.rect(3, 0, 2, 2, (100, 60, 20))                   # ogonek
+    img.set(5, 1, (60, 160, 60))                          # listek
+    return img
+
+
+def sprite_bee(step):
+    img = Img(12, 10)
+    body, stripe, wing = (240, 200, 40), (40, 30, 20), (220, 235, 255)
+    img.rect(2, 4, 8, 4, body)
+    for x in (4, 7):
+        img.rect(x, 4, 1, 4, stripe)
+    img.rect(9, 3, 3, 4, stripe)                          # glowa
+    img.set(10, 4, (255, 255, 255))                       # oko
+    img.set(1, 6, stripe)                                 # zadlo
+    if step == 0:
+        img.rect(3, 1, 3, 3, wing); img.rect(6, 1, 3, 3, wing)
+    else:
+        img.rect(2, 3, 3, 1, wing); img.rect(7, 3, 3, 1, wing)
+    return img
+
+
+def sprite_tree():
+    img = Img(24, 24)
+    img.circle(11.5, 13.5, 10, (30, 90, 40))              # cien korony
+    img.circle(11.5, 11.5, 10, (50, 150, 60))
+    img.circle(8.5, 8.5, 4, (90, 190, 80))                # jasniejsza gora
+    for (x, y) in ((5, 14), (15, 6), (17, 16), (9, 18)):  # jablka na drzewie
+        img.set(x, y, (220, 50, 50))
+    img.rect(10, 20, 4, 4, (100, 60, 20))                 # pien
+    return img
+
+
 def main():
+    les = ROOT / "assets" / "obrazki"
+    sprite_hero_top(0).save(str(les / "hero_0.png"))
+    sprite_hero_top(1).save(str(les / "hero_1.png"))
+    sprite_apple().save(str(les / "apple.png"))
+    sprite_bee(0).save(str(les / "bee_0.png"))
+    sprite_bee(1).save(str(les / "bee_1.png"))
+    sprite_tree().save(str(les / "tree.png"))
+
     lab = ROOT / "assets" / "labirynt3d"
     tex_brick().save(str(lab / "brick.png"))
     tex_stone().save(str(lab / "stone.png"))

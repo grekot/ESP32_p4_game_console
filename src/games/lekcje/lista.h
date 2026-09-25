@@ -18,6 +18,7 @@ LEKCJA(breakout)
 LEKCJA(bohater)
 LEKCJA(flappy_pelny)
 LEKCJA(mini_mario)
+LEKCJA(obrazki)
 
 // Nie lekcja: plakat wszystkich funkcji rysowania (docs/API.md). Ostatni w menu.
 LEKCJA(api_demo)

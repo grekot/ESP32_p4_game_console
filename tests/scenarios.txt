@@ -18,3 +18,13 @@ trace | labirynt_route  | --game labirynt3d --hold A 3 4 --hold RIGHT 10 49 --ho
 shot  | labirynt_door   | --game labirynt3d --hold A 3 4 --hold RIGHT 10 49 --hold UP 50 119 --hold LEFT 120 159 --hold UP 160 321 --frames 215
 trace | kosmos_play     | --game kosmos --hold B 3 4 --hold A 10 400 --hold UP 30 90 --hold DOWN 120 200 --frames 400 --trace 50
 shot  | kosmos_play     | --game kosmos --hold B 3 4 --hold A 10 400 --hold UP 30 90 --hold DOWN 120 200 --frames 230
+# Kart (23.09.2026): autopilot (Y) jedzie 1 okrazenie z rywalami i przedmiotami; slad deterministyczny (stale ziarno)
+trace | kart_auto       | --game kart --hold A 3 4 --hold Y 60 1800 --frames 1800 --trace 100
+shot  | kart_race       | --game kart --hold A 3 4 --hold Y 60 700 --frames 700
+trace | kart_player     | --game kart --hold A 3 4 --hold A 60 480 --hold RIGHT 250 330 --hold B 280 330 --frames 480 --trace 40
+# Snake (25.09.2026): autopilot (Y) przechodzi poziomy 1-2 z bonusami; poziom 3 (pustynia, X x2); smierc o sciane do konca gry
+trace | snake_auto      | --game snake --hold A 3 4 --hold Y 10 11 --frames 3600 --trace 100
+shot  | snake_title     | --game snake --frames 5
+shot  | snake_desert    | --game snake --hold X 2 3 --hold X 5 6 --hold A 8 9 --hold Y 12 13 --frames 700
+trace | snake_gameover  | --game snake --hold X 2 3 --hold A 5 6 --frames 1100 --trace 50
+trace | snake_player    | --game snake --hold A 3 4 --hold UP 140 141 --hold LEFT 175 176 --hold A 200 260 --hold DOWN 262 263 --frames 420 --trace 20

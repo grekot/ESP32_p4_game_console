@@ -22,4 +22,9 @@ Rng& rng();
 // Ustawia ziarno (0 jest zamieniane na stala, xorshift nie moze startowac od zera).
 void seed_rng(uint32_t seed);
 
+// Tryb powtarzalny (staly krok czasu w testach --frames): gry nie moga wtedy zmieniac wygladu zaleznie od zegara
+// (np. adaptacyjna jakosc Karta po czasie renderu) - inaczej zrzuty roznia sie pod obciazeniem CPU.
+void set_deterministic(bool on);
+bool deterministic();
+
 }  // namespace engine

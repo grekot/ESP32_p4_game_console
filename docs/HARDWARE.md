@@ -174,6 +174,11 @@ steruje jednocześnie obrotem obrazu i mapowaniem współrzędnych dotyku.
 - Czas klatki gier pokazowych (`engine::stats`, log FPS): Labirynt 3D (raycasting 400 kolumn, szacunek 2-4 ms) i Kosmos
   (800x480, ~30 sprite'ów PNG). Jeśli labirynt nie trzyma 60 FPS: zmniejszyć liczbę promieni (co druga kolumna x2) albo
   tekstury 64→32 px.
+- Kart (renderer 3D gfx3d, 800x480): PSRAM ~1,5 MB (siatki + bufor 14 000 trójkątów ekranowych + PNG nieba); sprawdzić
+  w logu `scena 3D: droga ... tri`, że żadna alokacja nie padła. Czas klatki: na PC 2,7 ms; na P4 szacunek 6-12 ms
+  (transformacja ~7 tys. trójkątów + wypełnienie ~600 tys. pikseli + niebo z alfą 800×160). Jeśli > 13 ms, gra sama
+  skraca zasięg (`quality_` 1: mgła od 300, koniec 900; 2: koniec 600) i wyłącza chmury – zanotować poziom z logu
+  `render X ms (N tri)`. Rezerwa: rysowanie nieba bez mieszania alfy, teren co drugą komórkę.
 
 ## Wi-Fi (nieużywane w grze)
 

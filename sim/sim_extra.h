@@ -21,4 +21,11 @@ uint16_t synthetic_keys();
 void set_unthrottled(bool on);
 bool unthrottled();
 
+// Tryb skryptowany (--frames): okno ukryte, prawdziwa klawiatura i mysz ignorowane - liczy sie tylko --hold/--pause-at.
+// Ustawiac PRZED platform::init().
+// Bez tego klawisz wcisniety przez osobe pracujaca przy komputerze w trakcie testu (np. Enter = START -> pauza)
+// psul slad i zrzut, a wzorzec nagrany w takiej chwili byl zly.
+void set_ignore_real_input(bool on);
+bool ignore_real_input();
+
 }  // namespace sim

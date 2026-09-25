@@ -116,6 +116,7 @@ void start_game_by_index(int index)
 void set_fixed_dt(float seconds)
 {
     s_fixed_dt = seconds > 0.f ? seconds : 0.f;
+    engine::set_deterministic(s_fixed_dt > 0.f);
 }
 
 void debug_line(char* buf, size_t n)

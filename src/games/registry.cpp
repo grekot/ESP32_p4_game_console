@@ -10,9 +10,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "games/kart/kart_game.h"
 #include "games/kosmos/kosmos_game.h"
 #include "games/labirynt3d/labirynt_game.h"
 #include "games/mario/mario_game.h"
+#include "games/snake/snake_game.h"
 
 // Deklaracje wpisow lekcji (definicje sa w plikach lekcji, przez CONSOLE_ADD_GAME).
 #define LEKCJA(id) extern const engine::GameEntry console_entry_##id;
@@ -41,6 +43,18 @@ Game* create_kosmos()
     return &game;
 }
 
+Game* create_kart()
+{
+    static kart::KartGame game;
+    return &game;
+}
+
+Game* create_snake()
+{
+    static snake::SnakeGame game;
+    return &game;
+}
+
 char upper(char c) { return (c >= 'a' && c <= 'z') ? (char)(c - 'a' + 'A') : c; }
 
 bool equal_ignore_case(const char* a, const char* b)
@@ -59,6 +73,8 @@ const GameEntry GAMES[] = {
     { "mario", "Lake Mario", "Platformowka 2D", create_mario },
     { "labirynt3d", "Labirynt 3D", "Raycasting: tekstury PNG, mini-mapa", create_labirynt },
     { "kosmos", "Kosmos", "Strzelanka 2D: PNG, paralaksa, wybuchy", create_kosmos },
+    { "kart", "Kart", "Wyscigi 3D: 3 okrazenia, rywale, przedmioty, drift", create_kart },
+    { "snake", "Snake", "Waz: 10 poziomow, 5 swiatow, bonusy, rekordy", create_snake },
 #define LEKCJA(id) console_entry_##id,
 #include "games/lekcje/lista.h"
 #undef LEKCJA

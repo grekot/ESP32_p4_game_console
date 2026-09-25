@@ -1,0 +1,103 @@
+// LEKCJA 14 - rozwiazanie zadania 3 (zbieranie jablka). Skopiuj do gra.cpp, zeby sprawdzic.
+#include "console/console.h"
+
+namespace {
+
+Sprite hero[2];
+Sprite bee[2];
+Sprite apple;
+Sprite tree;
+
+const int SCALE = 3;
+const int SPEED = 3;
+
+const int HERO_START_X = 100;
+const int HERO_START_Y = 228;
+
+int  hero_x = HERO_START_X;
+int  hero_y = HERO_START_Y;
+bool facing_left = false;
+bool walking     = false;
+
+int apple_x = 350;
+int apple_y = 240;
+int apples  = 0;
+
+int bee_x  = 620;
+int bee_y  = 100;
+int bee_dx = 2;
+int lives  = 3;
+
+void setup()
+{
+    hero[0] = load_image("hero_0.png");
+    hero[1] = load_image("hero_1.png");
+    bee[0]  = load_image("bee_0.png");
+    bee[1]  = load_image("bee_1.png");
+    apple   = load_image("apple.png");
+    tree    = load_image("tree.png");
+
+    hero_x = HERO_START_X;
+    hero_y = HERO_START_Y;
+    facing_left = false;
+    apple_x = 350;
+    apple_y = 240;
+    apples  = 0;
+    bee_x   = 620;
+    bee_y   = 100;
+    bee_dx  = 2;
+    lives   = 3;
+}
+
+void frame()
+{
+    clear(rgb(70, 150, 70));
+
+    sprite(tree, 300, 60, false, SCALE);
+    sprite(tree, 650, 330, false, SCALE);
+    sprite(tree, 120, 380, false, SCALE);
+
+    walking = false;
+    if (held(LEFT))  { hero_x = hero_x - SPEED; facing_left = true;  walking = true; }
+    if (held(RIGHT)) { hero_x = hero_x + SPEED; facing_left = false; walking = true; }
+    if (held(UP))    { hero_y = hero_y - SPEED; walking = true; }
+    if (held(DOWN))  { hero_y = hero_y + SPEED; walking = true; }
+    hero_x = clamp(hero_x, 0, screen_width() - hero[0].w * SCALE);
+    hero_y = clamp(hero_y, 0, screen_height() - hero[0].h * SCALE);
+
+    bee_x = bee_x + bee_dx;
+    if (bee_x < 560 || bee_x > 760) bee_dx = -bee_dx;
+
+    // ZADANIE 3: prostokat bohatera i prostokat jablka nachodza na siebie -> zbierz i przenies jablko
+    int hero_w  = hero[0].w * SCALE;
+    int hero_h  = hero[0].h * SCALE;
+    int apple_w = apple.w * SCALE;
+    int apple_h = apple.h * SCALE;
+    if (overlaps(hero_x, hero_y, hero_w, hero_h, apple_x, apple_y, apple_w, apple_h)) {
+        apples = apples + 1;
+        apple_x = random(0, screen_width() - apple_w);
+        apple_y = random(60, screen_height() - apple_h);
+    }
+
+    int hero_frame = 0;
+    if (walking) hero_frame = (frame_count() / 8) % 2;
+    int bee_frame = (frame_count() / 4) % 2;
+
+    sprite(apple, apple_x, apple_y, false, SCALE);
+    sprite(hero[hero_frame], hero_x, hero_y, facing_left, SCALE);
+    sprite(bee[bee_frame], bee_x, bee_y, bee_dx < 0, SCALE);
+
+    text(20, 8, apples, WHITE, 3);
+    for (int i = 0; i < lives; i++) {
+        circle(screen_width() - 30 - i * 30, 24, 10, RED);
+    }
+
+    watch("hero_x", hero_x);
+    watch("hero_y", hero_y);
+    watch("apples", apples);
+    watch("lives", lives);
+}
+
+}  // namespace
+
+CONSOLE_ADD_GAME(obrazki, "Obrazki PNG", "Lekcja 14: grafika z plikow")

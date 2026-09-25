@@ -1,6 +1,6 @@
 # Dziennik decyzji projektowych
 
-Każdy wpis: kontekst, decyzja, konsekwencje. Kolejność chronologiczna (22-23.09.2026).
+Każdy wpis: kontekst, decyzja, konsekwencje. Kolejność chronologiczna (22-24.09.2026).
 
 ## 1. ESP-IDF przez PlatformIO (pioarduino), nie Arduino ani gołe ESP-IDF
 
@@ -240,3 +240,162 @@ wireframe.
 Przy okazji naprawiony błąd w Kosmosie: `spawn_asteroid()` przy rozpadzie mogło zająć slot właśnie niszczonej
 asteroidy i odczytać jej **nowy** rozmiar (`size-1-1 = -1` → sprite spoza tablicy, na ekranie „statek-widmo") —
 dane potrzebne po zwolnieniu slotu kopiować do zmiennych lokalnych wcześniej.
+
+## 25. Kart: Mode 7 zamiast raycastingu dla wyścigów, autopilot jako narzędzie testowe (23.09.2026)
+
+**Kontekst.** Użytkownik poprosił o „wypasioną grę w stylu Mario Kart”. Raycasting z Labiryntu 3D nie nadaje się do
+wyścigów (świat z kafelków-ścian, brak otwartego terenu). Super Mario Kart na SNES używał trybu Mode 7: płaska
+tekstura podłoża rzutowana perspektywicznie – każdy wiersz ekranu to prosta w świecie, więc w pętli wewnętrznej
+są tylko dwa dodawania w stałym przecinku i jeden odczyt tekstury.
+**Decyzja.** `src/games/kart/`: tekstura toru 1024×1024 RGB565 (2 MB, PSRAM przez `platform::alloc_pixels(fast=false)`)
+generowana przy starcie z 16 punktów kontrolnych (Catmull-Rom → 256 próbek linii środkowej, stemplowanie kół:
+krawężniki, asfalt, linia startu, pola przyspieszenia). Osobna mapa nawierzchni 128×128 (komórki 8×8) daje
+tanie `surface_at()` dla fizyki. Płótno 400×240 x2 – 144 wiersze podłoża. Sprite'y (gokarty 16 kierunków × 4 kolory
+w arkuszach 512×32, drzewa, skrzynki, przedmioty) sortowane po odległości i skalowane `FOCAL / fwd`.
+AI jedzie do punktu linii kilka próbek przed sobą z własnym pasem; tempo bazowe 0,89/0,94/0,99 MAX + „guma”
+(+10 % gdy daleko za graczem, −6 % gdy przed). Przedmioty losowane zależnie od miejsca (lider: banany, ostatni: grzyby).
+**Autopilot (Y):** gokart gracza prowadzi to samo AI. Dla dziecka – demo; dla testów – jedyny sposób, żeby skrypt
+`--hold` przejechał całe okrążenie bez ręcznego strojenia skrętów. Scenariusz `kart_auto` (1800 klatek) jest w regresji
+i jest deterministyczny (losowanie przedmiotów z `engine::rng` ze stałym ziarnem).
+**Konsekwencje.** Na PC Mode 7 kosztuje tyle co Kosmos (0,55 ms z tłem 0,52). Na P4: 57 600 próbek tekstury z PSRAM
+na klatkę, dostęp przy dalekich wierszach skacze po pamięci (cache), szacunek 3-6 ms – **do zmierzenia**; awaryjnie
+tekstura 512×512 (0,5 MB) albo co drugi wiersz. Generowanie tekstury przy pierwszym wejściu do gry (1 M pikseli
+z szumem) na P4 potrwa zauważalnie (rząd 0,3-0,5 s) – jeśli przeszkadza, przenieść do PNG w `assets/`.
+Nazwy „Kart”, „Niebieski/Zielony/Zolty” to robocze nazwy do zmiany przez użytkownika.
+
+## 26. Kart bez pikselozy: natywne 800×480, PNG z alfą, filtrowanie, jakość adaptacyjna (23.09.2026)
+
+**Kontekst.** Pierwsza wersja Karta rysowała 400×240 powiększane ×2, sprite'y 32 px i teksturę 1 teksel na jednostkę
+– użytkownik: „ma wyglądać jak na nowoczesnej konsoli, żadnej pikselozy”. Zgłosił też błąd: skręt w lewo pokazywał
+gokart obrócony w prawo (generator arkusza obracał model w lewo przy rosnącym numerze klatki, renderer zakładał prawo).
+**Decyzja.** Kart renderuje natywnie 800×480 (`canvas_scale()` 1). Nowy typ `gfx::Image` (RGB565 + alfa 0..255,
+`gfx::load_png_rgba`, bufor w PSRAM) dla obrazów z wygładzonymi krawędziami; `draw_image` miesza alfę i przy jakości 0
+filtruje bilinearnie z wagami mnożonymi przez alfę (bez ciemnych obwódek). Tekstura toru 2048×2048 (2 teksele na
+jednostkę świata – fizyka i ślady testów bez zmian), stemple drogi z miękką krawędzią, 5 poziomów mipmap wybieranych
+per wiersz, filtrowanie bilinearne dla bliskich wierszy, mgła przy horyzoncie i z odległością. Niebo: gradient, słońce
+z poświatą, pas chmur 1024×160 i pas gór 2048×160 z alfą mapowane po kącie kamery. Efekty: dym spod kół (drift),
+kurz na trawie, płomień turbo, iskry. Grafika generowana Pillow z supersamplingiem ×4: model gokarta z cieniowaniem
+wg normalnych ścian (kierunek klatek zgodny z rendererem – naprawa błędu skrętu), 128 px na klatkę.
+**Jakość adaptacyjna.** Pełna jakość to na PC 3,8 ms; na P4 na pewno za dużo. `render()` mierzy swój czas i po 45
+wolnych klatkach (> 13 ms) schodzi na poziom 1 (bez bilinearnego, bez chmur), potem 2 (podłoże co drugi piksel,
+góry bez mieszania). Dzięki temu ta sama binarka wygląda najlepiej tam, gdzie może, i trzyma płynność tam, gdzie musi.
+**Konsekwencje.** PSRAM: ~14 MB (tekstura 8 MB + mipmapy 2,7 MB + arkusze 3,1 MB). Czas generowania toru na P4 do
+zmierzenia (szacunek 1-2 s). Narzędzie `gen_kart_assets.py` wymaga Pillow (`pip install pillow`) – wcześniejsze
+generatory były w czystym Pythonie; wygenerowane PNG są w repo, więc uczeń ani płytka Pillow nie potrzebują.
+
+## 27. Silnik 3D `gfx3d` zamiast Mode 7: Kart w prawdziwym low-poly 3D (23.09.2026)
+
+**Kontekst.** Użytkownik ocenił Karta jako słabego i zapytał, czy ogranicza nas silnik grafiki. Tak: warstwa `gfx`
+to płótno 2D i sprite'y, więc Mode 7 dawał płaski tor bez wzniesień, a gokarty były obrazkami przełączanymi między
+16 kierunkami. Nowocześnie wyglądające wyścigi wymagają geometrii 3D: toru z górkami, modeli oświetlanych z każdej
+strony, kamery w przestrzeni. P4 nie ma GPU, ale software'owy rasteryzator trójkątów low-poly (bez tekstur, bez
+Z-bufora) mieści się w budżecie: kilka tysięcy trójkątów i ~600 tys. wypełnionych pikseli na klatkę.
+**Decyzja.** Nowa warstwa `src/gfx3d/` nad `gfx::Canvas`: `math3d.h` (Vec3, Mat4 wierszowa, `heading()` z jawną bazą
+prawo/góra/przód), `mesh.h/.cpp` (siatka z kolorem na trójkąt, normalne wierzchołków do Gouraud, bryły: box, klin,
+koło, walec, stożek, kula, dysk; nawinięcie poprawiane wg wektora „na zewnątrz"), `renderer.h/.cpp` (kamera lookAt,
+światło kierunkowe + ambient, mgła, odrzucanie tylnych ścian po normalnej w świecie, przycinanie do z = 1,
+rasteryzacja płaska i Gouraud po skanliniach, sortowanie malarskie: 1024 kubełków głębokości × 2 warstwy
+(teren, obiekty), listy FIFO – kolejność zgłaszania zachowana w kubełku, dzięki czemu cień rysuje się na drodze).
+Bez Z-bufora: 800×480×16 bit w PSRAM kosztowałoby na P4 więcej niż całe rysowanie, a artefakty malarskie przy
+osobnej warstwie terenu są niewidoczne. Kart: tor = 256 przekrojów × 11 wierzchołków (4 pasy asfaltu, krawężniki,
+pobocza) + siatka terenu 32×32 z pominięciem komórek pod drogą; wysokość terenu to suma sinusów (fizyka 2D bez zmian,
+ślady testów zmieniły się tylko przez nową, czystszą mapę nawierzchni); gokart = 17 brył + kask (kula Gouraud) +
+4 koła obracające się z prędkością, przednie skręcające, przechył z tempa skrętu i nachylenia terenu; drzewa, skrzynki
+(bez oświetlenia – „świecą"), przedmioty, flaga jako bryły. Niebo, chmury, góry, dym, płomień pozostały obrazami
+z alfą. Mode 7 i arkusze gokartów usunięte.
+**Konsekwencje.** Na PC 2,7 ms/klatkę (było 3,8 ms w Mode 7 800×480), PSRAM ~1,5 MB zamiast ~14 MB, tor generuje się
+natychmiast (brak tekstury 8 MB). Na P4 szacunek 6-12 ms – do zmierzenia; jakość adaptacyjna skraca zasięg.
+`gfx3d` jest gotowe dla kolejnych gier (i lekcji zaawansowanej): `Mesh` + `Renderer::draw_mesh(model, layer)`.
+Ograniczenia: brak tekstur, brak Z-bufora (przecinające się bryły w jednej warstwie mogą się źle sortować),
+max 4096 wierzchołków na siatkę w jednym `draw_mesh`.
+
+## 28. Kart – wygląd: Gouraud z kolorami wierzchołków, oznaczenia w lukach siatki, obiekty przy torze (24.09.2026)
+
+**Kontekst.** Użytkownik: Kart „wygląda słabo, trzeba go przerobić, aby wyglądał naprawdę atrakcyjnie wizualnie”.
+Diagnoza ze zrzutów: (1) asfalt i trawa w szachownicę – jeden kolor na trójkąt daje wzór kafelków, a płaskie cieniowanie
+pokazuje każdą fasetę terenu; (2) pusty świat – sama droga, drzewa i flaga; (3) klockowaty gokart z kierowcą-pudełkiem;
+(4) surowy HUD z prostokątów; (5) światło niezgodne z tarczą słońca, cień gokarta zielony na asfalcie.
+**Decyzja.** Silnik: `Vertex::c` + `Mesh::vertex_colors` (kolor bazowy z wierzchołka, interpolowany Gouraud), bryły
+`add_hexa` (8 dowolnych naroży) i `add_loft` (prostokąt→prostokąt), `Renderer::set_flat_only` (tryb oszczędny) oraz
+`depth_bias` w `draw_mesh` (cienie zawsze po podłożu). Gra: asfalt i trawa jako siatki Gouraud z kolorami z szumu
+i wysokości terenu; oznaczenia (krawężniki, linie, oś, start, szewrony) jako **osobna płaska siatka wypełniająca luki**
+w siatce Gouraud – nie nakładka, bo dwie współpłaszczyznowe siatki migotałyby w sortowaniu malarskim, a jeden wspólny
+wierzchołek między pasami rozmywałby ostre granice. Statyczne obiekty (brama, trybuna, stosy opon w zakrętach z krzywizny
+toru, banery) w jednej siatce `props_` w współrzędnych świata (jedno `draw_mesh`); krzaki i drzewa instancjonowane
+z losową skalą i cieniami. Gokart z brył ściętych, kierowca z ramionami, kask z wizjerem – po ocenie „bolidy wyglądają
+bardzo słabo” druga iteracja: kadłub jako łańcuch lofów o wspólnych przekrojach (zamiast pudełek na płycie), koła
+z osobną felgą (`add_wheel(..., rim)`: ściana boczna opony, wklęsła grafitowa felga z fasetami, jasny kapsel – bok koła
+był jednolicie jasnoszary, a płaska jasna tarcza na pół boku nadal wyglądała jak bęben), wahacze i oś jako pręty (`add_rod`),
+pontony z wlotami, airbox, dyfuzor, dwa płaty skrzydła, kierowca z karkiem i rękawicami. Światło = kierunek słońca na
+niebie. HUD z zaokrąglonych paneli (`fill_round_rect_alpha`), medal miejsca, kolejność, gradientowy pasek prędkości,
+komunikaty okrążeń, odliczanie w kole, tabela mety z czasami. Kamera z FOV rosnącym przy turbo; na tytule kołysze się
+za polami startowymi (pełna orbita wjeżdżała w gokarty i bramę – przycinanie z ≥ 1 rozrywało geometrię).
+**Konsekwencje.** PC: 3,4 ms/klatkę (było 2,05) przy ~9,5 tys. trójkątów; na P4 koszt Gouraud na podłożu nieznany –
+przy > 13 ms gra sama przechodzi na cieniowanie płaskie (`quality_ ≥ 1`) i wyłącza krzaki/cienie (`≥ 2`). Fizyka
+nietknięta: ślady `kart_auto` i `kart_player` identyczne bajt w bajt, nagrano tylko nowy wzorzec zrzutu `kart_race`.
+Odrzucone: tekstury (brak w gfx3d, na P4 za drogie), Z-bufor (jak w 27), winieta/post-efekty (pełnoekranowe mieszanie
+384 tys. pikseli to na P4 kilka ms).
+
+## 29. Kart: teksturowanie z colormapą, cienie rzutowane przez maskę, odblask, ślady opon, Z-bufor (25.09.2026)
+
+**Kontekst.** Po dwóch iteracjach modeli użytkownik: „nadal grafika pozostawia wiele do życzenia. Czy na tym silniku nie
+jesteśmy w stanie uzyskać ładniejszych efektów?”. Ocena: ograniczeniem jest silnik – jeden kolor na trójkąt (brak
+tekstur), brak prawdziwych cieni, brak odblasku, brak AA. Zaproponowano kroki A-E z kosztami; użytkownik: „działaj po
+kolei od A do E”. Pytanie o źródło tekstur (skrypt czy ręcznie) bez odpowiedzi – przyjęto skrypt (deterministyczny,
+Pillow), z możliwością podmiany PNG o tym samym układzie.
+**Decyzja.** (A) Tekstury w stylu Quake/N64, bo P4 nie ma SIMD ani GPU: atlas 8-bit z paletą 256 kolorów (indeks 0
+przezroczysty) i colormapa 16 odcieni × 12 poziomów mgły × 256 wpisów RGB565 – piksel to dwa odczyty z tablic, bez
+mnożenia kanałów. Mapowanie afiniczne w blokach 16 px z dzieleniem na granicach (u/z, v/z, 1/z liniowe w ekranie)
+zamiast pełnej korekcji perspektywy. Gouraud na teksturze = interpolacja wiersza colormapy. Jeden atlas 512×512 dla całej
+gry (jedna paleta, jedno wczytanie, UV w tekselach atlasu w `Tri`). Drzewa i krzaki jako billboardy z alpha-test: tańsze
+i ładniejsze niż kule low-poly. (B) Cienie rzutowane macierzą na płaszczyznę podłoża, ale nie jako ciemne trójkąty
+(nakładające się trójkąty bolidu podwójnie by się przyciemniały), tylko przez maskę 1 B/piksel i jedno przyciemnienie
+po warstwie 0 – półprzezroczysty cień na każdej nawierzchni. (C) Odblask Blinna z półwektorem liczonym raz na siatkę,
+kadłub z normalnymi uśrednionymi (zaokrąglony lakier). (D) Ślady opon w logice gry (deterministyczne, nie w śladzie
+testów), rysowane jako czworokąty z `depth_bias`. (E) Z-bufor 16-bit opcjonalny (`quality_ == 0`), sortowanie
+malarskie zostaje – Z-bufor rozstrzyga tylko przecięcia.
+**Konsekwencje.** PC ~5 ms/klatkę (było 2,5) – teksturowane podłoże to większość pikseli. Na P4 koszt nieznany;
+szacunek z liczby operacji na piksel: 8-12 ms na podłoże, czyli cel 30 FPS, z awaryjnym zejściem przez `quality_`.
+PSRAM: +256 kB atlas, +96 kB colormapa, +384 kB maska, +768 kB Z-bufor, bufor trójkątów 18 000 × ~100 B = 1,8 MB.
+Wykryta pułapka testów: adaptacyjna jakość mierzy zegar, więc pod obciążeniem CPU (regresja i benchmark równolegle)
+zrzut różnił się między uruchomieniami – w trybie `--frames` jakość jest zamrożona (`engine::deterministic()`).
+Pozostałe ograniczenia: brak mipmap (ostra trawa migocze w oddali – złagodzone rozmytym kafelkiem na dalekie plany),
+brak AA, brak filtrowania bilinearnego (za drogie na P4).
+**Uzupełnienie (25.09).** Użytkownik: bolid „częściowo ginie pod asfaltem”. Z-bufor ujawnił rozjazd między siatką
+drogi (płaska w poprzek, na wysokości środka toru) a wysokością, na której stawiano obiekty (`ground_height` w ich
+punkcie). Dodano `surface_height()` zgodne z siatką i użyto go dla wszystkiego, co stoi na drodze. To nie wystarczyło:
+przechył nadwozia w zakrętach obracał także koła wokół punktu na ziemi (zewnętrzne koła 1,1 jednostki pod drogą), a skok
+kąta przy ustawianiu na polach startowych dawał ten sam przechył na starcie. Teraz każde koło stoi na wysokości nawierzchni
+w swoim punkcie, nadwozie liczy pochylenie i przechył z czterech kół, a przechył w zakrętach obraca tylko nadwozie wokół
+osi kół. Wniosek ogólny: z Z-buforem obiekty muszą być stawiane na tej samej funkcji wysokości, z której zbudowano
+podłoże, a efekty „kosmetyczne” nie mogą ruszać punktów styku z podłożem.
+**Uzupełnienie 2 (25.09).** „Przednie koła skręcają się przeciwnie” – nie znak skrętu, lecz `Mat4::heading` o wyznaczniku
+−1 (odbicie): odwrócone nawinięcie sprawiało, że renderer odrzucał bliższe ściany i pokazywał lustrzane odbicie bolidu
+(koła odwrotnie, malowanie niewidoczne). Renderer sprawdza teraz wyznacznik macierzy modelu i odwraca normalną geometryczną.
+Diagnoza wymagała pomiaru (rzut czubka koła na ekran) zamiast oceny na oko – obraz i rachunek się nie zgadzały, i to
+obraz miał rację co do objawu, a rachunek co do geometrii; łącznikiem był cull.
+**Uzupełnienie 3 (25.09).** Kolizje z obiektami przy torze (drzewa, stosy opon, słupy, trybuna) jako okręgi
+rejestrowane przy budowie sceny i sprawdzane w fizyce – wcześniej dekoracje były przenikalne. Emulator w `--frames`
+nie pokazuje okna: wyskakujące okno kradło fokus osobie piszącej w innym edytorze w trakcie testów.
+
+## 30. Snake: grafika z Gemini jako PNG z alfą, ciało węża generowane w kodzie, tło „wypalane” raz na poziom (25.09.2026)
+
+**Kontekst.** Użytkownik: nowa, pełnowartościowa gra w węża (lekcja 07 zostaje) „na ładnych grafikach”, grafiki
+wygenerować w jego Gemini przez przeglądarkę; poziomy, przyspieszanie, dodatkowe przedmioty, ładny interfejs.
+**Decyzja.** (1) Obiekty z Gemini jako arkusze 4×3 na jednolitej magencie, wycinane skryptem (`tools/gen_snake_assets.py`):
+tło = obszar magenty połączony z brzegiem komórki (flood fill – pierwsza wersja kluczująca po samym odcieniu zjadła
+fioletowy grzyb), miękka alfa i zdjęcie różowej poświaty tylko w pasie 3 px przy tle. Wynik: PNG RGBA 24/36/40/48 px,
+wczytywane `gfx::load_png_rgba` i rysowane z mieszaniem alfa. Surowe obrazy trzymane w `assets_src/snake/`, żeby dało się
+przerobić rozmiary bez ponownego generowania (Gemini nie jest deterministyczny). (2) Ciało węża nie z grafiki, tylko
+cieniowane kulki generowane przy starcie (8 promieni × 2 tony × 3 kolory): płynnie się zwężają, pasują do dowolnego
+kształtu i koloru głowy; głowa z Gemini (widok z boku) obracana o 90° (w lewo = lustro, żeby nie była do góry nogami).
+Dwa przejścia (obrys, potem kolor) dają jeden kontur zamiast „koralików”; cień przez maskę 1 B/piksel (jak w Karcie).
+(3) Tło świata + szachownica + winieta + przeszkody z cieniami wypalane do bufora raz na poziom, klatka zaczyna się od
+jednego `memcpy` 717 kB. (4) Ruch po kratkach ze stałym krokiem, rysowanie z interpolacją `prev_ → body_`; zawijanie
+krawędzi liczone jako ruch o kratkę „na zewnątrz”. (5) Autopilot (BFS + test wolnej przestrzeni zalewaniem) jako
+narzędzie testów – deterministyczny, przechodzi całą kampanię (~19 000 klatek), dzięki czemu regresja sprawdza wszystkie
+10 plansz i wszystkie moce.
+**Konsekwencje.** PC 0,84 ms/klatkę średnio (Kosmos 0,26); max 28 ms to dekodowanie tła PNG 800×448 przy starcie poziomu
+(na P4 szacunkowo 100-300 ms – w trybie Bez końca zmiana świata w trakcie gry da jedno zacięcie). Firmware +42 kB flash,
++8,5 kB RAM statycznie; PSRAM: tło 2×717 kB + maska 358 kB + obrazki ~0,5 MB. Partycja assets: +2,8 MB PNG.
+Rekordy tylko w RAM (NVS w planach, pkt 7 „Następne kroki”). Na sprzęcie nic nie sprawdzone.

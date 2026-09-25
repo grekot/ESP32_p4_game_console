@@ -6,7 +6,7 @@
 #   powershell -File tools/testy.ps1 mario -Update # nagraj wzorce na nowo (po SWIADOMEJ zmianie fizyki/wygladu)
 #
 # tests/scenarios.txt:  rodzaj | nazwa | argumenty     (trace = linie ^TRACE, shot = zrzut BMP; porownanie dokladne)
-# <lekcja>/testy.txt:   argumenty | regex              (regex musi wystapic w wyjsciu; --game dokleja skrypt)
+# <lekcja>/testy.txt:   argumenty | regex              (regex musi wystapic w wyjsciu, tryb (?m): ^ i $ to poczatek/koniec LINII; --game dokleja skrypt)
 # Kod wyjscia: 0 = wszystko OK, 1 = sa bledy.
 param(
     [string]$Target = "all",
@@ -111,7 +111,7 @@ function Test-Lekcja([string]$dir) {
         $r = Run-Sim $args
         $text = $r.Lines -join "`n"
         if ($r.Code -ne 0) { Report "test $n" $false "kod wyjscia $($r.Code): $($args -join ' ')"; continue }
-        if ($text -match $regex) { Report "test $n  /$regex/" $true "" }
+        if ($text -match ("(?m)" + $regex)) { Report "test $n  /$regex/" $true "" }
         else {
             $tail = (@($r.Lines | Where-Object { $_ -like "TRACE*" } | Select-Object -Last 3) -join "`n")
             Report "test $n  /$regex/" $false ("nie znaleziono w wyjsciu. Ostatnie linie TRACE:`n" + $tail)

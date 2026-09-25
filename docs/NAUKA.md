@@ -56,6 +56,7 @@ dlatego wartości startowe nadaje `setup()`. Lekcja 02 uczy tego wprost.
 | 11 | `11_flappy_pelny` | `enum`, `switch`, maszyna stanów, rekord w globalu | Flappy kompletny | 1 | gotowa |
 | 12 | `12_mini_mario` | mapa kafelków (`load_map`, `move_box`, `int&`), kamera | mini-platformówka | 1 | gotowa, stretch |
 | 13 | `13_twoja_gra` | projekt własny (tylko README z listą kontrolną) | dowolna | – | gotowa, stretch |
+| 14 | `14_obrazki` | obrazki z plików PNG (`load_image`), klatki animacji w tablicy, Piskel, przeszkody z cofaniem ruchu | sad: jabłka, pszczoła, drzewa | 2 | gotowa, dodatkowa (po 10) |
 
 Każda lekcja została sprawdzona 23.09.2026: kod startowy **nie przechodzi** swoich testów, rozwiązanie z `rozwiazania/` **przechodzi**.
 Lekcja 12 używa API poziomu 2 (`load_map`, `map_tile`, `map_set`, `map_col/row`, `draw_tiles`, `move_box`) zbudowanego
@@ -96,6 +97,9 @@ powershell -File tools/testy.ps1 src/games/lekcje/03_lapacz      # jedna lekcja
 
 Pisząc test: użyj `--hold KLAWISZ od do` do zasymulowania gracza, `--frames N --trace N-1` do odczytu ostatniej klatki,
 a w regexie nazw z `watch()`. Przykład z lekcji 03: `--hold LEFT 0 300 --frames 301 --trace 300 | paddle_x=0( |$)`.
+
+Regex jest dopasowywany w trybie wieloliniowym (`(?m)`): `^` i `$` oznaczają początek i koniec **linii** śladu,
+np. `lives=[0-2]( |$)` trafia w ostatnią wartość `watch` w linii.
 
 ## Obrazki PNG (`assets/`)
 

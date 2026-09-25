@@ -1,0 +1,170 @@
+// LEKCJA 14 - rozwiazanie zadania 5 (piec jablek w tablicy, drzewa jako przeszkody). Zawiera zadania 3 i 4.
+#include "console/console.h"
+
+namespace {
+
+Sprite hero[2];
+Sprite bee[2];
+Sprite apple;
+Sprite tree;
+
+const int SCALE     = 3;
+const int SPEED     = 3;
+const int BEE_SPEED = 2;
+
+const int HERO_START_X = 100;
+const int HERO_START_Y = 228;
+const int BEE_START_X  = 700;
+const int BEE_START_Y  = 100;
+
+// Drzewa - struktura z pozycja; przez drzewo nie da sie przejsc
+struct Tree {
+    int x;
+    int y;
+};
+const int  TREE_COUNT = 4;
+const Tree trees[TREE_COUNT] = { { 300, 60 }, { 650, 330 }, { 120, 380 }, { 560, 40 } };
+
+// Jablka - tablica struktur; zebrane jablko pojawia sie w nowym miejscu
+struct Apple {
+    int x;
+    int y;
+};
+const int APPLE_COUNT = 5;
+Apple all_apples[APPLE_COUNT];
+
+int  hero_x = HERO_START_X;
+int  hero_y = HERO_START_Y;
+bool facing_left = false;
+bool walking     = false;
+int  apples = 0;
+
+int  bee_x  = BEE_START_X;
+int  bee_y  = BEE_START_Y;
+bool bee_left = false;
+int  lives  = 3;
+
+// Czy prostokat (x, y, w, h) zachodzi na ktores drzewo? Funkcja, bo pytamy o to dwa razy (ruch w x i w y).
+bool hits_tree(int x, int y, int w, int h)
+{
+    int tree_size = tree.w * SCALE;
+    for (int i = 0; i < TREE_COUNT; i++) {
+        // pien i korona: bierzemy troche mniejszy prostokat, zeby dalo sie przecisnac obok
+        if (overlaps(x, y, w, h, trees[i].x + 6, trees[i].y + 6, tree_size - 12, tree_size - 12)) return true;
+    }
+    return false;
+}
+
+void new_apple(int i)
+{
+    all_apples[i].x = random(0, screen_width() - apple.w * SCALE);
+    all_apples[i].y = random(60, screen_height() - apple.h * SCALE);
+}
+
+void setup()
+{
+    hero[0] = load_image("hero_0.png");
+    hero[1] = load_image("hero_1.png");
+    bee[0]  = load_image("bee_0.png");
+    bee[1]  = load_image("bee_1.png");
+    apple   = load_image("apple.png");
+    tree    = load_image("tree.png");
+
+    hero_x = HERO_START_X;
+    hero_y = HERO_START_Y;
+    facing_left = false;
+    apples  = 0;
+    bee_x   = BEE_START_X;
+    bee_y   = BEE_START_Y;
+    lives   = 3;
+
+    all_apples[0].x = 350;   // pierwsze jablko na drodze bohatera (test 1)
+    all_apples[0].y = 240;
+    for (int i = 1; i < APPLE_COUNT; i++) new_apple(i);
+}
+
+void frame()
+{
+    clear(rgb(70, 150, 70));
+
+    for (int i = 0; i < TREE_COUNT; i++) sprite(tree, trees[i].x, trees[i].y, false, SCALE);
+
+    int hero_w  = hero[0].w * SCALE;
+    int hero_h  = hero[0].h * SCALE;
+    int apple_w = apple.w * SCALE;
+    int apple_h = apple.h * SCALE;
+    int bee_w   = bee[0].w * SCALE;
+    int bee_h   = bee[0].h * SCALE;
+
+    if (lives == 0) {
+        text(screen_width() / 2 - text_width("KONIEC", 4) / 2, 180, "KONIEC", WHITE, 4);
+        text(screen_width() / 2 - text_width("A - jeszcze raz", 2) / 2, 250, "A - jeszcze raz", WHITE, 2);
+        text(20, 8, apples, WHITE, 3);
+        if (pressed(A)) restart();
+        watch("apples", apples);
+        watch("lives", lives);
+        return;
+    }
+
+    // ZADANIE 5: ruch z przeszkodami - najpierw probujemy krok, a jesli wchodzi w drzewo, cofamy go
+    walking = false;
+    int old_x = hero_x;
+    int old_y = hero_y;
+    if (held(LEFT))  { hero_x = hero_x - SPEED; facing_left = true;  walking = true; }
+    if (held(RIGHT)) { hero_x = hero_x + SPEED; facing_left = false; walking = true; }
+    hero_x = clamp(hero_x, 0, screen_width() - hero_w);
+    if (hits_tree(hero_x, hero_y, hero_w, hero_h)) hero_x = old_x;
+
+    if (held(UP))    { hero_y = hero_y - SPEED; walking = true; }
+    if (held(DOWN))  { hero_y = hero_y + SPEED; walking = true; }
+    hero_y = clamp(hero_y, 0, screen_height() - hero_h);
+    if (hits_tree(hero_x, hero_y, hero_w, hero_h)) hero_y = old_y;
+
+    // Zadanie 4: pszczola goni (przez drzewa przelatuje)
+    int hero_cx = hero_x + hero_w / 2;
+    int hero_cy = hero_y + hero_h / 2;
+    int bee_cx  = bee_x + bee_w / 2;
+    int bee_cy  = bee_y + bee_h / 2;
+    if (bee_cx < hero_cx) { bee_x = bee_x + BEE_SPEED; bee_left = false; }
+    if (bee_cx > hero_cx) { bee_x = bee_x - BEE_SPEED; bee_left = true; }
+    if (bee_cy < hero_cy) bee_y = bee_y + BEE_SPEED;
+    if (bee_cy > hero_cy) bee_y = bee_y - BEE_SPEED;
+
+    if (overlaps(hero_x, hero_y, hero_w, hero_h, bee_x, bee_y, bee_w, bee_h)) {
+        lives = lives - 1;
+        hero_x = HERO_START_X;
+        hero_y = HERO_START_Y;
+        bee_x  = BEE_START_X;
+        bee_y  = BEE_START_Y;
+    }
+
+    // Zadanie 3 dla kazdego jablka z tablicy
+    for (int i = 0; i < APPLE_COUNT; i++) {
+        if (overlaps(hero_x, hero_y, hero_w, hero_h, all_apples[i].x, all_apples[i].y, apple_w, apple_h)) {
+            apples = apples + 1;
+            new_apple(i);
+        }
+    }
+
+    int hero_frame = 0;
+    if (walking) hero_frame = (frame_count() / 8) % 2;
+    int bee_frame = (frame_count() / 4) % 2;
+
+    for (int i = 0; i < APPLE_COUNT; i++) sprite(apple, all_apples[i].x, all_apples[i].y, false, SCALE);
+    sprite(hero[hero_frame], hero_x, hero_y, facing_left, SCALE);
+    sprite(bee[bee_frame], bee_x, bee_y, bee_left, SCALE);
+
+    text(20, 8, apples, WHITE, 3);
+    for (int i = 0; i < lives; i++) {
+        circle(screen_width() - 30 - i * 30, 24, 10, RED);
+    }
+
+    watch("hero_x", hero_x);
+    watch("hero_y", hero_y);
+    watch("apples", apples);
+    watch("lives", lives);
+}
+
+}  // namespace
+
+CONSOLE_ADD_GAME(obrazki, "Obrazki PNG", "Lekcja 14: grafika z plikow")

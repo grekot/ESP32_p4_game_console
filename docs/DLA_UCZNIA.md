@@ -171,5 +171,6 @@ Wysyłaniem do internetu (push) zajmuje się rodzic.
 | 12 | `12_mini_mario` | mapa kafelków, skok | mini-platformówka |
 
 | 13 | `13_twoja_gra` | własny projekt od pomysłu do gry | twoja |
+| 14 | `14_obrazki` | obrazki PNG z Piskela, klatki animacji (dodatkowa, po lekcji 10) | sad z jabłkami i pszczołą |
 
 Rób je po kolei – każda korzysta z poprzednich.

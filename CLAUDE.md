@@ -11,9 +11,10 @@ dokumentacja w `docs/`, README i ten plik z polskimi znakami.
 
 - **Płytka jeszcze nie dotarła** (zamówiona 22.09.2026, dostawa ok. 27.09-01.10). Cały kod powstał bez
   sprzętu. Po przyjściu płytki zacząć od listy „Do zweryfikowania na sprzęcie" w `docs/HARDWARE.md`.
-- Firmware kompiluje się (23.09 późnym wieczorem, z grami pokazowymi Labirynt 3D i Kosmos): **1 208 kB flash
-  (28,8 % z 4 MB)**, 54,2 kB RAM statycznie (labirynt: zbuf 1,6 kB + gradienty 1 kB + mapa; kosmos: pule obiektów).
-  Przed grami pokazowymi: 1 186 kB / 46,0 kB. Dekoder PNG i komponent spiffs to ~70 kB. Wzrost z 832 kB to czcionki Montserrat 24/32/40/48 (~280 kB) — jeśli flash zacznie brakować,
+- Firmware kompiluje się (24.09 rano, po przeróbce wizualnej Karta): **1 266 kB flash (30,2 % z 4 MB)**, 78,4 kB RAM
+  statycznie (23.09 noc: 1 250 kB / 77,6 kB); siatki, bufor 14 000 trójkątów ekranowych, cache wierzchołków (100 kB, SRAM) i PNG nieba (~1,5 MB PSRAM) alokowane
+  w czasie działania.
+  Wcześniej: 1 208 kB / 54 kB (Labirynt + Kosmos), 1 186 kB / 46 kB (przed grami pokazowymi). Dekoder PNG i komponent spiffs to ~70 kB. Wzrost z 832 kB to czcionki Montserrat 24/32/40/48 (~280 kB) — jeśli flash zacznie brakować,
   wyłączyć 40 i 48 w `lv_conf.h` (używa ich tylko `console::text` w rozmiarze 4 i etykiety pada). Emulator kompiluje się i działa.
 - Wszystkie mechaniki Lake Mario zweryfikowane skryptami w emulatorze (lista niżej). Bez testu skryptowego,
   tylko przegląd kodu: meta `F`, śmierć w przepaści, koniec czasu.
@@ -33,10 +34,127 @@ dokumentacja w `docs/`, README i ten plik z polskimi znakami.
   wybuchy 4 klatki PNG). Grafika z `python tools/gen_demo_assets.py` (deterministyczne PNG do `assets/`). Pełne 3D
   odrzucone (DECYZJE 23). Regresja 14/14 (`tests/scenarios.txt`: + `labirynt_route`, `labirynt_door`, `kosmos_play` x2).
   `--bench`: labirynt 0,62 ms/klatkę na PC vs 0,52 ms pusta gra; szacunek na P4 2-4 ms — **do zmierzenia na sprzęcie**.
+- **Silnik 3D `src/gfx3d/` (23.09 noc, po ocenie użytkownika „słaba ta gra, czy ogranicza nas silnik?”):** software'owy
+  rasteryzator low-poly na `gfx::Canvas` – `math3d.h` (Vec3, Mat4, `heading()`), `mesh` (siatka: kolor na trójkąt, bryły:
+  box/klin/koło/walec/stożek/kula/dysk, `smooth` = Gouraud, `unlit`), `renderer` (kamera, światło kierunkowe, mgła, cull po
+  normalnej, przycinanie z ≥ 1, sortowanie malarskie 1024 kubełków × 2 warstwy z FIFO, bez Z-bufora; `project()`,
+  `horizon_y()`, statystyki). Bufory w PSRAM przez `platform::alloc_pixels`. Max 4096 wierzchołków na siatkę. DECYZJE 27.
+- **Kart (23.09 noc; „wypasiona gra w stylu Mario Kart”, „żadnej pikselozy”, „coś, co da lepsze możliwości”):**
+  `src/games/kart/` (kart_game.cpp logika 2D: tor Catmull-Rom, mapa nawierzchni 128x128, fizyka, AI z pasami i „gumą”,
+  przedmioty, ranking; kart_render.cpp: scena 3D na gfx3d) – tor z wzniesieniami (256 przekrojów × 11 wierzchołków:
+  4 pasy asfaltu, krawężniki, pobocza; siatka terenu 32x32 bez komórek pod drogą; wysokość = suma sinusów, tylko wizualna),
+  gokarty jako modele (17 brył + kask Gouraud + 4 koła: obrót z prędkości, skręt przednich, przechył z `yaw_rate_` i terenu),
+  drzewa/skrzynki (unlit)/przedmioty/flaga jako bryły, kamera za gokartem podążająca za terenem, niebo+chmury+góry (pasy PNG
+  z alfą, `gfx::Image`/`load_png_rgba`), dym driftu, kurz, płomień turbo (`draw_image` z alfą przez `r3d_.project`).
+  4 gokarty, 3 okrążenia, skrzynki → grzyb/banan/skorupa, drift + mini-turbo, pola przyspieszenia, wirowanie, mini-mapa,
+  tabela na mecie; **Y = autopilot** (demo + testy). Jakość adaptacyjna (`quality_` 0/1/2: zasięg mgły i chmury, próg 13 ms).
+  Na PC 2,7 ms/klatkę (~7 tys. trójkątów). Regresja: `kart_auto`, `kart_race`, `kart_player` (wzorce nagrane po zmianie
+  mapy nawierzchni na komórkową). Nazwy w UI („Kart”, „Niebieski/Zielony/Zolty”) robocze – użytkownik nie zatwierdzał.
+  `gen_kart_assets.py` (Pillow) generuje już tylko elementy 2D: ikony, chmury, góry, dym, poświatę, płomień.
+- **Kart – przeróbka wizualna (24.09 rano, „wygląda słabo, ma być naprawdę atrakcyjnie”):** koniec z szachownicą asfaltu
+  i trawy – `road_` i `terrain_` to siatki Gouraud z **kolorami wierzchołków** (`Mesh::vertex_colors`, `add_vertex(p, kolor)`):
+  asfalt z szumem i jaśniejszą osią, trawa z koloru wysokości (doliny ciemne, wzniesienia jasne) + szum. Oznaczenia w osobnej
+  płaskiej siatce `marks_` wypełniającej luki w `road_` (krawężniki czerwono-białe co 3 przekroje, linie boczne, przerywana
+  oś, szachownica startu 8 kolumn, szewrony pól przyspieszenia). Statyczne obiekty w jednej siatce `props_` w współrzędnych
+  świata: brama startowa (szachownicowy baner z obu stron, czerwona belka), trybuna z kolorową publicznością i dachem (przy
+  przekrojach 0-18 po lewej; drzewa stamtąd usunięte), stosy opon (2 poziomy) po zewnętrznej ostrych zakrętów (`path_curvature`
+  > 0,17), banery na prostych. Krzaki (`bushes_`, 40, dwa odcienie) za krawężnikiem, drzewa ze skalą losową i **cieniami**
+  (dysk, `depth_bias` 60 w `draw_mesh` → zawsze po podłożu). **Bolid (druga iteracja po „bolidy wyglądają bardzo słabo”):**
+  kadłub jako łańcuch brył ściętych o wspólnych przekrojach (ogon → kokpit → nos → szpic, `Mesh::add_loft`/`add_hexa`),
+  pontony z czarnymi wlotami i białym pasem, lusterka, airbox z wlotem za głową, silnik, wydechy, płyta podłogowa i dyfuzor
+  (karbon), tylne skrzydło z dwu płatów + białe płytki + dwa środkowe słupki, przednie skrzydło z klapą i płytkami,
+  **wahacze** (widelce z przodu, drążki, wahacze i oś z tyłu – `add_rod`: pręt o kwadratowym przekroju między dwoma
+  punktami, ogólny helper), kierowca: fotel, tułów-loft, barki, kark, ramiona-pręty do kierownicy, rękawice, kierownica
+  ze środkiem i kolumną; kask 12×6 z wizjerem i pasem. **Koła z felgą**: `add_wheel(..., rim)` – bok koła = ściana boczna opony
+  (jaśniejsza czerń) + **wklęsła** felga w ciemnym graficie z fasetami na przemian („szprychy”) + mały jasny kapsel na osi
+  (pierwsza wersja z płaską jasnoszarą tarczą na pół boku wyglądała jak „bębny” – uwaga użytkownika), promienie 2,1/2,4,
+  12 boków. 648+384 trójkątów
+  na gokart (było 360+192). Światło zgodne z tarczą słońca (`SUN_ANGLE` 0,9 rad),
+  niebo 3-progowe, cień gokarta szary. Kamera: FOV rozszerza się przy turbo (`fov_vis_`), na tytule kołysze się za polami
+  startowymi. HUD: zaokrąglone panele z cieniem (`hud_panel`, `fill_round_rect_alpha`), medal miejsca, kolejność 4 gokartów
+  (kropki), pasek prędkości z gradientem i km/h, etykieta DRIFT/MINI-TURBO, komunikat „OKRAZENIE n / OSTATNIE OKRAZENIE!”,
+  odliczanie w pulsującym kole, tabela mety z czasami. Tryb oszczędny `Renderer::set_flat_only` przy `quality_ ≥ 1`
+  (Gouraud → płasko), `quality_ ≥ 2` bez krzaków i cieni drzew. **PC: 2,4-3,4 ms/klatkę (było 2,05; rozrzut między
+  uruchomieniami)**, ~14 tys. trójkątów w scenie przed odrzucaniem (droga 3040+2672, teren 930, obiekty 3024, gokart
+  4×(648+384)); bufor renderera 18 000.
+- **Kart – tekstury, cienie, odblask, ślady, Z-bufor (25.09 rano; użytkownik: „nadal wiele do życzenia, czy silnik nie
+  da ładniej?” → ocena + plan A-E, „działaj po kolei od A do E”):**
+  A. **Teksturowanie w gfx3d:** atlas 512×512 **8-bit z paletą** (`assets/kart/atlas.png` z `tools/gen_kart_atlas.py`,
+  Pillow; indeks 0 = przezroczysty; `gfx::load_png_indexed` dekoduje lodepng do indeksów + paleta) i **colormapa**
+  16 odcieni × 12 poziomów mgły × 256 (96 kB, `Renderer::set_texture`) – piksel = 2 odczyty (atlas, colormapa), bez
+  mnożenia kolorów (jak w Quake). Rasteryzacja afiniczna z **korekcją perspektywy co 16 px** (u/z, v/z, 1/z liniowe),
+  Gouraud = interpolowany wiersz colormapy, `alpha_test` (indeks 0) dla billboardów. `Tri` ma `u[3], v[3], tex`;
+  `add_quad_uv/add_tri_uv/set_tri_uv`, `add_hexa/add_loft(..., top_uv)`, `add_wheel(..., tread_uv)`, `add_billboard`.
+  Kart: asfalt (kafelek 128 na 64 jednostki w poprzek, 6 przekrojów wzdłuż), trawa (pobocze szczegółowa, dalsze pobocze
+  i teren wygładzona – bez mipmap ostra tekstura migocze w oddali), komórki terenu z losowym obrotem UV i wyborem
+  sucha/soczysta z wysokości, malowania bolidów 64×128 (numer, pasy, sponsorzy) na wierzchu kadłuba, bieżnik opon,
+  publiczność trybuny, banery (KART/TURBO/LAKE) i baner bramy z tekstu (Arial Bold; fallback DejaVu/domyślna) – dwustronne
+  `add_sign`. **Drzewa i krzaki = billboardy** (1 prostokąt obracany do kamery, `unlit + alpha_test`, 2 trójkąty zamiast
+  ~100 – i wyglądają lepiej). Uwaga: `add_billboard` – prawo widza = `cross(-n, up)`; pierwsza wersja odbijała napisy.
+  B. **Cienie rzutowane:** `Mat4::shadow_onto_plane(kierunek do słońca, y)` + `Renderer::draw_shadow(mesh, model)` →
+  maska 1 B/piksel, po warstwie 0 piksele maski przyciemniane (×0,69, `darken565`), maska czyszczona tylko w bbox.
+  Półprzezroczysty cień o kształcie bolidu (kadłub + 4 koła), bez podwójnego przyciemnienia nakładających się trójkątów.
+  Słońce podniesione (`SUN_ELEV` 1,15 ≈ 50°), bo przy 33° cień był dłuższy od bolidu. Cienie drzew = dysk w masce.
+  C. **Odblask:** `Mesh::specular` (wykładnik 16, półwektor L+V liczony raz na `draw_mesh`), kadłub `smooth` z normalnymi
+  uśrednionymi w narożach (zaokrąglony lakier), kask 0,8, kadłub 0,38 (0,55 przepalało do bieli).
+  D. **Ślady opon:** `update_skids` w logice (tylne koła przy drifcie/wirowaniu na asfalcie, segment co 1,5 jednostki,
+  bufor 240 czworokątów, 30 s zanikania) rysowane `draw_tri(unlit, depth_bias 30)`. Nie wchodzą do `debug_line`.
+  E. **Z-bufor 16-bit** (768 kB PSRAM, `enable_zbuffer`, 1/z jako 8.16 w spanie) przy `quality_ == 0`; sortowanie
+  malarskie zostaje. Koszt na PC +0,3 ms. `KART_NOZ=1` (zmienna środowiskowa) wyłącza go do pomiaru.
+  **Wynik: PC ~5 ms/klatkę (było 2,5)**; firmware 1 275 kB flash, 88,7 kB RAM statycznie (+10 kB: `KartGame` jest
+  `static` w `registry.cpp`, ślady opon 9,6 kB). Na P4 koszt teksturowania NIEZMIERZONY – cel projektowy 30 FPS,
+  awaryjnie `quality_` (płasko, bez Z-bufora, bez krzaków/cieni). **Testy:** adaptacyjna jakość mierzy zegar, więc pod
+  obciążeniem CPU zrzut `kart_race` różnił się między uruchomieniami → `engine::set_deterministic()` (ustawiane przez
+  `app::set_fixed_dt`) zamraża jakość w trybie `--frames`. Opis Karta w menu poprawiony („Wyscigi 3D…”, był „Mode 7”)
+  → wzorzec `menu` nagrany na nowo. DECYZJE 29.
+  **Bolidy „ginęły pod asfaltem” (zgłoszenie użytkownika po Z-buforze):** jezdnia jest wypłaszczona w poprzek (wysokość
+  środka toru), a obiekty stały na `ground_height` swojego punktu – niżej od nawierzchni na przechyle terenu; malarz to
+  maskował (warstwa 1 zawsze nad 0), Z-bufor uczciwie chował koła. Rozwiązanie: `surface_height(x, z)` (najbliższy odcinek
+  linii środkowej, płasko do 38, przejście do terenu jak w siatce `road_`) dla bolidów (wysokość, pochylenie, przechył),
+  przedmiotów, dymu, iskier, śladów (wysokość zapamiętana w `Skid::h`), kamery; drzewa i krzaki cachują wysokość przy
+  budowie (`tree_h_`, `Bush::h`). Zasada: **co stoi na drodze, pyta o `surface_height`, nie `ground_height`.**
+  To nie wystarczyło (użytkownik: „już na starcie koła wchodzą w asfalt”). Pomiar (tymczasowy log spodu koła vs wysokość
+  siatki pod nim) pokazał trzy źródła: (1) przechył w zakrętach `yaw_rate_ * 0.09` (do 0,16 rad) obracał CAŁY bolid z kołami
+  wokół punktu na ziemi → zewnętrzne koła 1,1 jednostki pod drogą; (2) `prev_angle_` niezerowane w `new_race` → skok kąta
+  → przechył 0,16 przez ~1 s na starcie (i na tytule); (3) krzywizna terenu (`2·sin((x−2z)·0,027)`) daje ~0,13 jednostki
+  ugięcia na pół rozstawu osi. Rozwiązanie w `draw_kart_3d`: **każde koło na `surface_height` swojego punktu**, nadwozie
+  z pochyleniem i przechyłem z czterech kół (średnie przód/tył, lewo/prawo), przechył kosmetyczny (max 0,09) obraca tylko
+  nadwozie wokół osi kół (y = 2,3); `prev_angle_`/`yaw_rate_` zerowane w `new_race`. Weryfikacja: wycinki kół z Z-buforem
+  i bez (`KART_NOZ=1`) identyczne.
+  **Bolidy były lustrzanym odbiciem (użytkownik: „przednie koła skręcają się przeciwnie”).** Rachunek na macierzach
+  i rzut czubka koła na ekran mówiły „w prawo”, obraz mówił „w lewo”. Przyczyna: `Mat4::heading` (X = prawo, Y = góra,
+  Z = przód) ma **wyznacznik −1** – to odbicie, nie obrót (prawoskrętna baza z Z do przodu ma X w lewo). Odbicie odwraca
+  nawinięcie trójkątów w świecie, więc `cross(b−a, c−a)` wskazywało do środka bryły: cull odrzucał BLIŻSZE ściany, widać było
+  dalsze = lustrzane odbicie modelu (koła „skręcone” odwrotnie, malowanie z numerem na masce w ogóle niewidoczne, bo górna
+  ściana odrzucana). Malarz i brak Z-bufora maskowały to od początku (23.09). Naprawa w `Renderer::draw_mesh`: wyznacznik
+  macierzy modelu < 0 → normalna geometryczna mnożona przez −1 (cull i oświetlenie płaskie); normalne gładkie
+  (`apply_dir(V.n)`) bez zmian, bo izometria zachowuje „na zewnątrz”. **Zasada: każda macierz modelu z odbiciem jest OK
+  dla renderera, ale nie budować na tym dalszych założeń o kolejności wierzchołków.**
+  **Kolizje z obiektami przy torze (użytkownik: „można przejechać przez drzewo”):** `add_obstacle(x, y, r)` wołane przy
+  budowie sceny (pnie drzew 2,6, stosy opon 2,7, słupy bramy 2,2, słupki banerów 1, trybuna jako 9 okręgów po 5),
+  `obstacle_collisions` w fizyce po `kart_collisions`: wypchnięcie z okręgu `r + KART_RADIUS`, prędkość × (1 − 0,75·into),
+  gdzie `into` = składowa kierunku jazdy w stronę przeszkody. Deterministyczne; ślady Karta bez zmian, bo AI nie zjeżdża
+  z toru (sprawdzone regresją). Ślady `kart_auto`/`kart_player` bez zmian (fizyka
+  nietknięta), wzorzec `kart_race` nagrany na nowo. DECYZJE 28.
+- **Snake (25.09, prośba „nowa gra snake na ładnych grafikach z mojego Gemini”; lekcja 07 `waz` zostaje):** `src/games/snake/`
+  (snake_game.cpp: 10 plansz ASCII 25x14 w 5 światach, ruch po kratkach z kolejką 3 skrętów, przedmioty, combo, portal,
+  tryb Bez końca, autopilot BFS; snake_render.cpp: tło wypalane raz na poziom do `bake_`, ciało z kulek generowanych w kodzie
+  + obrys + cień przez maskę, głowa z Gemini obracana, HUD, ekrany). Grafika: Gemini w **Chrome użytkownika** (Claude in
+  Chrome, gemini.google.com, konto z subskrypcją; wbudowana przeglądarka nie jest zalogowana) – arkusze 4x3 na magencie,
+  tła, ilustracja tytułowa; surowe JPG w `assets_src/snake/` (19 MB, **nie** idą na SPIFFS), obróbka
+  `python tools/gen_snake_assets.py` → `assets/snake/` (2,8 MB). Pobieranie z Gemini: przycisk „Pobierz obraz w pełnym
+  rozmiarze” (widoczny po najechaniu na obraz) → `~/Downloads/Gemini_Generated_Image_*.jpg`; gdy kolejne pobrania nie
+  przychodzą, pomaga odświeżenie strony. Sterowanie: A = turbo, X na tytule = poziom startowy, Y = autopilot (w autopilocie
+  poziomy przechodzą same). PC 0,84 ms/klatkę; firmware 1 317 kB flash, 97,2 kB RAM statycznie. Rekordy tylko w RAM.
+  Regresja: `snake_auto`, `snake_title`, `snake_desert`, `snake_gameover`, `snake_player` (22/22 z menu nagranym na nowo).
+  DECYZJE 30. **Nieoceniona przez użytkownika, na sprzęcie niesprawdzona** (koszt dekodowania tła PNG przy starcie poziomu).
+- **Lekcja 14 `14_obrazki` (23.09 noc):** PNG z `load_image`, klatki animacji w tablicy `Sprite hero[2]`, Piskel, drzewa jako
+  przeszkody z cofaniem ruchu; gra „sad” (jabłka, pszczoła). Kod startowy pada na 2 testy, zad4/zad5 przechodzą (zad3 tylko test 1).
+  Lekcja dodatkowa po 10. Grafika z `gen_demo_assets.py` (`assets/obrazki/`).
 - Repozytorium: **https://github.com/grekot/ESP32_p4_game_console.git**, gałąź `main`, pierwszy commit 23.09.2026.
   Commit i push tylko na wyraźne polecenie użytkownika. `.gitattributes` wymusza LF w repozytorium.
   Uwaga historyczna: repozytorium bez żadnego commita wywala build ESP-IDF (woła `git describe`).
-- Około 11 000 linii własnego kodu (bez sterownika ST7701 i lodepng), w tym ~1500 w `src/console` + lekcje + `tools/` oraz ~1100 w grach pokazowych.
+- Około 11 500 linii własnego kodu (bez sterownika ST7701 i lodepng), w tym ~1500 w `src/console` + lekcje + `tools/` oraz ~1100 w grach pokazowych.
 
 ## Komendy
 
@@ -52,6 +170,8 @@ cmake --build sim/build              # emulator (kilka sekund) - ZAMKNIJ dzialaj
 ./sim/build/console_sim.exe --game 0 --hold B 3 4 --hold RIGHT 20 90 --frames 90 --trace 15   # test skryptowany
 ./sim/build/console_sim.exe --game labirynt3d --hold A 3 4 --hold UP 10 600 --frames 600 --bench   # sredni/max czas klatki (PC)
 python tools/gen_demo_assets.py                              # PNG dla labirynt3d i kosmos (assets/), deterministyczne
+python tools/gen_kart_atlas.py                               # atlas tekstur Karta (assets/kart/atlas.png, Pillow, deterministyczny)
+python tools/gen_snake_assets.py                             # Snake: assets_src/snake/*.jpg (Gemini) -> assets/snake/*.png (Pillow)
 powershell -File tools/testy.ps1 mario                       # regresja: 8 sladow + 6 zrzutow bajt w bajt (Mario, api_demo, labirynt, kosmos)
 powershell -File tools/testy.ps1 src/games/lekcje/02_pilka   # testy zadan jednej lekcji (kod startowy PADA, rozwiazanie przechodzi)
 powershell -File tools/testy.ps1 mario -Update               # nowe wzorce - tylko po swiadomej zmianie (np. menu po nowej lekcji)
@@ -87,6 +207,8 @@ src/platform/           interfejs platformy + implementacja ESP
 src/board/              sterowniki płytki: pins.h, display (DSI+PPA), touch (GT911), keypad, joystick (ADC2), buttons, st7701/
 src/core/log.h          logowanie zależne od celu
 src/gfx/                Canvas RGB565 (blit, blit_scaled, blit_upscale2x, line, circle), Sprite z ASCII-artu (make_sprite, domyślna paleta),
+                        png.h: load_png (RGB565 z kolorem-kluczem) i load_png_rgba → gfx::Image (RGB565 + alfa 0..255, PSRAM) dla gier
+                        z mieszaniem alfa (Kart),
                         text.h (wygładzony tekst Montserrat 12-48 px z glifów LVGL - menu i gry ucznia),
                         palette.h (19 kolorów gfx::pal::* + DEFAULT_PALETTE, wspólna dla Mario i console), czcionka 5x7 (wielkie+małe)
 src/input/              keys.h (14 klawiszy), pad.h (PadState + osie, held/pressed), virtual_pad (dotyk + klawisze -> PadState, zbocza)
@@ -104,16 +226,34 @@ src/games/labirynt3d/   raycasting (DDA po mapie 32x24 z liter, własna tablica 
                         zbuf_[400], gradient sufit/podłoga, drzwi 'D' znikają przy podejściu; debug_line: x y ang coins doors time
 src/games/kosmos/       strzelanka 800x480: pule Bullet/Asteroid/Boom/Spark, gwiazdy 3 warstwy, PNG z assets/kosmos/; debug_line:
                         ship score lives asteroids bullets
+src/gfx3d/              math3d.h (Vec3, Mat4 wierszowa, heading, shadow_onto_plane), mesh.h/.cpp (Mesh + bryły: box/hexa/loft/klin/
+                        koło/walec/stożek/kula/dysk/billboard, UV na trójkąt, smooth/unlit/vertex_colors/alpha_test/specular),
+                        renderer.h/.cpp (Camera, Light, Fog, Renderer: set_texture (atlas 8-bit + colormapa), enable_zbuffer,
+                        begin/draw_mesh(depth_bias)/draw_tri/draw_shadow/end, project, horizon_y, set_flat_only)
+src/games/snake/        snake_game (plansze, ruch, przedmioty, autopilot BFS; debug_line: stan lvl len head dir apples score lives items
+                        portal pw=SGMXO ap), snake_render (bake_field, kulki ciała, głowy obrócone, portal 8 faz, HUD, tytuł, nakładki)
+src/games/kart/         kart_game (tor Catmull-Rom → path_ + surf_, fizyka 2D, AI, przedmioty, ranking, dym, obrót kół, ślady opon),
+                        kart_render (atlas + colormapa; build_road: road_ teksturowana Gouraud + marks_ płaskie; build_terrain;
+                        build_props: brama/trybuna/opony/banery z teksturami; build_decor: billboardy drzew i krzaków;
+                        build_kart_models z malowaniem; draw_scene: kamera, światło, mgła, Z-bufor, cienie rzutowane, ślady, jakość;
+                        draw_sky: gradient 3-progowy/słońce/pasy; draw_effects: dym/płomień/iskry przez project(); HUD:
+                        draw_hud_title/race/finish, draw_minimap); debug_line: lap place x y ang spd idx item surf t boost spin ai haz sh
 assets/                 PNG gier: bohater/, api_demo/, labirynt3d/ (brick stone door exit coin portal), kosmos/ (ship asteroid_s/m/l
-                        bullet boom0-3) - generowane przez tools/gen_demo_assets.py, podmiana pliku = nowa grafika
-src/games/lekcje/       lista.h (LEKCJA(id) na lekcję) + 00_szablon … 13_twoja_gra: gra.cpp, README.md, testy.txt, rozwiazania/*.cpp.txt
+                        bullet boom0-3), obrazki/ (lekcja 14) - tools/gen_demo_assets.py; kart/ (banana/shell/mushroom 48 = ikony HUD,
+                        clouds 1024x160, mountains 2048x160, smoke, glow, flame - tools/gen_kart_assets.py; atlas.png 512x512 8-bit
+                        z paletą: asfalt, trawa ×2, publiczność, banery, drzewa, krzaki, bieżnik, brama, 4 malowania -
+                        tools/gen_kart_atlas.py, układ kafelków w docstringu i w tabeli T_* w kart_render.cpp); gokarty, skrzynki,
+                        brama, trybuna to modele 3D w kodzie. Podmiana pliku = nowa grafika
+src/games/lekcje/       lista.h (LEKCJA(id) na lekcję) + 00_szablon … 13_twoja_gra, 14_obrazki (dodatkowa, PNG): gra.cpp, README.md,
+                        testy.txt, rozwiazania/*.cpp.txt
 sim/                    emulator: CMakeLists (LVGL: managed_components → third_party/lvgl → FetchContent zip), CMakePresets,
                         platform_win32 (set_unthrottled), keymap_win32 + keymap.cfg, gamepad_win32 (winmm), main (--list, --game id,
                         --bench, --hold do 12 wpisów; set_fixed_dt PRZED start_game = stałe ziarno)
 tests/                  scenarios.txt + expected/ (ślady i BMP: Mario nagrane 23.09 przed refaktorem; api_demo, labirynt, kosmos 23.09 wieczorem)
 tools/                  testy.ps1 (regresja + testy lekcji), setup_kid_pc.ps1 (PC ucznia), fetch_lvgl.ps1, bmp2png.ps1,
                         md2pdf.py (Markdown -> PDF przez Edge headless; python Windows + pakiet markdown),
-                        gen_demo_assets.py (PNG gier pokazowych, czysty Python/zlib)
+                        gen_demo_assets.py (PNG gier pokazowych i lekcji 14, czysty Python/zlib), gen_kart_assets.py (model 3D gokarta
+                        rzutowany w 16 kierunkach, przedmioty, drzewa)
 docs/API.md             opis wszystkich funkcji console dla ucznia + plakat docs/images/api_plakat.png (gra 99_api_demo)
 docs/pdf/               PDF-y z md2pdf.py: API, DLA_UCZNIA, kazda lekcja (odswiezac po zmianie README)
 third_party/            (gitignore) LVGL z fetch_lvgl.ps1 na komputerze bez PlatformIO
@@ -152,11 +292,26 @@ docs/DECYZJE.md         dziennik decyzji projektowych z uzasadnieniami (wpisy 15
   `git ls-files`) — dla gita to zero różnicy. Uwaga dla narzędzi: `perl -0pi` z wzorcem `\n` nie trafia w pliki CRLF,
   a `git diff --quiet` ignoruje `--ignore-cr-at-eol` przy kodzie wyjścia (używać `--name-only`).
 - Emulator w trybie `--frames` nie czeka na 60 FPS (`sim::set_unthrottled`), stąd 600 klatek w ułamku sekundy; wyniki bez zmian.
+- **Emulator w `--frames` ignoruje prawdziwą klawiaturę i mysz** (`sim::set_ignore_real_input`, 25.09). Wcześniej stan
+  klawiszy z okna dokładał się do `--hold`, więc Enter (= START) wciśnięty przez osobę piszącą przy komputerze w trakcie
+  `testy.ps1` pauzował grę w teście: ślad `kart_player` pokazywał `PAUSED`, a wzorzec nagrany `-Update` w takiej chwili był
+  zły. Objaw: test raz przechodzi, raz nie, bez zmian w kodzie. Od tego samego dnia okno emulatora w `--frames` jest
+  **ukryte** (`SW_HIDE`; zrzuty idą z bitmapy w pamięci) – wcześniej wyskakiwało na pierwszy plan i kradło fokus
+  osobie piszącej w innym edytorze (zgłoszenie użytkownika).
 - **Nie ruszać `managed_components/` podczas `pio run`.** Menedżer komponentów ESP-IDF przy każdym buildzie sprawdza hash
   katalogu; gdy 23.09 przemianowałem `managed_components` na czas testu ścieżek LVGL emulatora, a w tle szedł `pio run`,
   komponent `lvgl__lvgl` został uznany za uszkodzony i wyczyszczony (zostały `tests/` i `zephyr/`). Naprawa: `rm -rf
   managed_components/lvgl__lvgl` i `pio run` (pobiera wg `dependencies.lock`). Testy ścieżek LVGL emulatora robić przy
   zatrzymanym PlatformIO albo przez `-DCONSOLE_LVGL_DIR=`.
+- **Partycja assets: `board_build.filesystem = spiffs` + `board_build.spiffs.obj_name_len = 64` w `platformio.ini`
+  (dodane 25.09).** Bez nich pioarduino budował obraz **LittleFS**, a potem SPIFFS z nazwami 32 znaki – firmware montuje
+  SPIFFS z `CONFIG_SPIFFS_OBJ_NAME_LEN=64` i `format_if_mount_failed`, więc `uploadfs` skończyłby się skasowaniem obrazków.
+  Sprawdzenie bez płytki: `pio run -t buildfs` → `.pio/build/jc4880p443c/spiffs.bin` (25.09: 3,68 MB zajęte z 11,94 MB,
+  w tym 2,96 MB plików; Snake 2,84 MB). Montowanie na sprzęcie nadal niesprawdzone.
+- **Nie zmieniać `platformio.ini`, gdy otwarte jest VS Code z PlatformIO IDE.** Rozszerzenie po zapisie pliku samo
+  rekonfiguruje projekt; równoległa konfiguracja ESP-IDF z terminala ściga się o `managed_components` i komponent
+  `lvgl__lvgl` zostaje „corrupted” (25.09: dwa razy z rzędu). Naprawa jak niżej: `rm -rf managed_components/lvgl__lvgl`,
+  odczekać, aż nie działa żaden `pio`/`python` z VS Code, i jeden `pio run`.
 - Skrypty PowerShell w `tools/` są pod Windows PowerShell 5.1 (bez `&&`, bez `?:`); składnię sprawdza
   `[System.Management.Automation.Language.Parser]::ParseFile`.
 
@@ -231,6 +386,24 @@ docs/DECYZJE.md         dziennik decyzji projektowych z uzasadnieniami (wpisy 15
 - **Pule obiektów (Kosmos, nauczka):** funkcja `spawn_*` szukająca wolnego slotu może zająć slot, który właśnie zwolniliśmy
   w tej samej iteracji — wszystko, co jest potrzebne po `alive = false` (rozmiar, pozycja), skopiować do lokalnych
   zmiennych **przed** spawnowaniem. Objaw był: „statek-widmo" (indeks -1 w tablicy sprite'ów) i niedeterministyczny ślad.
+- **Testy lekcji: `(?m)`.** `testy.ps1` dopina `(?m)` do regexa, więc `^`/`$` działają na LINII, nie na całym wyjściu
+  (wcześniej `lives=2( |$)` nie trafiało, bo za śladem są jeszcze logi). Przy podmianie `gra.cpp` na rozwiązanie i z powrotem
+  przez `mv` **ninja nie przebuduje pliku** (stary mtime) – po przywróceniu `touch gra.cpp`, inaczej binarka nadal ma rozwiązanie.
+- **gfx3d – układ i konwencje:** X prawo, Y góra, Z „w głąb”; mapa 2D gry (x, y) = 3D (X, Z). `Mat4::heading(a)` ustawia
+  lokalne +Z modelu na (cos a, 0, sin a) i lokalne +X na prawo gokarta (jawna baza, nie `rotation_y` – ta mirrorowała X).
+  Nawinięcie trójkątów: budować przez `add_tri_out/add_quad_out` z wektorem „na zewnątrz” (normalna = cross(b−a, c−a));
+  cull odrzuca `dot(n, a − kamera) > 0`. Sortowanie malarskie: warstwa 0 (teren, cienie) przed 1 (obiekty); w kubełku
+  kolejność zgłaszania (FIFO) – cień zgłaszać po drodze, gokart po cieniu. Skrzynki `unlit`, bo boki w cieniu wyglądały
+  jak ciemne płytki „pływające” nad drogą (to nie był błąd geometrii). `draw_mesh` ma cache 4096 wierzchołków (alokowany w `Renderer::init`, SRAM z awaryjnym PSRAM) – większa siatka = podział na kilka.
+  Zmiana mapy nawierzchni (stemplowanie komórek 8x8 zamiast tekseli) zmienia ślady Karta – wzorce nagrane 23.09 noc.
+  **Kolory wierzchołków** (`vertex_colors`) wymagają `smooth`; wierzchołek dzielony między pasami o różnych kolorach się rozmyje –
+  pasy o ostrej granicy (asfalt | trawa) mają własne wierzchołki, a płaskie oznaczenia (krawężniki, linie) siedzą w LUKACH siatki
+  Gouraud, nie na niej (nakładanie dwu współpłaszczyznowych siatek = migotanie sortowania malarskiego). **Cienie na podłożu**:
+  `draw_mesh(..., layer 0, cull, depth_bias = 60)` – bez przesunięcia duży trójkąt terenu o dalszym środku zamalowywał dysk cienia.
+  Kamera nie może wjeżdżać w bryły (przycinanie z ≥ 1 rozrywa geometrię) – na tytule kołysze się za gokartami zamiast okrążać.
+  **Stos zadania konsoli na płytce to 16 kB** (`main.cpp`): tablice robocze budowy siatek (indeksy pierścieni toru 10 kB, siatka
+  terenu 4 kB) idą przez `new[]`/`delete[]`, nie na stos (wersja z 23.09 miała 15,6 kB na stosie w `build_scene` – na sprzęcie
+  groziło przepełnieniem) i nie jako `static` (zjadałyby SRAM na stałe).
 - Labirynt 3D: mapa 32x24 w własnej tablicy (`TileMap::MAX_ROWS` = 16; podniesienie limitu = więcej RAM w każdej instancji).
   Po zmianie mapy sprawdzić osiągalność BFS-em (skrypt jednorazowy; 4 zamknięte pokoje wyszły przy pierwszej wersji).
 - Struktury ESP-IDF inicjalizować przez `= {}` + przypisania pól (kolejność pól w makrach IDF bywa niezgodna z C++).
@@ -253,8 +426,8 @@ i powrót (czas dalej liczy); START na tytule nie startuje gry. **Zmieniając fi
 **Siatka regresji (od 23.09 po południu):** `tests/scenarios.txt` = 6 śladów Mario (chód, skok tap/pełny, bieg, 600 klatek,
 pauza) + 3 zrzuty BMP (tytuł, gra, menu), wzorce w `tests/expected/` nagrane z binarki **sprzed** refaktoru silnika
 (math2d, palette, ParticlePool, TileMap); od wieczora także `api_demo` (zrzut), `labirynt_route` (ślad 640 klatek: skręty,
-drzwi, moneta), `labirynt_door` (zrzut), `kosmos_play` (ślad + zrzut, losowość ze stałym ziarnem). `tools/testy.ps1 mario`
-musi dać 14/14 po każdej zmianie w `src/engine`, `src/gfx`, `src/games/*`. Zrzut `menu` zmienia się po dodaniu lekcji — wtedy `-Update`. Testy lekcji: kod startowy w `gra.cpp`
+drzwi, moneta), `labirynt_door` (zrzut), `kosmos_play` (ślad + zrzut, losowość ze stałym ziarnem). od nocy `kart_auto` (ślad 1800 klatek autopilotem), `kart_race` (zrzut), `kart_player` (ślad). `tools/testy.ps1 mario`
+musi dać 22/22 (od 25.09, z pięcioma testami Snake) po każdej zmianie w `src/engine`, `src/gfx`, `src/games/*`. Zrzut `menu` zmienia się po dodaniu lekcji — wtedy `-Update`. Testy lekcji: kod startowy w `gra.cpp`
 **ma padać**, `rozwiazania/zadN.cpp.txt` skopiowane do `gra.cpp` **ma przechodzić** (sprawdzone dla 01-12).
 
 ## Lake Mario - fizyka i poziom
@@ -296,7 +469,7 @@ musi dać 14/14 po każdej zmianie w `src/engine`, `src/gfx`, `src/games/*`. Zrz
 2. Płytka: uruchomienie wg listy w `docs/HARDWARE.md` (koniec ramki DPI co klatkę, kierunek obrotu vs USB,
    mapowanie dotyku, rewizja krzemu, kalibracja gałki, odkłócanie klawiszy). Lekcje pojawią się w menu konsoli.
 3. Testy skryptowe brakujących mechanik Mario: meta `F` (LevelClear), przepaść, koniec czasu (dopisać do `tests/scenarios.txt`).
-   Labirynt 3D: scenariusz dojścia do portalu (stan WON).
+   Labirynt 3D: scenariusz dojścia do portalu (stan WON). Kart: test trafienia skorupą i mini-turbo.
 4. Zrzuty lekcji do README (`LEKCJA: Zrzut ekranu` + `tools/bmp2png.ps1`), ewentualnie `docs/images/lekcje/`.
 5. Dźwięk: ES8311 przez I2S (`espressif/esp_codec_dev`, adres 8-bitowy 0x30, I2S stereo slot mimo mono, jedna instancja IN_OUT);
    dla ucznia `console::beep()`.

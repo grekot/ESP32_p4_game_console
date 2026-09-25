@@ -73,6 +73,7 @@ file(GLOB_RECURSE CONSOLE_SHARED_SOURCES CONFIGURE_DEPENDS
     ${CONSOLE_SRC}/app/*.cpp
     ${CONSOLE_SRC}/engine/*.cpp
     ${CONSOLE_SRC}/gfx/*.cpp
+    ${CONSOLE_SRC}/gfx3d/*.cpp
     ${CONSOLE_SRC}/input/*.cpp
     ${CONSOLE_SRC}/ui/*.cpp
     ${CONSOLE_SRC}/console/*.cpp

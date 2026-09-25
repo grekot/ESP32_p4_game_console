@@ -1,0 +1,7 @@
+# Testy zadan z lekcji 14. Format: argumenty emulatora | regex w wyjsciu (--game dokleja skrypt).
+
+# test 1 - zadanie 3: bohater idacy w prawo przez 200 klatek przechodzi przez jablko (x=350) i je zbiera
+--hold RIGHT 0 200 --frames 201 --trace 200 | apples=[1-9]\d*
+
+# test 2 - zadanie 4: pszczola goni stojacego bohatera i dolatuje do niego przed 400. klatka - traci zycie
+--frames 400 --trace 399 | lives=[0-2]( |$)

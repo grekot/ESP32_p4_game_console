@@ -28,3 +28,4 @@ src/games/lekcje/**/zrzut.png
 
 # LVGL pobrane skryptem tools/fetch_lvgl.ps1 (komputer bez PlatformIO)
 third_party/
+__pycache__/

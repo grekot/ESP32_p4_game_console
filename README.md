@@ -116,12 +116,17 @@ src/
   games/mario/         gra: assety, poziom (ASCII), logika
   games/labirynt3d/    gra pokazowa: labirynt pseudo-3D (raycasting), tekstury PNG, mini-mapa
   games/kosmos/        gra pokazowa: strzelanka 2D w 800x480, sprite'y PNG, paralaksa, wybuchy
+  games/kart/          wyscigi 3D (gfx3d, low-poly): tor z wzniesieniami, gokarty-modele, 3 rywali AI, przedmioty, drift
+  games/snake/         waz: 10 poziomow w 5 swiatach, 9 przedmiotow, portal, tryb bez konca, grafika z Gemini (PNG z alfa)
   games/lekcje/        lekcje: lista.h + NN_nazwa/ (gra.cpp, README.md, testy.txt, rozwiazania/)
   gfx/lodepng/         dekoder PNG (lodepng, licencja zlib; tylko dekoder)
+  gfx3d/               software'owy renderer 3D: math3d (Vec3/Mat4), mesh (siatki + bryly), renderer (rasteryzacja, swiatlo, mgla, sortowanie)
 assets/                obrazki PNG gier w assets/<id gry>/; emulator czyta z dysku, plytka z partycji SPIFFS (pio run -t uploadfs)
 sim/                   emulator Windows: backend Win32, mapowanie klawiszy, pad USB, keymap.cfg
 tests/                 scenariusze regresji Lake Mario (slady --trace i zrzuty) + wzorce
-tools/                 testy.ps1 (regresja + testy lekcji), setup_kid_pc.ps1, fetch_lvgl.ps1, bmp2png.ps1, gen_demo_assets.py
+tools/                 testy.ps1 (regresja + testy lekcji), setup_kid_pc.ps1, fetch_lvgl.ps1, bmp2png.ps1, gen_demo_assets.py, gen_kart_assets.py,
+                       gen_snake_assets.py (surowe obrazy Gemini z assets_src/snake/ -> assets/snake/)
+assets_src/snake/      surowe obrazy z Gemini (arkusze obiektow na magencie, tla swiatow, ilustracja tytulowa) - nie ida na plytke
 third_party/           (gitignore) LVGL pobrane przez fetch_lvgl.ps1 na komputerze bez PlatformIO
 docs/HARDWARE.md       pinout, opis plytki, co zweryfikowac po przyjsciu sprzetu
 docs/EMULATOR.md       emulator: budowanie, sterowanie, testy skryptowane
@@ -149,10 +154,61 @@ i uruchamia grę z otwartego pliku. Przewodnik dla rodzica: [docs/NAUKA.md](docs
 |---|---|
 | **Labirynt 3D** — pseudo-3D metodą raycastingu (jak Wolfenstein 3D): 400 promieni na klatkę, teksturowane ściany, drzwi otwierające się przy podejściu, monety i portal jako sprite'y skalowane odległością, mini-mapa. Płótno 400x240 x2. | **Kosmos** — strzelanka w natywnym 800x480: statek, asteroidy rozpadające się na mniejsze, gwiazdy w trzech warstwach paralaksy, wybuchy z klatek PNG, iskry silnika. |
 
+## Kart: wyścigi w stylu Mario Kart – prawdziwe 3D
+
+| ![Kart](docs/images/kart.png) | ![Kart – wzniesienia](docs/images/kart_hills.png) |
+|---|---|
+
+Gra działa na własnym **software'owym rendererze 3D** ([src/gfx3d/](src/gfx3d/)): trójkąty low-poly z cieniowaniem
+płaskim, gładkim (Gouraud) albo **teksturowanym** (od 25.09: atlas 8-bit z paletą `assets/kart/atlas.png` i colormapa
+odcień × mgła jak w silnikach z lat 90., korekcja perspektywy co 16 px), światło kierunkowe z odblaskiem, mgła,
+odrzucanie tylnych ścian, przycinanie do płaszczyzny bliskiej, sortowanie malarskie kubełkami po głębokości plus
+opcjonalny Z-bufor 16-bit do przecinających się brył, **cienie rzutowane** przez maskę (półprzezroczyste, o kształcie
+bolidu). Asfalt z ziarnem, trawa, malowania bolidów z numerami, bieżnik opon, publiczność na trybunie, banery, drzewa
+i krzaki jako billboardy pochodzą z atlasu. Tor z 16 punktów kontrolnych ma wzniesienia, krawężniki czerwono-białe,
+linie, szachownicę startu i szewrony pól przyspieszenia; przy torze brama startowa, trybuna, stosy opon, banery. Bolidy
+to modele 3D z brył ściętych (kadłub, pontony z wlotami, airbox, dwa skrzydła, wahacze i oś, koła z oponą i felgą,
+kierowca z kaskiem) z lakierem z odblaskiem i **śladami opon** po drifcie; koła obracają się z prędkością, przednie
+skręcają, całość przechyla się w zakrętach i na górkach. Kamera jedzie za gokartem, podąża za terenem i rozszerza kąt
+przy turbo. Niebo, chmury, góry, dym driftu, kurz i płomień turbo to obrazy PNG z alfą rzutowane w scenę. W grze: 3 okrążenia,
+3 rywali sterowanych przez AI (jadą po linii środkowej z własnym pasem i „gumą” wyrównującą tempo), skrzynki
+z przedmiotami (grzyb = turbo, banan = pułapka, skorupa = pocisk), drift z mini-turbo (B podczas skrętu), pola
+przyspieszenia, hamulec, wirowanie po trafieniu, kolizje z drzewami, stosami opon i słupami, ranking na żywo, licznik
+czasu i najlepszego okrążenia, mini-mapa,
+komunikaty o okrążeniach, tabela wyników z czasami na mecie. **Y (trzymaj)** włącza autopilota – demo i podstawa testów regresji.
+Sterowanie: A gaz, strzałki skręt, B drift, X przedmiot, dół hamulec.
+
+Fizyka pozostaje 2D (płaszczyzna XZ, mapa nawierzchni 128×128), wysokość terenu jest tylko wizualna. Elementy 2D
+(ikony, chmury, góry, dym, płomień) generuje `tools/gen_kart_assets.py`, atlas tekstur `tools/gen_kart_atlas.py` (oba Pillow;
+własny PNG o tym samym układzie kafelków zastępuje atlas bez zmian w kodzie). Gdy render trwa dłużej niż 13 ms (płytka),
+gra sama skraca zasięg rysowania, przechodzi na cieniowanie płaskie, wyłącza Z-bufor, potem krzaki i cienie.
+
 Obie gry czytają grafikę z `assets/labirynt3d/` i `assets/kosmos/` (PNG). Pliki wygenerował skrypt
 `python tools/gen_demo_assets.py` — wystarczy podmienić PNG o tej samej nazwie, żeby zmienić wygląd.
 Pełne 3D z wielokątami nie ma sensu na P4 bez GPU (patrz [docs/DECYZJE.md](docs/DECYZJE.md), wpis 23);
 raycasting daje efekt 3D kosztem ok. 0,1 ms na klatkę na PC (szacunkowo 2-4 ms na P4).
+
+## Snake: wąż w pięciu światach
+
+| ![Snake – ekran tytułowy](docs/images/snake_title.png) | ![Snake – zima](docs/images/snake.png) |
+|---|---|
+
+Pełna gra w węża w natywnym 800×480, pole 25×14 kratek po 32 px. **Przygoda:** 10 poziomów w 5 światach (łąka, pustynia,
+zima, dżungla, wulkan) – na każdym trzeba zjeść N jabłek (8…20), wtedy otwiera się portal do następnego poziomu (premia za
+czas, długość i życia). Część poziomów ma ściany na krawędziach, część otwarte krawędzie (zawijanie). **Bez końca:** otwarte
+pole, świat zmienia się co 20 jabłek. Wąż przyspiesza z poziomem i z długością (−1 % odstępu kroku na segment, maks. −40 %),
+ruch jest po kratkach, ale rysowany płynnie (interpolacja między krokami).
+
+Przedmioty: jabłko (+1 segment), złote jabłko (+3, znika po 6 s), grzyb (skraca o 3), klepsydra (spowolnienie 8 s), gwiazda
+(duch 6 s – przez przeszkody, siebie i krawędzie), serce (+życie, maks. 5), magnes (jabłka w promieniu 5 kratek podchodzą),
+klejnot ×2 (punkty ×2 przez 12 s), kula-tarcza (jedno darmowe zderzenie), bomba (od poziomu 3; zjedzona = strata życia,
+niezjedzona wybucha sama po 12 s). Combo do ×5 za jabłka jedzone w odstępie < 3 s. Rekordy (top 5) w pamięci do wyłączenia
+konsoli. Sterowanie: krzyżak (kolejka do 3 skrętów), A trzymane = turbo, X na ekranie tytułowym = poziom startowy,
+Y = autopilot (BFS do najbliższego celu; demo i testy – przechodzi całą kampanię bez straty życia).
+
+Grafika: przedmioty, przeszkody, portal, głowy węża (3 kolory), 5 teł i ilustracja tytułowa wygenerowane w Gemini
+(25.09.2026, konto użytkownika), obrobione skryptem `python tools/gen_snake_assets.py` (wycięcie tła magenta z miękką
+krawędzią, skala, korekta jasności teł). Ciało węża to cieniowane kulki generowane w kodzie (obrys + kolor + cień przez maskę).
 
 ## Dodawanie nowej gry
 

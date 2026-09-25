@@ -36,4 +36,11 @@ void seed_rng(uint32_t seed)
     s_rng.state = seed ? seed : 0x4C414B45u;
 }
 
+namespace {
+bool s_deterministic = false;
+}
+
+void set_deterministic(bool on) { s_deterministic = on; }
+bool deterministic() { return s_deterministic; }
+
 }  // namespace engine

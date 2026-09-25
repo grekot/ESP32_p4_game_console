@@ -1,0 +1,12 @@
+TRACE    0 TITLE  lap=1/3 place=1 x=181 y=223 ang=-1.65 spd=0 idx=252 item=- surf=1 t=0.0 boost=0.0 spin=0.0 ai=1.252/1.247/1.247 haz=0 sh=0
+TRACE   40 COUNT  lap=1/3 place=1 x=181 y=223 ang=-1.65 spd=0 idx=252 item=- surf=1 t=0.0 boost=0.0 spin=0.0 ai=1.252/1.247/1.247 haz=0 sh=0
+TRACE   80 COUNT  lap=1/3 place=1 x=181 y=223 ang=-1.65 spd=0 idx=252 item=- surf=1 t=0.0 boost=0.0 spin=0.0 ai=1.252/1.247/1.247 haz=0 sh=0
+TRACE  120 COUNT  lap=1/3 place=1 x=181 y=223 ang=-1.65 spd=0 idx=252 item=- surf=1 t=0.0 boost=0.0 spin=0.0 ai=1.252/1.247/1.247 haz=0 sh=0
+TRACE  160 COUNT  lap=1/3 place=1 x=181 y=223 ang=-1.65 spd=0 idx=252 item=- surf=1 t=0.0 boost=0.0 spin=0.0 ai=1.252/1.247/1.247 haz=0 sh=0
+TRACE  200 RACE   lap=1/3 place=2 x=181 y=222 ang=-1.65 spd=21 idx=252 item=- surf=1 t=0.1 boost=0.4 spin=0.0 ai=1.252/1.247/1.247 haz=0 sh=0
+TRACE  240 RACE   lap=1/3 place=4 x=175 y=147 ang=-1.65 spd=147 idx=1 item=- surf=0 t=0.7 boost=-0.0 spin=0.0 ai=1.255/1.249/1.249 haz=0 sh=0
+TRACE  280 RACE   lap=1/3 place=4 x=191 y=90 ang=-0.50 spd=65 idx=3 item=- surf=0 t=1.4 boost=-0.0 spin=0.0 ai=1.6/1.251/1.251 haz=0 sh=0
+TRACE  320 RACE   lap=1/3 place=4 x=219 y=108 ang=1.58 spd=61 idx=4 item=- surf=0 t=2.1 boost=-0.0 spin=0.0 ai=1.12/1.252/1.253 haz=0 sh=0
+TRACE  360 RACE   lap=1/3 place=1 x=184 y=180 ang=2.05 spd=196 idx=255 item=- surf=1 t=2.7 boost=-0.0 spin=0.0 ai=1.18/1.253/1.255 haz=0 sh=0
+TRACE  400 RACE   lap=1/3 place=2 x=133 y=279 ang=2.05 spd=123 idx=249 item=- surf=0 t=3.4 boost=-0.0 spin=0.0 ai=1.24/1.255/1.2 haz=0 sh=0
+TRACE  440 RACE   lap=1/3 place=1 x=109 y=327 ang=2.05 spd=65 idx=247 item=- surf=0 t=4.1 boost=-0.0 spin=0.0 ai=1.32/1.2/1.3 haz=0 sh=0

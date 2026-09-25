@@ -112,6 +112,10 @@ sprawdzania, czy zmiana w UI albo w grafice nie popsuła wyglądu.
 
 ## Testy skryptowane
 
+W trybie `--frames` emulator nie pokazuje okna (zrzuty powstają z bitmapy w pamięci) i ignoruje prawdziwą klawiaturę
+i mysz – liczą się tylko `--hold` i `--pause-at`. Można więc pisać i klikać w innych programach podczas `tools/testy.ps1`
+bez psucia wyników i bez kradzieży fokusu.
+
 ```bash
 ./sim/build/console_sim.exe --game 0 --hold B 3 4 --hold RIGHT 20 90 --frames 90 --trace 15
 ```
@@ -143,6 +147,7 @@ bez 10 pierwszych klatek. To liczba z PC, nie z płytki; służy do porównania 
 | Lake Mario | 0,54 ms | |
 | Kosmos | 0,54 ms | |
 | Labirynt 3D | 0,62 ms | raycasting 400 kolumn + tekstury: ok. 0,1 ms ponad tło |
+| Kart | ~5 ms | renderer 3D gfx3d w 800x480 z teksturami (atlas 8-bit + colormapa, korekcja perspektywy co 16 px), cieniami rzutowanymi (maska), Z-buforem 16-bit (+0,3 ms; `KART_NOZ=1` wyłącza), ~12 tys. trójkątów przed odrzucaniem; 24.09 bez tekstur 2,5 ms, 23.09: 2,05 ms |
 
 Skala na P4 (360 MHz, bez SIMD) jest szacunkowo 20-40 razy wolniejsza — raycasting kosztowałby 2-4 ms z 16,7 ms
 budżetu. **Do zmierzenia na sprzęcie** (`engine::stats`).
@@ -156,7 +161,9 @@ powershell -File tools/testy.ps1 mario -Update  # nagraj wzorce od nowa (po świ
 ```
 
 Scenariusze są w [tests/scenarios.txt](../tests/scenarios.txt), wzorce w `tests/expected/`: 6 śladów i 3 zrzuty Lake Mario,
-zrzut plakatu API oraz (od 23.09) trasa w Labiryncie 3D (skręty, drzwi, moneta) i rozgrywka w Kosmosie (ślad + zrzut).
+zrzut plakatu API oraz (od 23.09) trasa w Labiryncie 3D (skręty, drzwi, moneta), rozgrywka w Kosmosie (ślad + zrzut)
+i Kart (okrążenie autopilotem z rywalami i przedmiotami – ślad 1800 klatek, zrzut, oraz ślad sterowania gracza:
+gaz, skręt, drift).
 Refaktoring silnika ma zostawić je bez zmian. Testy lekcji (`testy.txt`: `argumenty | regex`) czytają wartości z `watch()` w linii `TRACE` —
 szczegóły w [NAUKA.md](NAUKA.md).
 

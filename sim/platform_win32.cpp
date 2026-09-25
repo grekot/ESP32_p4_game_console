@@ -24,6 +24,7 @@
 namespace sim {
 uint16_t synthetic_keys();
 bool     unthrottled();
+bool     ignore_real_input();
 }
 
 namespace platform {
@@ -221,7 +222,9 @@ bool init()
     }
     SelectObject(s_memdc, s_dib);
 
-    ShowWindow(s_hwnd, SW_SHOW);
+    // W trybie skryptowanym (--frames) okno zostaje ukryte: zrzuty ida z bitmapy w pamieci, a widoczne okno
+    // wyskakiwalo na pierwszy plan i przechwytywalo klawiature w trakcie testow.
+    ShowWindow(s_hwnd, sim::ignore_real_input() ? SW_HIDE : SW_SHOW);
     UpdateWindow(s_hwnd);
 
     CONSOLE_LOGI(TAG, "okno %dx%d (plotno %dx%d, powiekszenie x%d)",
@@ -299,7 +302,7 @@ void present(const uint16_t* canvas)
 
 int read_touch(input::TouchPoint* out, int max_points)
 {
-    if (!s_mouse_down || max_points < 1) return 0;
+    if (!s_mouse_down || max_points < 1 || sim::ignore_real_input()) return 0;
 
     int cw, ch;
     client_size(cw, ch);
@@ -319,9 +322,9 @@ input::PadState controller()
     pump_messages();
     update_keys();
 
-    input::PadState p = s_pad_keys;
+    input::PadState p = sim::ignore_real_input() ? input::PadState{} : s_pad_keys;
 
-    // Klawisze wstrzykniete z linii polecen (--hold, --pause-at) dokladamy do prawdziwych.
+    // Klawisze wstrzykniete z linii polecen (--hold, --pause-at) dokladamy do prawdziwych (w --frames: tylko one).
     if (const uint16_t syn = sim::synthetic_keys()) {
         const input::PadState sp = input::pad_from_mask(syn);
         p.up |= sp.up; p.down |= sp.down; p.left |= sp.left; p.right |= sp.right;
@@ -410,7 +413,11 @@ namespace sim {
 namespace {
 uint16_t s_synthetic_keys = 0;
 bool     s_unthrottled     = false;
+bool     s_ignore_real     = false;
 }
+
+void set_ignore_real_input(bool on) { s_ignore_real = on; }
+bool ignore_real_input()            { return s_ignore_real; }
 
 void     set_synthetic_keys(uint16_t mask) { s_synthetic_keys = mask; }
 uint16_t synthetic_keys()                  { return s_synthetic_keys; }
