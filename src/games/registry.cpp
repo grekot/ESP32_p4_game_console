@@ -70,11 +70,11 @@ bool equal_ignore_case(const char* a, const char* b)
 }  // namespace
 
 const GameEntry GAMES[] = {
-    { "mario", "Lake Mario", "Platformowka 2D", create_mario },
-    { "labirynt3d", "Labirynt 3D", "Raycasting: tekstury PNG, mini-mapa", create_labirynt },
-    { "kosmos", "Kosmos", "Strzelanka 2D: PNG, paralaksa, wybuchy", create_kosmos },
-    { "kart", "Kart", "Wyscigi 3D: 3 okrazenia, rywale, przedmioty, drift", create_kart },
-    { "snake", "Snake", "Waz: 10 poziomow, 5 swiatow, bonusy, rekordy", create_snake },
+    { "mario", "Lake Mario", "Platformowka 2D", create_mario, "covers/mario.png" },
+    { "labirynt3d", "Labirynt 3D", "Raycasting: tekstury PNG, mini-mapa", create_labirynt, "covers/labirynt3d.png" },
+    { "kosmos", "Kosmos", "Strzelanka 2D: PNG, paralaksa, wybuchy", create_kosmos, "covers/kosmos.png" },
+    { "kart", "Kart", "Wyscigi 3D: 3 okrazenia, rywale, przedmioty, drift", create_kart, "covers/kart.png" },
+    { "snake", "Snake", "Waz: 10 poziomow, 5 swiatow, bonusy, rekordy", create_snake, "covers/snake.png" },
 #define LEKCJA(id) console_entry_##id,
 #include "games/lekcje/lista.h"
 #undef LEKCJA

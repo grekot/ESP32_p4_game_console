@@ -136,6 +136,26 @@ dokumentacja w `docs/`, README i ten plik z polskimi znakami.
   gdzie `into` = składowa kierunku jazdy w stronę przeszkody. Deterministyczne; ślady Karta bez zmian, bo AI nie zjeżdża
   z toru (sprawdzone regresją). Ślady `kart_auto`/`kart_player` bez zmian (fizyka
   nietknięta), wzorzec `kart_race` nagrany na nowo. DECYZJE 28.
+- **Menu konsoli „KOTARBA / GAME CONSOLE” (25.09 po południu, użytkownik: „menu mało atrakcyjne, trzeba też opcji
+  konfiguracji”; wybrał wariant A = karuzela okładek; nazwa od „Kotarba Game Console” – do ewentualnej zmiany,
+  stałe `theme::BRAND_NAME/BRAND_SUB`):** `src/ui/menu.cpp` przepisane – pasek z logo i 4 zakładkami (Gry, Lekcje,
+  Ustawienia, O konsoli); Gry = karuzela okładek 440x248 (boczne ×0,62 przez `lv_image_set_scale`, stała ramka
+  zaznaczenia na środku, tło = okładka rozmyta w kodzie i przyciemniona, przenikanie dwóch warstw), Lekcje = lista +
+  podgląd (okładka generowana: kolor z nazwy + numer z opisu „Lekcja NN:”), Ustawienia (`app/settings`: jasność PWM,
+  wygaszanie ekranu, podpowiedzi dotykowe auto/zawsze/nigdy, licznik FPS, kolor akcentu, wyczyść rekordy, domyślne),
+  O konsoli (wersja, pamięć, czas pracy, test przycisków), ekran startowy z logo. Klawisze obsługuje `menu::update()`
+  (zbocza liczone w menu), nie grupa LVGL; X/Y = następna/poprzednia zakładka, GÓRA = pasek zakładek. Zapis trwały:
+  `platform::load_blob/save_blob/erase_blob` (NVS „console” / `sim/build/save_<key>.bin`) przez `engine::load_data/
+  save_data` – **wyłączone w trybie deterministycznym**, więc testy startują z ustawień domyślnych; `RECORD_KEYS` w
+  `engine/storage.cpp` (Snake zapisuje `snake_top`). Polskie litery: `tools/gen_pl_fonts.py` → `src/ui/fonts/
+  console_fonts_pl.c` (18 znaków Montserrat Medium 12-48 px z `fallback` na wbudowane czcionki – ASCII bez zmian,
+  zrzuty starych testów identyczne); w kodzie jako `\uXXXX`. Okładki: Gemini → `assets_src/covers/*.jpg` →
+  `python tools/gen_covers.py` → `assets/covers/<id>.png` (Snake z ilustracji tytułowej); `GameEntry` ma pola `cover`
+  i `lesson` (lekcje przez `CONSOLE_ADD_GAME`). LVGL w trybie `--frames` ma **zegar wirtualny** (1/60 s na `ui::tick`) –
+  inaczej odświeżanie co 16 ms nie nadążało i zrzuty pokazywały starą klatkę. Firmware 1 384 kB flash, 98,7 kB RAM;
+  partycja assets 4,55 MB z 11,94. Regresja 28/28 (`menu_carousel`, `menu_lessons`, `menu_settings`, `menu_about`,
+  `menu_nav`). **Na sprzęcie niesprawdzone:** PWM podświetlenia (GPIO23 może nie znosić PWM), płynność karuzeli
+  (skalowanie okładek programowo), czas dekodowania 5 okładek przy starcie, NVS.
 - **Snake (25.09, prośba „nowa gra snake na ładnych grafikach z mojego Gemini”; lekcja 07 `waz` zostaje):** `src/games/snake/`
   (snake_game.cpp: 10 plansz ASCII 25x14 w 5 światach, ruch po kratkach z kolejką 3 skrętów, przedmioty, combo, portal,
   tryb Bez końca, autopilot BFS; snake_render.cpp: tło wypalane raz na poziom do `bake_`, ciało z kulek generowanych w kodzie
@@ -144,9 +164,9 @@ dokumentacja w `docs/`, README i ten plik z polskimi znakami.
   tła, ilustracja tytułowa; surowe JPG w `assets_src/snake/` (19 MB, **nie** idą na SPIFFS), obróbka
   `python tools/gen_snake_assets.py` → `assets/snake/` (2,8 MB). Pobieranie z Gemini: przycisk „Pobierz obraz w pełnym
   rozmiarze” (widoczny po najechaniu na obraz) → `~/Downloads/Gemini_Generated_Image_*.jpg`; gdy kolejne pobrania nie
-  przychodzą, pomaga odświeżenie strony. Sterowanie: A = turbo, X na tytule = poziom startowy, Y = autopilot (w autopilocie
+  przychodzą, pomaga odświeżenie strony. Sterowanie: krzyżak albo „2 przyciski” (wiersz Ruch na tytule, `two_buttons_`: Lewo/Prawo = skręt względem głowy, tylko zbocza), A = turbo, X na tytule = poziom startowy, Y = autopilot (w autopilocie
   poziomy przechodzą same). PC 0,84 ms/klatkę; firmware 1 317 kB flash, 97,2 kB RAM statycznie. Rekordy tylko w RAM.
-  Regresja: `snake_auto`, `snake_title`, `snake_desert`, `snake_gameover`, `snake_player` (22/22 z menu nagranym na nowo).
+  Regresja: `snake_auto`, `snake_title`, `snake_desert`, `snake_gameover`, `snake_player`, `snake_twobtn` (23/23 z menu nagranym na nowo).
   DECYZJE 30. **Nieoceniona przez użytkownika, na sprzęcie niesprawdzona** (koszt dekodowania tła PNG przy starcie poziomu).
 - **Lekcja 14 `14_obrazki` (23.09 noc):** PNG z `load_image`, klatki animacji w tablicy `Sprite hero[2]`, Piskel, drzewa jako
   przeszkody z cofaniem ruchu; gra „sad” (jabłka, pszczoła). Kod startowy pada na 2 testy, zad4/zad5 przechodzą (zad3 tylko test 1).
@@ -172,6 +192,8 @@ cmake --build sim/build              # emulator (kilka sekund) - ZAMKNIJ dzialaj
 python tools/gen_demo_assets.py                              # PNG dla labirynt3d i kosmos (assets/), deterministyczne
 python tools/gen_kart_atlas.py                               # atlas tekstur Karta (assets/kart/atlas.png, Pillow, deterministyczny)
 python tools/gen_snake_assets.py                             # Snake: assets_src/snake/*.jpg (Gemini) -> assets/snake/*.png (Pillow)
+python tools/gen_covers.py                                   # okladki menu: assets_src/covers/*.jpg -> assets/covers/<id>.png 440x248
+python tools/gen_pl_fonts.py                                 # polskie litery dla LVGL -> src/ui/fonts/console_fonts_pl.c
 powershell -File tools/testy.ps1 mario                       # regresja: 8 sladow + 6 zrzutow bajt w bajt (Mario, api_demo, labirynt, kosmos)
 powershell -File tools/testy.ps1 src/games/lekcje/02_pilka   # testy zadan jednej lekcji (kod startowy PADA, rozwiazanie przechodzi)
 powershell -File tools/testy.ps1 mario -Update               # nowe wzorce - tylko po swiadomej zmianie (np. menu po nowej lekcji)
@@ -215,9 +237,11 @@ src/input/              keys.h (14 klawiszy), pad.h (PadState + osie, held/press
 src/engine/             Game (init/update/render/canvas_scale/debug_line), screen.h (800x480 + PIXEL_CANVAS 400x240), stats, game_registry (GameEntry{id,name,desc,create},
                         find_game), rng (xorshift32, seed_rng), math2d.h, particles.h (ParticlePool<N>), tilemap (TileMap: ASCII,
                         solid_at, move_x/move_y AABB, draw z kamerą - wycięte 1:1 z Mario)
-src/ui/                 lv_conf.h (WSPÓLNY), lvgl_glue (PARTIAL, flush do płótna, indev dotyk+klawisze, grupa), menu (36 px/pozycja,
+src/ui/                 menu.cpp (karuzela/lekcje/ustawienia/o konsoli, update(pad), debug_line), fonts/ (polskie litery, generowane),
+                        lv_conf.h (WSPÓLNY), lvgl_glue (PARTIAL, flush do płótna, indev dotyk+klawisze, grupa, zegar wirtualny w testach), dawniej menu (36 px/pozycja,
                         4 widoczne, pasek przewijania), pause
-src/app/                maszyna stanów konsoli Menu -> Playing -> Paused; set_fixed_dt; debug_line; seed_rng przy starcie gry
+src/app/                maszyna stanów konsoli Menu -> Playing -> Paused; set_fixed_dt; debug_line; seed_rng przy starcie gry;
+                        settings (ustawienia w NVS, apply = jasność), wygaszanie ekranu, licznik FPS, tryb podpowiedzi dotykowych
 src/console/               API dla ucznia: console.h (using namespace console + makro CONSOLE_ADD_GAME), console_api.h (deklaracje z opisami),
                         console_runtime.cpp (implementacja, arena sprite'ów 64 kB, watch, mapa poziom 2), simple_game (adapter -> engine::Game)
 src/games/registry.cpp  lista gier: Mario, Labirynt 3D, Kosmos + lekcje z lekcje/lista.h (X-makro)
@@ -312,6 +336,9 @@ docs/DECYZJE.md         dziennik decyzji projektowych z uzasadnieniami (wpisy 15
   rekonfiguruje projekt; równoległa konfiguracja ESP-IDF z terminala ściga się o `managed_components` i komponent
   `lvgl__lvgl` zostaje „corrupted” (25.09: dwa razy z rzędu). Naprawa jak niżej: `rm -rf managed_components/lvgl__lvgl`,
   odczekać, aż nie działa żaden `pio`/`python` z VS Code, i jeden `pio run`.
+- **Narzędzie Bash (Claude Code) zjada podwójne ukośniki w heredocu**, także w `<<'EOF'`: `'\\'` w Pythonie z heredoca
+  zrobiło się `'\'`, a `'\0'` bajtem NUL w `sim/platform_win32.cpp`. Skrypty z ukośnikami zapisywać do pliku i uruchamiać.
+  Po edycji sprawdzić, że źródła C/C++ są w ASCII: `LC_ALL=C grep -c '[^ -~<TAB>]' plik` ma dać 0.
 - Skrypty PowerShell w `tools/` są pod Windows PowerShell 5.1 (bez `&&`, bez `?:`); składnię sprawdza
   `[System.Management.Automation.Language.Parser]::ParseFile`.
 
@@ -427,7 +454,7 @@ i powrót (czas dalej liczy); START na tytule nie startuje gry. **Zmieniając fi
 pauza) + 3 zrzuty BMP (tytuł, gra, menu), wzorce w `tests/expected/` nagrane z binarki **sprzed** refaktoru silnika
 (math2d, palette, ParticlePool, TileMap); od wieczora także `api_demo` (zrzut), `labirynt_route` (ślad 640 klatek: skręty,
 drzwi, moneta), `labirynt_door` (zrzut), `kosmos_play` (ślad + zrzut, losowość ze stałym ziarnem). od nocy `kart_auto` (ślad 1800 klatek autopilotem), `kart_race` (zrzut), `kart_player` (ślad). `tools/testy.ps1 mario`
-musi dać 22/22 (od 25.09, z pięcioma testami Snake) po każdej zmianie w `src/engine`, `src/gfx`, `src/games/*`. Zrzut `menu` zmienia się po dodaniu lekcji — wtedy `-Update`. Testy lekcji: kod startowy w `gra.cpp`
+musi dać 28/28 (od 25.09: sześć testów Snake, pięć testów menu) po każdej zmianie w `src/engine`, `src/gfx`, `src/games/*`. Zrzut `menu` zmienia się po dodaniu lekcji — wtedy `-Update`. Testy lekcji: kod startowy w `gra.cpp`
 **ma padać**, `rozwiazania/zadN.cpp.txt` skopiowane do `gra.cpp` **ma przechodzić** (sprawdzone dla 01-12).
 
 ## Lake Mario - fizyka i poziom

@@ -7,6 +7,7 @@
 #include "core/log.h"
 #include "engine/math2d.h"
 #include "engine/rng.h"
+#include "engine/storage.h"
 #include "gfx/palette.h"
 
 namespace snake {
@@ -223,6 +224,10 @@ void SnakeGame::init(gfx::Canvas&)
     state_   = State::Title;
     state_t_ = 0;
     autopilot_ = false;
+    // rekordy z pamieci trwalej (NVS / plik emulatora); w testach --frames zawsze puste
+    Score saved[TOP];
+    if (engine::load_data("snake_top", saved, sizeof(saved))) memcpy(top_, saved, sizeof(top_));
+    else memset(top_, 0, sizeof(top_));
     world_ = 0;
     level_ = 0;
     wrap_  = true;
@@ -481,6 +486,7 @@ void SnakeGame::submit_score()
             for (int j = TOP - 1; j > i; --j) top_[j] = top_[j - 1];
             top_[i] = { score_, mode_ == Mode::Adventure ? level_ + 1 : apples_total_, (uint8_t)mode_ };
             last_rank_ = i;
+            engine::save_data("snake_top", top_, sizeof(top_));
             return;
         }
     }
@@ -491,6 +497,17 @@ void SnakeGame::submit_score()
 void SnakeGame::read_input(const input::PadState& pad)
 {
     const bool held[4] = { pad.right, pad.down, pad.left, pad.up };
+    if (two_buttons_) {
+        // dwa przyciski: kazde wcisniecie LEWO/PRAWO = skret o 90 stopni wzgledem kierunku po poprzednim skrecie
+        // (kolejnosc Dir jest zgodna z ruchem wskazowek zegara: prawo = +1). Trzymanie nie powtarza skretu.
+        const bool turn_r = held[RIGHT] && !held_prev_[RIGHT], turn_l = held[LEFT] && !held_prev_[LEFT];
+        for (int d = 0; d < 4; ++d) held_prev_[d] = held[d];
+        if ((turn_r || turn_l) && !(turn_r && turn_l) && queued_ < QUEUE) {
+            const Dir last = queued_ ? queue_[queued_ - 1] : dir_;
+            queue_[queued_++] = (Dir)((last + (turn_r ? 1 : 3)) & 3);
+        }
+        return;
+    }
     for (int d = 0; d < 4; ++d) {
         const bool edge = held[d] && !held_prev_[d];
         const Dir  last = queued_ ? queue_[queued_ - 1] : dir_;
@@ -593,11 +610,13 @@ void SnakeGame::update_title(const input::PadState& pad)
     const bool up_e = pad.up && !prev_ud[0], down_e = pad.down && !prev_ud[1];
     const bool left_e = pad.left && !prev_lr[0], right_e = pad.right && !prev_lr[1];
     prev_ud[0] = pad.up; prev_ud[1] = pad.down; prev_lr[0] = pad.left; prev_lr[1] = pad.right;
-    if (up_e || down_e) title_row_ ^= 1;
+    if (up_e) title_row_ = (title_row_ + 2) % 3;
+    if (down_e) title_row_ = (title_row_ + 1) % 3;
     if (left_e || right_e) {
         const int d = right_e ? 1 : -1;
         if (title_row_ == 0) mode_ = mode_ == Mode::Adventure ? Mode::Endless : Mode::Adventure;
-        else skin_ = (skin_ + 3 + d) % 3;
+        else if (title_row_ == 1) skin_ = (skin_ + 3 + d) % 3;
+        else two_buttons_ = !two_buttons_;
     }
     if (pad.x_pressed) start_level_ = (start_level_ + 1) % 10;   // wybor poziomu startowego (trening)
     if (state_t_ > 0.03f && pad.a_pressed) start_game();

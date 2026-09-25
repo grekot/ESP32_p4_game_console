@@ -119,14 +119,15 @@ int main(int argc, char** argv)
         CONSOLE_LOGE(TAG, "nie udalo sie otworzyc okna");
         return 1;
     }
+    // Tryb skryptowany: staly krok 1/60 s PRZED app::init i startem gry - app::start_game() ustawia wtedy stale
+    // ziarno losowosci (gry z random() daja identyczny slad), a konsola nie czyta zapisanych ustawien ani rekordow
+    // (engine::deterministic) i pomija ekran startowy.
+    if (frames > 0) app::set_fixed_dt(1.f / 60.f);
+
     if (!app::init()) {
         CONSOLE_LOGE(TAG, "inicjalizacja konsoli nie powiodla sie");
         return 1;
     }
-
-    // Tryb skryptowany: staly krok 1/60 s PRZED startem gry - app::start_game() ustawia wtedy stale
-    // ziarno losowosci, wiec gry z random() daja identyczny slad za kazdym razem.
-    if (frames > 0) app::set_fixed_dt(1.f / 60.f);
 
     if (game >= 0) {
         app::start_game_by_index(game);

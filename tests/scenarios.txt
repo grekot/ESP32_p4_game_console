@@ -28,3 +28,10 @@ shot  | snake_title     | --game snake --frames 5
 shot  | snake_desert    | --game snake --hold X 2 3 --hold X 5 6 --hold A 8 9 --hold Y 12 13 --frames 700
 trace | snake_gameover  | --game snake --hold X 2 3 --hold A 5 6 --frames 1100 --trace 50
 trace | snake_player    | --game snake --hold A 3 4 --hold UP 140 141 --hold LEFT 175 176 --hold A 200 260 --hold DOWN 262 263 --frames 420 --trace 20
+trace | snake_twobtn    | --game snake --hold DOWN 2 3 --hold DOWN 5 6 --hold RIGHT 8 9 --hold A 11 12 --hold RIGHT 150 200 --hold RIGHT 215 216 --hold LEFT 240 241 --hold LEFT 260 261 --hold LEFT 262 263 --hold UP 300 330 --hold DOWN 340 345 --frames 380 --trace 10
+# Menu konsoli (25.09.2026): karuzela, zakladki, ustawienia; nawigacja klawiszami i start gry z karuzeli (A -> Kosmos)
+shot  | menu_carousel   | --hold RIGHT 5 6 --frames 60
+shot  | menu_lessons    | --hold X 5 6 --hold DOWN 10 11 --hold DOWN 14 15 --frames 60
+shot  | menu_settings   | --hold X 5 6 --hold X 10 11 --hold DOWN 14 15 --hold RIGHT 18 19 --frames 40
+shot  | menu_about      | --hold Y 5 6 --hold A 15 30 --frames 20
+trace | menu_nav        | --hold RIGHT 5 6 --hold RIGHT 10 11 --hold UP 15 16 --hold RIGHT 20 21 --hold DOWN 25 26 --hold Y 30 31 --hold A 45 46 --frames 70 --trace 5

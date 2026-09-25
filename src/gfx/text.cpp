@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "lvgl.h"
+#include "ui/fonts/console_fonts_pl.h"
 
 namespace gfx {
 
@@ -14,10 +15,11 @@ struct FontEntry {
 };
 
 // Rozmiary wlaczone w lv_conf.h. Kolejnosc rosnaca - wybieramy najblizszy.
+// console_font_pl_N = polskie litery + fallback na lv_font_montserrat_N (tools/gen_pl_fonts.py).
 const FontEntry FONTS[] = {
-    { 12, &lv_font_montserrat_12 }, { 14, &lv_font_montserrat_14 }, { 16, &lv_font_montserrat_16 },
-    { 20, &lv_font_montserrat_20 }, { 24, &lv_font_montserrat_24 }, { 28, &lv_font_montserrat_28 },
-    { 32, &lv_font_montserrat_32 }, { 40, &lv_font_montserrat_40 }, { 48, &lv_font_montserrat_48 },
+    { 12, &console_font_pl_12 }, { 14, &console_font_pl_14 }, { 16, &console_font_pl_16 },
+    { 20, &console_font_pl_20 }, { 24, &console_font_pl_24 }, { 28, &console_font_pl_28 },
+    { 32, &console_font_pl_32 }, { 40, &console_font_pl_40 }, { 48, &console_font_pl_48 },
 };
 constexpr int FONT_N = (int)(sizeof(FONTS) / sizeof(FONTS[0]));
 

@@ -76,6 +76,7 @@ file(GLOB_RECURSE CONSOLE_SHARED_SOURCES CONFIGURE_DEPENDS
     ${CONSOLE_SRC}/gfx3d/*.cpp
     ${CONSOLE_SRC}/input/*.cpp
     ${CONSOLE_SRC}/ui/*.cpp
+    ${CONSOLE_SRC}/ui/*.c        # czcionki z polskimi literami (tools/gen_pl_fonts.py)
     ${CONSOLE_SRC}/console/*.cpp
     ${CONSOLE_SRC}/games/*.cpp)
 

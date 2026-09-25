@@ -686,16 +686,18 @@ void SnakeGame::draw_title(gfx::Canvas& c)
     text_shadow(c, center_x(sub, 20, ux), ly + 58, sub, gfx::WHITE, 20);
 
     // menu wyboru
-    const int pw = 420, px = ux - pw / 2, py = 150, ph = 104;
+    const int pw = 420, px = ux - pw / 2, py = 124, ph = 148;
     panel(c, px, py, pw, ph, 200);
     char buf[48];
-    for (int row = 0; row < 2; ++row) {
+    for (int row = 0; row < 3; ++row) {
         const int y = py + 12 + row * 44;
         const bool sel = title_row_ == row;
         if (sel) fill_round_rect_alpha(c, px + 10, y - 4, pw - 20, 38, 10, gfx::rgb565(80, 150, 90), 150);
-        gfx::draw_text_px(c, px + 26, y + 4, row == 0 ? "Tryb" : "Waz", gfx::rgb565(170, 210, 180), 20);
+        static const char* const LABELS[3] = { "Tryb", "Waz", "Ruch" };
+        gfx::draw_text_px(c, px + 26, y + 4, LABELS[row], gfx::rgb565(170, 210, 180), 20);
         if (row == 0) snprintf(buf, sizeof(buf), "%s", mode_ == Mode::Adventure ? "Przygoda (10 poziomow)" : "Bez konca");
-        else snprintf(buf, sizeof(buf), "%s", SKIN_NAMES[skin_]);
+        else if (row == 1) snprintf(buf, sizeof(buf), "%s", SKIN_NAMES[skin_]);
+        else snprintf(buf, sizeof(buf), "%s", two_buttons_ ? "2 przyciski (skret L/P)" : "Krzyzak (4 kierunki)");
         const int tx = px + 240 - gfx::text_width_px(buf, 20) / 2;
         gfx::draw_text_px(c, tx, y + 4, buf, gfx::WHITE, 20);
         if (sel) {
@@ -713,7 +715,8 @@ void SnakeGame::draw_title(gfx::Canvas& c)
         text_outline(c, center_x(s, 24, ux), py + ph + 14, s, gfx::WHITE, gfx::rgb565(10, 40, 10), 24, 2);
     }
     fill_round_rect_alpha(c, ux - 170, py + ph + 44, 340, 72, 12, gfx::rgb565(10, 30, 16), 120);
-    const char* hint1 = "Krzyzak - ruch    A - turbo    Y - autopilot";
+    const char* hint1 = two_buttons_ ? "Lewo / Prawo - skret    A - turbo    Y - autopilot"
+                                     : "Krzyzak - ruch    A - turbo    Y - autopilot";
     const char* hint2 = "X - poziom startowy    START - pauza";
     text_shadow(c, center_x(hint1, 14, ux), py + ph + 76, hint1, gfx::rgb565(235, 245, 235), 14);
     text_shadow(c, center_x(hint2, 14, ux), py + ph + 94, hint2, gfx::rgb565(235, 245, 235), 14);

@@ -399,3 +399,20 @@ narzędzie testów – deterministyczny, przechodzi całą kampanię (~19 000 kl
 (na P4 szacunkowo 100-300 ms – w trybie Bez końca zmiana świata w trakcie gry da jedno zacięcie). Firmware +42 kB flash,
 +8,5 kB RAM statycznie; PSRAM: tło 2×717 kB + maska 358 kB + obrazki ~0,5 MB. Partycja assets: +2,8 MB PNG.
 Rekordy tylko w RAM (NVS w planach, pkt 7 „Następne kroki”). Na sprzęcie nic nie sprawdzone.
+
+## 31. Menu: karuzela okładek w LVGL, własna obsługa klawiszy, ustawienia w NVS, polskie litery przez fallback (25.09.2026)
+
+**Kontekst.** Użytkownik: menu „mało atrakcyjne”, potrzebne też opcje konfiguracji. Z trzech makiet wybrał karuzelę
+okładek (A); nazwa konsoli „Kotarba Game Console” (propozycje wariantów w rozmowie).
+**Decyzja.** (1) Zostaje LVGL (dotyk, gesty, widgety), ale nawigację klawiszami robi samo menu (`menu::update`), bo
+karuzela i wiersze ustawień używają LEWO/PRAWO do zmiany wartości, a grupa LVGL mapuje strzałki na następny/poprzedni
+widget. (2) Okładki 440x248 jako PNG z Gemini w natywnym rozmiarze karty; boczne karty przez skalowanie LVGL, tło
+pełnoekranowe liczone raz na grę (średnia z bloków 8x8 + interpolacja dwuliniowa + przyciemnienie) zamiast drugiego
+PNG. (3) Ustawienia i rekordy przez `engine::load_data/save_data` nad NVS; w trybie deterministycznym wyłączone, żeby
+testy nie zależały od stanu komputera. (4) Polskie litery: małe czcionki z 18 znakami i `fallback` na wbudowane
+Montserrat – ASCII rysuje się identycznie (stare wzorce zrzutów bez zmian), koszt 31 kB flash. (5) LVGL w testach
+z zegarem wirtualnym (1/60 s na klatkę) – bez tego przyspieszone `--frames` nie odświeżało ekranu.
+**Konsekwencje.** Firmware +66 kB (1 384 kB). Menu przy starcie dekoduje 5 okładek (PC kilkanaście ms; P4
+nieznane). Jasność przez PWM LEDC na pinie podświetlenia – niesprawdzone na płytce. Rekordy innych gier trzeba
+dopisać do `RECORD_KEYS`, żeby „Wyczyść rekordy” je obejmowało.
+

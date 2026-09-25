@@ -6,7 +6,8 @@
 // Przedmioty: jablko, zlote jablko (znika), grzyb (skraca), klepsydra (spowolnienie), gwiazda (duch - przez
 // przeszkody i siebie), serce (+zycie), magnes (przyciaga jablka), klejnot x2 (punkty), kula-tarcza (jedno
 // darmowe zderzenie), bomba (od poziomu 3; zjedzona = strata zycia). Combo za szybkie jedzenie.
-// Sterowanie: krzyzak, A trzymane = turbo, Y = autopilot (demo i testy skryptowe).
+// Sterowanie: krzyzak (4 kierunki) albo dwa przyciski (LEWO/PRAWO = skret w lewo/prawo wzgledem glowy, jak w starych
+// telefonach) - wybor na ekranie tytulowym; A trzymane = turbo, Y = autopilot (demo i testy skryptowe).
 //
 // Logika w snake_game.cpp (plansze, ruch, przedmioty, autopilot), rysowanie w snake_render.cpp.
 #pragma once
@@ -57,7 +58,8 @@ private:
     State state_ = State::Title;
     Mode  mode_  = Mode::Adventure;
     int   skin_  = 0;          // 0 zielony, 1 niebieski, 2 pomaranczowy
-    int   title_row_ = 0;      // wybrany wiersz na ekranie tytulowym (tryb / waz)
+    int   title_row_ = 0;      // wybrany wiersz na ekranie tytulowym (tryb / waz / sterowanie)
+    bool  two_buttons_ = false;   // sterowanie dwoma przyciskami: LEWO/PRAWO skreca wzgledem kierunku jazdy
     int   level_ = 0;          // 0..9 (Przygoda)
     int   start_level_ = 0;    // wybor na ekranie tytulowym (X)
     int   world_ = 0;          // 0..4 - tlo i przeszkody

@@ -1,0 +1,14 @@
+TRACE    0 MENU tab=0 tabs_focus=0 game=0 lesson=0 setting=0 confirm=-1
+TRACE    5 MENU tab=0 tabs_focus=0 game=1 lesson=0 setting=0 confirm=-1
+TRACE   10 MENU tab=0 tabs_focus=0 game=2 lesson=0 setting=0 confirm=-1
+TRACE   15 MENU tab=0 tabs_focus=1 game=2 lesson=0 setting=0 confirm=-1
+TRACE   20 MENU tab=1 tabs_focus=1 game=2 lesson=0 setting=0 confirm=-1
+TRACE   25 MENU tab=1 tabs_focus=0 game=2 lesson=0 setting=0 confirm=-1
+TRACE   30 MENU tab=0 tabs_focus=0 game=2 lesson=0 setting=0 confirm=-1
+TRACE   35 MENU tab=0 tabs_focus=0 game=2 lesson=0 setting=0 confirm=-1
+TRACE   40 MENU tab=0 tabs_focus=0 game=2 lesson=0 setting=0 confirm=-1
+TRACE   45 TITLE ship=120,240 score=0 lives=3 asteroids=0 bullets=0
+TRACE   50 TITLE ship=120,240 score=0 lives=3 asteroids=0 bullets=0
+TRACE   55 TITLE ship=120,240 score=0 lives=3 asteroids=0 bullets=0
+TRACE   60 TITLE ship=120,240 score=0 lives=3 asteroids=0 bullets=0
+TRACE   65 TITLE ship=120,240 score=0 lives=3 asteroids=0 bullets=0

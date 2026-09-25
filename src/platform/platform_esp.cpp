@@ -7,6 +7,7 @@
 #include "esp_heap_caps.h"
 #include "esp_spiffs.h"
 #include "esp_timer.h"
+#include "nvs.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -172,6 +173,50 @@ uint8_t* read_file(const char* path, size_t& size)
 void free_file(uint8_t* data)
 {
     free(data);
+}
+
+bool load_blob(const char* key, void* data, size_t size)
+{
+    nvs_handle_t h;
+    if (nvs_open("console", NVS_READONLY, &h) != ESP_OK) return false;
+    size_t len = 0;
+    bool ok = nvs_get_blob(h, key, nullptr, &len) == ESP_OK && len == size && nvs_get_blob(h, key, data, &len) == ESP_OK;
+    nvs_close(h);
+    return ok;
+}
+
+bool save_blob(const char* key, const void* data, size_t size)
+{
+    nvs_handle_t h;
+    if (nvs_open("console", NVS_READWRITE, &h) != ESP_OK) return false;
+    const bool ok = nvs_set_blob(h, key, data, size) == ESP_OK && nvs_commit(h) == ESP_OK;
+    nvs_close(h);
+    if (!ok) CONSOLE_LOGW(TAG, "zapis %s do NVS nie powiodl sie", key);
+    return ok;
+}
+
+void erase_blob(const char* key)
+{
+    nvs_handle_t h;
+    if (nvs_open("console", NVS_READWRITE, &h) != ESP_OK) return;
+    nvs_erase_key(h, key);
+    nvs_commit(h);
+    nvs_close(h);
+}
+
+void set_brightness(int percent)
+{
+    board::display::set_backlight_level(percent);
+}
+
+MemInfo memory_info()
+{
+    MemInfo m;
+    m.sram_free   = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+    m.sram_total  = heap_caps_get_total_size(MALLOC_CAP_INTERNAL);
+    m.psram_free  = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+    m.psram_total = heap_caps_get_total_size(MALLOC_CAP_SPIRAM);
+    return m;
 }
 
 }  // namespace platform

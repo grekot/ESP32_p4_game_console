@@ -20,7 +20,7 @@ Dlaczego tak:
   Arduino na P4 jest nakładką na ESP-IDF bez wygodnego dostępu do tych bloków.
 - **PlatformIO** masz już zainstalowane. Oficjalna platforma `platformio/espressif32` nie wspiera P4,
   więc używamy forka **pioarduino** (`55.03.312` = ESP-IDF 5.5.5).
-- **LVGL** obsługuje UI: menu konsoli, ekran pauzy, w przyszłości ustawienia i wyniki.
+- **LVGL** obsługuje UI: menu konsoli (karuzela okładek, lekcje, ustawienia, informacje), ekran pauzy.
   Gry rysują własnym rendererem (kafelki, sprite'y) — LVGL jest za wolne na pełnoekranową animację
   60 FPS, ale idealne do interfejsu.
 
@@ -188,6 +188,19 @@ Obie gry czytają grafikę z `assets/labirynt3d/` i `assets/kosmos/` (PNG). Plik
 Pełne 3D z wielokątami nie ma sensu na P4 bez GPU (patrz [docs/DECYZJE.md](docs/DECYZJE.md), wpis 23);
 raycasting daje efekt 3D kosztem ok. 0,1 ms na klatkę na PC (szacunkowo 2-4 ms na P4).
 
+## Menu konsoli
+
+| ![Menu – karuzela gier](docs/images/menu.png) | ![Menu – ustawienia](docs/images/menu_ustawienia.png) |
+|---|---|
+
+Ekran startowy z logo, potem pasek z czterema zakładkami. **Gry:** karuzela okładek (strzałki lub przesunięcie palcem,
+A albo stuknięcie w środkową okładkę uruchamia grę), tło to rozmyta okładka wybranej gry. **Lekcje:** lista lekcji i gier
+ucznia z podglądem. **Ustawienia:** jasność ekranu, wygaszanie po 1–10 min bezczynności, podpowiedzi dotykowe w grach,
+licznik FPS, kolor akcentu, kasowanie rekordów, ustawienia domyślne – zapisywane w pamięci NVS. **O konsoli:** wersja,
+pamięć, czas pracy, test przycisków. Zakładki: GÓRA, potem LEWO/PRAWO, albo X/Y. Polskie litery w UI i w grach
+(`gfx/text.h`) dają czcionki uzupełniające z `tools/gen_pl_fonts.py`; okładki z Gemini obrabia `tools/gen_covers.py`,
+gra bez okładki dostaje zastępczą (kolor z nazwy, inicjał).
+
 ## Snake: wąż w pięciu światach
 
 | ![Snake – ekran tytułowy](docs/images/snake_title.png) | ![Snake – zima](docs/images/snake.png) |
@@ -203,7 +216,8 @@ Przedmioty: jabłko (+1 segment), złote jabłko (+3, znika po 6 s), grzyb (skra
 (duch 6 s – przez przeszkody, siebie i krawędzie), serce (+życie, maks. 5), magnes (jabłka w promieniu 5 kratek podchodzą),
 klejnot ×2 (punkty ×2 przez 12 s), kula-tarcza (jedno darmowe zderzenie), bomba (od poziomu 3; zjedzona = strata życia,
 niezjedzona wybucha sama po 12 s). Combo do ×5 za jabłka jedzone w odstępie < 3 s. Rekordy (top 5) w pamięci do wyłączenia
-konsoli. Sterowanie: krzyżak (kolejka do 3 skrętów), A trzymane = turbo, X na ekranie tytułowym = poziom startowy,
+konsoli. Sterowanie: krzyżak (kolejka do 3 skrętów) albo **2 przyciski** (wiersz „Ruch” na ekranie tytułowym: Lewo/Prawo
+skręcają węża o 90° względem kierunku jazdy, jak w starych telefonach), A trzymane = turbo, X na ekranie tytułowym = poziom startowy,
 Y = autopilot (BFS do najbliższego celu; demo i testy – przechodzi całą kampanię bez straty życia).
 
 Grafika: przedmioty, przeszkody, portal, głowy węża (3 kolory), 5 teł i ilustracja tytułowa wygenerowane w Gemini

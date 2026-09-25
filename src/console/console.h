@@ -30,4 +30,4 @@ using namespace console;   // celowo: uczen pisze rect(...), nie console::rect(.
         return &game;                                                                   \
     }                                                                                   \
     extern const engine::GameEntry console_entry_##id;                                     \
-    const engine::GameEntry        console_entry_##id = { #id, name_, desc_, console_create_##id };
+    const engine::GameEntry        console_entry_##id = { #id, name_, desc_, console_create_##id, nullptr, true };

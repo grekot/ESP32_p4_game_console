@@ -7,6 +7,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "driver/gpio.h"
+#include "driver/ledc.h"
 #include "driver/ppa.h"
 #include "esp_attr.h"
 #include "esp_cache.h"
@@ -211,7 +212,44 @@ esp_err_t present(const uint16_t* src, int src_w, int src_h)
 
 void set_backlight(bool on)
 {
-    gpio_set_level(pins::LCD_BACKLIGHT, on ? 1 : 0);
+    set_backlight_level(on ? 100 : 0);
+}
+
+void set_backlight_level(int percent)
+{
+    static bool pwm = false;
+    if (percent < 0) percent = 0;
+    if (percent > 100) percent = 100;
+    if (!pwm) {
+        if (percent == 100) {   // bez PWM, dopoki nikt nie prosi o przyciemnienie
+            gpio_set_level(pins::LCD_BACKLIGHT, 1);
+            return;
+        }
+        ledc_timer_config_t t = {};
+        t.speed_mode      = LEDC_LOW_SPEED_MODE;
+        t.duty_resolution = LEDC_TIMER_10_BIT;
+        t.timer_num       = LEDC_TIMER_0;
+        t.freq_hz         = 20000;   // ponad pasmem slyszalnym (piszczenie cewek)
+        t.clk_cfg         = LEDC_AUTO_CLK;
+        if (ledc_timer_config(&t) != ESP_OK) {
+            ESP_LOGW(TAG, "LEDC timer - jasnosc bez regulacji");
+            gpio_set_level(pins::LCD_BACKLIGHT, percent > 0 ? 1 : 0);
+            return;
+        }
+        ledc_channel_config_t ch = {};
+        ch.gpio_num   = pins::LCD_BACKLIGHT;
+        ch.speed_mode = LEDC_LOW_SPEED_MODE;
+        ch.channel    = LEDC_CHANNEL_0;
+        ch.timer_sel  = LEDC_TIMER_0;
+        ch.duty       = 1023;
+        if (ledc_channel_config(&ch) != ESP_OK) {
+            ESP_LOGW(TAG, "LEDC kanal - jasnosc bez regulacji");
+            return;
+        }
+        pwm = true;
+    }
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, (uint32_t)(percent * 1023 / 100));
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
 }
 
 uint32_t vsync_timeouts()

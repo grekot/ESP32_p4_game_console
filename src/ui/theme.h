@@ -3,6 +3,7 @@
 #pragma once
 
 #include "lvgl.h"
+#include "ui/fonts/console_fonts_pl.h"
 
 namespace ui::theme {
 
@@ -18,17 +19,22 @@ constexpr uint32_t TEXT_MUTED = 0x94a3b8;
 constexpr uint32_t TEXT_FAINT = 0x64748b;
 constexpr uint32_t DANGER     = 0xef4444;
 
-// czcionki (Montserrat wbudowane w LVGL; tylko ASCII - bez polskich liter w UI)
-#define CONSOLE_UI_FONT_TITLE      (&lv_font_montserrat_32)
-#define CONSOLE_UI_FONT_CARD_TITLE (&lv_font_montserrat_24)
-#define CONSOLE_UI_FONT_BODY       (&lv_font_montserrat_16)
-#define CONSOLE_UI_FONT_SMALL      (&lv_font_montserrat_14)
-#define CONSOLE_UI_FONT_BUTTON     (&lv_font_montserrat_20)
+// czcionki: Montserrat LVGL + polskie litery (console_font_pl_N, fallback na lv_font_montserrat_N).
+// Polskie znaki w napisach zapisujemy w kodzie jako \u0105 itd. - pliki zrodlowe zostaja w ASCII.
+#define CONSOLE_UI_FONT_TITLE      (&console_font_pl_32)
+#define CONSOLE_UI_FONT_CARD_TITLE (&console_font_pl_24)
+#define CONSOLE_UI_FONT_BODY       (&console_font_pl_16)
+#define CONSOLE_UI_FONT_SMALL      (&console_font_pl_14)
+#define CONSOLE_UI_FONT_BUTTON     (&console_font_pl_20)
 inline const lv_font_t* const FONT_TITLE      = CONSOLE_UI_FONT_TITLE;
 inline const lv_font_t* const FONT_CARD_TITLE = CONSOLE_UI_FONT_CARD_TITLE;
 inline const lv_font_t* const FONT_BODY       = CONSOLE_UI_FONT_BODY;
 inline const lv_font_t* const FONT_SMALL      = CONSOLE_UI_FONT_SMALL;
 inline const lv_font_t* const FONT_BUTTON     = CONSOLE_UI_FONT_BUTTON;
+
+// nazwa konsoli (ekran startowy, naglowek menu, "O konsoli")
+inline constexpr const char* BRAND_NAME = "KOTARBA";
+inline constexpr const char* BRAND_SUB  = "GAME CONSOLE";
 
 // wymiary
 constexpr int MARGIN   = 32;    // margines boczny ekranu

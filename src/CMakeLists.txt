@@ -13,6 +13,7 @@ idf_component_register(
     REQUIRES
         esp_lcd          # MIPI-DSI / DPI panel, panel IO
         esp_driver_gpio
+        esp_driver_ledc  # PWM podswietlenia (jasnosc w ustawieniach)
         esp_driver_i2c   # magistrala I2C dla dotyku GT911
         esp_adc          # galka analogowa (ADC2)
         esp_driver_ppa   # PPA - sprzetowe skalowanie/obrot bufora ramki

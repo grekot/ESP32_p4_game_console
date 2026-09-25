@@ -11,6 +11,8 @@ struct GameEntry {
     const char* name;          // nazwa w menu
     const char* description;
     Game*       (*create)();   // zwraca instancje o czasie zycia programu
+    const char* cover  = nullptr;   // okladka w menu (sciezka w assets/, np. "covers/snake.png"); brak = generowana
+    bool        lesson = false;     // true = lekcja / gra ucznia (zakladka "Lekcje"), false = gra (zakladka "Gry")
 };
 
 extern const GameEntry GAMES[];

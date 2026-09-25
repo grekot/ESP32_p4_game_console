@@ -49,4 +49,20 @@ bool should_run();
 uint8_t* read_file(const char* path, size_t& size);
 void     free_file(uint8_t* data);
 
+// Trwaly zapis malych danych (ustawienia, rekordy): plytka -> NVS (przestrzen "console"), emulator -> plik
+// save_<key>.bin obok exe. key: do 15 znakow [a-z0-9_]. load zwraca false, gdy zapisu nie ma albo ma inny rozmiar
+// (wtedy data zostaje nietknieta - wartosci domyslne). Gry uzywaja engine::load_data/save_data (wylaczone w testach).
+bool load_blob(const char* key, void* data, size_t size);
+bool save_blob(const char* key, const void* data, size_t size);
+void erase_blob(const char* key);
+
+// Jasnosc podswietlenia 0..100 % (plytka: PWM LEDC na pinie podswietlenia, emulator: przyciemnienie obrazu).
+void set_brightness(int percent);
+
+// Wolna / calkowita pamiec (bajty). Emulator zwraca zera - ekran "O konsoli" pisze wtedy "emulator".
+struct MemInfo {
+    size_t sram_free = 0, sram_total = 0, psram_free = 0, psram_total = 0;
+};
+MemInfo memory_info();
+
 }  // namespace platform

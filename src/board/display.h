@@ -33,6 +33,10 @@ esp_err_t present(const uint16_t* src, int src_w, int src_h);
 
 void set_backlight(bool on);
 
+// Jasnosc 0..100 %. Pierwsze wywolanie przelacza pin podswietlenia z GPIO na PWM (LEDC, 20 kHz, 10 bit).
+// NA SPRZECIE NIESPRAWDZONE: uklad podswietlenia plytki moze nie lubic PWM (wtedy zostaw 100 %).
+void set_backlight_level(int percent);
+
 // Statystyki: ile razy nie doczekano sie sygnalu VSYNC (diagnostyka)
 uint32_t vsync_timeouts();
 

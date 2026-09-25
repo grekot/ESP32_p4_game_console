@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "core/log.h"
+#include "engine/rng.h"
 #include "engine/screen.h"
 #include "lvgl.h"
 #include "platform/platform.h"
@@ -79,9 +80,15 @@ void key_read_cb(lv_indev_t*, lv_indev_data_t* data)
     data->state = press ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
 }
 
+// Zegar LVGL. W trybie powtarzalnym (testy --frames, klatki liczone szybciej niz w czasie rzeczywistym) zegar jest
+// wirtualny: 1/60 s na kazde ui::tick(). Bez tego LVGL (odswiezanie co 16 ms, animacje) widzialo ulamek sekundy
+// na 30 klatek i zrzut pokazywal stary obraz.
+uint32_t s_virtual_ms = 0;
+int      s_virtual_frac = 0;
+
 uint32_t tick_cb()
 {
-    return platform::millis();
+    return engine::deterministic() ? s_virtual_ms : platform::millis();
 }
 
 }  // namespace
@@ -160,7 +167,13 @@ lv_group_t* nav_group()
 
 void tick()
 {
-    if (s_disp) lv_timer_handler();
+    if (!s_disp) return;
+    if (engine::deterministic()) {
+        s_virtual_frac += 1000;   // 1000/60 ms na klatke, bez dryfu
+        s_virtual_ms += (uint32_t)(s_virtual_frac / 60);
+        s_virtual_frac %= 60;
+    }
+    lv_timer_handler();
 }
 
 }  // namespace ui

@@ -257,6 +257,10 @@ uint16_t* alloc_pixels(size_t pixel_count, bool /*fast*/)
     return (uint16_t*)calloc(pixel_count, sizeof(uint16_t));
 }
 
+namespace {
+int s_brightness = 100;   // set_brightness: przyciemnienie obrazu w oknie
+}  // namespace
+
 void present(const uint16_t* canvas)
 {
     pump_messages();
@@ -274,6 +278,13 @@ void present(const uint16_t* canvas)
         const uint32_t g8 = (g << 2) | (g >> 4);
         const uint32_t b8 = (b << 3) | (b >> 2);
         s_dib_px[i] = (r8 << 16) | (g8 << 8) | b8;
+    }
+    if (s_brightness < 100) {   // symulacja podswietlenia: przyciemnienie obrazu
+        const uint32_t k = (uint32_t)(s_brightness * 256 / 100);
+        for (size_t i = 0; i < n; ++i) {
+            const uint32_t p = s_dib_px[i];
+            s_dib_px[i] = ((((p >> 16) & 255) * k >> 8) << 16) | ((((p >> 8) & 255) * k >> 8) << 8) | ((p & 255) * k >> 8);
+        }
     }
 
     int cw, ch;
@@ -390,6 +401,60 @@ uint8_t* read_file(const char* path, size_t& size)
 void free_file(uint8_t* data)
 {
     free(data);
+}
+
+namespace {
+
+// Zapisy emulatora: save_<key>.bin obok pliku exe (sim/build/) - poza repozytorium.
+void save_path(const char* key, char* out, size_t n)
+{
+    char exe[MAX_PATH] = {};
+    GetModuleFileNameA(nullptr, exe, MAX_PATH);
+    if (char* slash = strrchr(exe, '\\')) *slash = '\0';
+    snprintf(out, n, "%s/save_%s.bin", exe, key);
+}
+}  // namespace
+
+bool load_blob(const char* key, void* data, size_t size)
+{
+    char path[MAX_PATH + 64];
+    save_path(key, path, sizeof(path));
+    FILE* f = fopen(path, "rb");
+    if (!f) return false;
+    fseek(f, 0, SEEK_END);
+    const long len = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    bool ok = len == (long)size && fread(data, 1, size, f) == size;
+    fclose(f);
+    return ok;
+}
+
+bool save_blob(const char* key, const void* data, size_t size)
+{
+    char path[MAX_PATH + 64];
+    save_path(key, path, sizeof(path));
+    FILE* f = fopen(path, "wb");
+    if (!f) return false;
+    const bool ok = fwrite(data, 1, size, f) == size;
+    fclose(f);
+    return ok;
+}
+
+void erase_blob(const char* key)
+{
+    char path[MAX_PATH + 64];
+    save_path(key, path, sizeof(path));
+    remove(path);
+}
+
+void set_brightness(int percent)
+{
+    s_brightness = percent < 0 ? 0 : (percent > 100 ? 100 : percent);
+}
+
+MemInfo memory_info()
+{
+    return MemInfo{};
 }
 
 
