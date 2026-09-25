@@ -14,6 +14,7 @@
 #include "games/kosmos/kosmos_game.h"
 #include "games/labirynt3d/labirynt_game.h"
 #include "games/mario/mario_game.h"
+#include "games/invaders/invaders_game.h"
 #include "games/pacman/pacman_game.h"
 #include "games/snake/snake_game.h"
 
@@ -56,6 +57,12 @@ Game* create_snake()
     return &game;
 }
 
+Game* create_invaders()
+{
+    static invaders::InvadersGame game;
+    return &game;
+}
+
 Game* create_pacman()
 {
     static pacman::PacmanGame game;
@@ -82,7 +89,8 @@ const GameEntry GAMES[] = {
     { "kosmos", "Kosmos", "Strzelanka 2D: PNG, paralaksa, wybuchy", create_kosmos, "covers/kosmos.png" },
     { "kart", "Kart", "Wyscigi 3D: 3 okrazenia, rywale, przedmioty, drift", create_kart, "covers/kart.png" },
     { "snake", "Snake", "Waz: 10 poziomow, 5 swiatow, bonusy, rekordy", create_snake, "covers/snake.png" },
-    { "pacman", "Pacman", "Labirynt: kulki, 4 duchy, owoce, 4 plansze", create_pacman, "covers/pacman.png" },
+    { "pacman", "Pacman", "Labirynt: 4 duchy, owoce, 8 plansz, 8 swiatow", create_pacman, "covers/pacman.png" },
+    { "invaders", "Space Invaders", "Kosmiczni najezdzcy: 4 swiaty, bonusy, boss co 5 fal", create_invaders, "covers/invaders.png" },
 #define LEKCJA(id) console_entry_##id,
 #include "games/lekcje/lista.h"
 #undef LEKCJA

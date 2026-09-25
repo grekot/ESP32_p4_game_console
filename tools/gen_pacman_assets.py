@@ -6,6 +6,7 @@ Surowe obrazy wygenerowal Gemini (konto uzytkownika, 25.09.2026), wszystkie 2816
                         przestraszony granatowy, przestraszony bialy, same oczy, pusto
   fruits_sheet.jpg 4x2: wisnie, truskawka, pomarancza, jablko; arbuz, dzwonek, klucz, gwiazda
   bg_sheet.jpg     2x2 tla swiatow (magentowe linie podzialu): neon, cukierki, dzungla, lawa
+  bg_sheet2.jpg    2x2 tla swiatow 5-8: ocean, kosmos, pustynia, lod
   title.jpg        ilustracja tytulowa 16:9
 Skrypt: wycina komorki, usuwa magente z miekka krawedzia (jak gen_snake_assets.py), skaluje i zapisuje RGBA.
 Klatki paszczy bohatera sa wyrownywane do LEWEJ krawedzi i srodka w pionie ze wspolna skala (paszcza otwiera sie
@@ -225,34 +226,40 @@ def process_fruits():
         save(fit_center(obj, ICON), "icon_%s.png" % name)
 
 
-WORLDS = ["neon", "candy", "jungle", "lava"]
+# arkusz 2x2 -> 4 swiaty; drugi arkusz (26.09.2026) daje swiaty 5-8
+# (plik, swiaty, jasnosc) - drugi arkusz Gemini wyszedl juz ciemny, wiec tylko lekko przyciemniany
+WORLD_SHEETS = [
+    ("bg_sheet.jpg", ["neon", "candy", "jungle", "lava"], 0.55),
+    ("bg_sheet2.jpg", ["ocean", "space", "desert", "ice"], 0.9),
+]
 
 
 def process_bg():
-    path = os.path.join(SRC, "bg_sheet.jpg")
-    if not os.path.exists(path):
-        print("BRAK", path)
-        return
-    sheet = Image.open(path).convert("RGB")
-    w, h = sheet.size
-    for i, name in enumerate(WORLDS):
-        c, r = i % 2, i // 2
-        # margines 2 % odcina magentowe linie podzialu
-        box = (int(c * w / 2 + w * 0.02), int(r * h / 2 + h * 0.02), int((c + 1) * w / 2 - w * 0.02), int((r + 1) * h / 2 - h * 0.02))
-        im = sheet.crop(box)
-        cw, ch = im.size
-        target = MAZE_W / MAZE_H
-        if cw / ch > target:
-            nw = int(ch * target)
-            im = im.crop(((cw - nw) // 2, 0, (cw - nw) // 2 + nw, ch))
-        else:
-            nh = int(cw / target)
-            im = im.crop((0, (ch - nh) // 2, cw, (ch - nh) // 2 + nh))
-        im = im.resize((MAZE_W, MAZE_H), Image.LANCZOS)
-        im = ImageEnhance.Brightness(im).enhance(0.55)   # tlo pod swiecacym labiryntem musi byc ciemne
-        im = ImageEnhance.Color(im).enhance(0.9)
-        im.save(os.path.join(DST, "bg_%s.png" % name), optimize=True)
-        print("  %-22s %dx%d" % ("bg_%s.png" % name, MAZE_W, MAZE_H))
+    for fname, names, bright in WORLD_SHEETS:
+        path = os.path.join(SRC, fname)
+        if not os.path.exists(path):
+            print("BRAK", path)
+            continue
+        sheet = Image.open(path).convert("RGB")
+        w, h = sheet.size
+        for i, name in enumerate(names):
+            c, r = i % 2, i // 2
+            # margines 2 % odcina magentowe linie podzialu
+            box = (int(c * w / 2 + w * 0.02), int(r * h / 2 + h * 0.02), int((c + 1) * w / 2 - w * 0.02), int((r + 1) * h / 2 - h * 0.02))
+            im = sheet.crop(box)
+            cw, ch = im.size
+            target = MAZE_W / MAZE_H
+            if cw / ch > target:
+                nw = int(ch * target)
+                im = im.crop(((cw - nw) // 2, 0, (cw - nw) // 2 + nw, ch))
+            else:
+                nh = int(cw / target)
+                im = im.crop((0, (ch - nh) // 2, cw, (ch - nh) // 2 + nh))
+            im = im.resize((MAZE_W, MAZE_H), Image.LANCZOS)
+            im = ImageEnhance.Brightness(im).enhance(bright)   # tlo pod swiecacym labiryntem musi byc ciemne
+            im = ImageEnhance.Color(im).enhance(0.9)
+            im.save(os.path.join(DST, "bg_%s.png" % name), optimize=True)
+            print("  %-22s %dx%d" % ("bg_%s.png" % name, MAZE_W, MAZE_H))
 
 
 def process_title():

@@ -136,6 +136,16 @@ dokumentacja w `docs/`, README i ten plik z polskimi znakami.
   gdzie `into` = składowa kierunku jazdy w stronę przeszkody. Deterministyczne; ślady Karta bez zmian, bo AI nie zjeżdża
   z toru (sprawdzone regresją). Ślady `kart_auto`/`kart_player` bez zmian (fizyka
   nietknięta), wzorzec `kart_race` nagrany na nowo. DECYZJE 28.
+- **Kart – model bolidu i kask (25.09 noc; „kaski kanciaste, popracuj nad wyglądem kartów”):** kask = gładka elipsoida
+  24×12 (`add_helmet` w `kart_render.cpp`) z wizjerem, obwódką, pasem i otworem na szyję jako obszarami tej samej
+  powierzchni (wcześniej kula 12×6 + kostki); kadłub = jedna gładka skorupa (`add_hull`: przekrój squircle 12 punktów,
+  sekcje interpolowane smoothstep) zamiast 4 brył prostokątnych; ramiona, barki, kierownica = `add_tube`, rękawice kule,
+  koła 16 boków. **LOD:** pełny model (2 420 tri) tylko < 50 jednostek od kamery i przy `quality_ == 0`, dalej i w
+  cieniach wersja uproszczona (1 332 tri; dawny bolid ~1 176). Narzędzia (zmienne środowiskowe): `KART_CAM=kat,odl,wys`
+  (podgląd modelu bez HUD), `KART_STATS=1` (średnia trójkątów/klatkę co 300 klatek – miara kosztu niezależna od
+  obciążenia PC), `KART_LOD_HI/LO` (wymuszenie). Trójkąty/klatkę na torze 0: 3 191 (wszystko uproszczone 2 684).
+  Czas klatki PC w tej chwili niemiarodajny (inne sesje budowały w tle). Nowe wzorce: `kart_race`, `kart_kanion`,
+  `kart_title_zima` (ślady bez zmian).
 - **Kart – 4 tory i motywy, krok 2 tekstur (25.09 wieczorem; „wprowadzaj krok 2, weź pod uwagę kilka różnych torów”):**
   `src/games/kart/kart_tracks.h`: `TRACKS[]` (16 punktów kontrolnych, pola przyspieszenia, skrzynki, motyw, `hills`/`phase`
   terenu) i `THEMES[]` (kolory nieba i mgły). Tory: **Jezioro** (tor 0 = pierwotny, na nim `kart_auto/race/player`),
@@ -204,15 +214,32 @@ dokumentacja w `docs/`, README i ten plik z polskimi znakami.
   kratkach z decyzją raz na kratkę, skręt „przed czasem” 6 px, zawrócenie natychmiast, 4 duchy z celami i harmonogramem
   rozproszenie/pościg jak w oryginale, strach z łańcuchem 200…1600, oczy wracają do domu, owoce po 70/170 kulkach, dodatkowe
   życie za 10 000, autopilot BFS; pacman_render.cpp: tło z Gemini + ściany z pola odległości od korytarza wypalane raz na
-  poziom, sprite'y PNG z alfa, panel; pacman_mazes.h: 4 plansze 27×19, „Klasyk” ręcznie + 3 z `tools/pacman_maze_gen.py`,
-  sprawdzane `tools/pacman_maze_check.py`). 4 światy (neon, cukierki, dżungla, lawa). Grafika: `assets_src/pacman/`
-  (5 obrazów Gemini) → `python tools/gen_pacman_assets.py` → `assets/pacman/` (1,5 MB); okładka z ilustracji tytułowej.
+  poziom, sprite'y PNG z alfa, panel; pacman_mazes.h: 8 plansz 27×19, „Klasyk” ręcznie + 7 z `tools/pacman_maze_gen.py`,
+  sprawdzane `tools/pacman_maze_check.py`). 8 światów (neon, cukierki, dżungla, lawa, ocean, kosmos, pustynia, lód).
+  **Wierność oryginałowi (25.09 wieczorem, na życzenie):** tabele poziomów `LEVELS[21]` (prędkości %, strach, mignięcia,
+  Elroy), harmonogram trybów per poziom, zatrzymanie na kulce (1/3 klatki), liczniki kulek wyjść z domu (osobiste/globalne/
+  zegar bezczynności), strefy bez skrętu w górę. Bez przerywników i ekranu demonstracyjnego. Grafika: `assets_src/pacman/`
+  (6 obrazów Gemini) → `python tools/gen_pacman_assets.py` → `assets/pacman/` (2,1 MB); okładka z ilustracji tytułowej.
   Rekord `pacman_top` w NVS (`RECORD_KEYS`). PC 0,30 ms/klatkę. Regresja 39/39 (`pacman_title`, `pacman_auto`,
   `pacman_play`, `pacman_player`, `pacman_lava`, `pacman_gameover`; wzorce `menu`, `menu_carousel`, `menu_about` nagrane na
   nowo – 6 gier w karuzeli). Zintegrowany z głównym drzewem 25.09 wieczorem (worktree można usunąć: `git worktree remove ../LakeMarioGame_pacman`);
-  firmware z Pacmanem: **1 413 kB flash (33,7 %), 98,1 kB RAM statycznie** (pierwszy `pio run` po `clean` padł na
+  firmware z Pacmanem (po tabelach poziomów i 8 światach): **1 440 kB flash (34,3 %), 98,5 kB RAM statycznie**, assets 7,5 MB z 11,9 (pierwszy `pio run` po `clean` padł na
   `ninja: failed recompaction: Permission denied` – wyścig o `.pio` z innym procesem; drugi przebieg OK).
   Nazwa „Pacman” i nazwy plansz/światów robocze. DECYZJE 34.
+- **Space Invaders (25.09 wieczorem; użytkownik: „space invaders w wypasionej graficznie wersji”, równolegle z agentem
+  od instalatora – worktree `../LakeMarioGame_invaders`, gałąź `invaders`, zintegrowany tego samego wieczoru):**
+  `src/games/invaders/` (invaders_game.cpp: formacja 5×10 – kalmar 40, meduza 30, krab 20, ośmiornica 10 – przesuw na boki,
+  zejście 16 px na krawędzi, przyspieszenie z ubywaniem, od fali 2 nurkowania łukiem z powrotem do formacji, od fali 3
+  część strzałów celowana, UFO z bonusem, 4 bunkry kruszone pikselami z maski (kopia alfy PNG), co 5. fala boss (HP, wachlarze,
+  eskorta 10 meduz), bonusy: potrójny/laser/osłona/spowolnienie/życie, combo do ×4, życie za 20 000, potem co 30 000, autopilot
+  (cel + koszt zagrożenia od pocisków i nurkujących, omija kolumny pod bunkrem); invaders_render.cpp: tło 800×480 per świat
+  + 3 warstwy gwiazd, poświaty addytywne bez pierwiastka, wybuchy z 4 klatek PNG skalowane + iskry, HUD, tytuł). Grafika:
+  `assets_src/invaders/` (7 obrazów Gemini: 2 arkusze 4×3 na magencie, 4 tła, tytuł) → `python tools/gen_invaders_assets.py`
+  (używa funkcji z `gen_pacman_assets.py`) → `assets/invaders/` (1,9 MB). Rekord `invaders_top` w `RECORD_KEYS`. Nazwa
+  w menu „Space Invaders” (nie „Inwazja” – tak nazywa się lekcja 05). PC 0,48 ms/klatkę (boss więcej – duże poświaty).
+  Firmware 1 441 kB flash. Regresja 47/47 (7 testów `invaders_*`). DECYZJE 36. **Balans dla człowieka niesprawdzony**
+  (grał autopilot: fale 1-5 z bossem, traci 1-2 życia na falę); na sprzęcie niezmierzone (memcpy tła 768 kB co klatkę).
+  Wydane w instalatorze 1.1.0.
 - **Lekcja 14 `14_obrazki` (23.09 noc):** PNG z `load_image`, klatki animacji w tablicy `Sprite hero[2]`, Piskel, drzewa jako
   przeszkody z cofaniem ruchu; gra „sad” (jabłka, pszczoła). Kod startowy pada na 2 testy, zad4/zad5 przechodzą (zad3 tylko test 1).
   Lekcja dodatkowa po 10. Grafika z `gen_demo_assets.py` (`assets/obrazki/`).
@@ -241,6 +268,7 @@ python tools/gen_kart_gemini.py                              # Kart: assets_src/
 python tools/gen_kart_atlas.py                               # Kart: assets/kart/atlas_<motyw>.png (tekstury, drzewa z Gemini)
 python tools/kart_tracks_check.py --png p.png                # Kart: walidacja ukladow torow z kart_tracks.h
 python tools/kart_shimmer.py                                 # Kart: pomiar migotania tekstur w oddali (emulator)
+python tools/gen_invaders_assets.py                          # Space Invaders: assets_src/invaders/*.jpg (Gemini) -> assets/invaders/
 python tools/gen_covers.py                                   # okladki menu: assets_src/covers/*.jpg -> assets/covers/<id>.png 440x248
 python tools/gen_pl_fonts.py                                 # polskie litery dla LVGL -> src/ui/fonts/console_fonts_pl.c
 powershell -File tools/build_installer.ps1 -Version 1.0.0     # instalator Windows -> dist/ (Inno Setup 6); wydanie: git tag v1.0.0 + push = CI
@@ -309,6 +337,9 @@ src/games/snake/        snake_game (plansze, ruch, przedmioty, autopilot BFS; de
 src/games/pacman/       pacman_game (plansza z pacman_mazes.h, ruch po kratkach, AI duchów, strach, owoce, autopilot BFS; debug_line:
                         stan lvl maze pac dir pel score lives g=HLNFEI ph fr fruit ap), pacman_render (bake_maze: tło PNG + ściany
                         z pola odległości, maska do migania; sprite'y z obrotami; panel; tytuł), pacman_mazes.h (4 plansze ASCII)
+src/games/invaders/     invaders_game (formacja, nurkowania, pociski, bunkry z maską, UFO, boss, bonusy, combo, autopilot; debug_line:
+                        stan lvl score lives alive f=x,y ship bolts bombs div ufo boss=hp/max pw=TLSV combo ap), invaders_render
+                        (tło + gwiazdy, glow/ring addytywne, blit skalowany, HUD, tytuł, napisy)
 src/games/kart/         kart_game (tor Catmull-Rom → path_ + surf_, fizyka 2D, AI, przedmioty, ranking, dym, obrót kół, ślady opon),
                         kart_render (atlas + colormapa; build_road: road_ teksturowana Gouraud + marks_ płaskie; build_terrain;
                         build_props: brama/trybuna/opony/banery z teksturami; build_decor: billboardy drzew i krzaków;
@@ -323,6 +354,9 @@ assets/                 PNG gier: bohater/, api_demo/, labirynt3d/ (brick stone 
                         brama, trybuna to modele 3D w kodzie. Podmiana pliku = nowa grafika
 assets/pacman/          hero0-3, die0-3, ghost_<kolor>0/1, scared0/1, eyes, 8 owoców + ikony, bg_<świat> 648x456, title 800x480
                         (tools/gen_pacman_assets.py z assets_src/pacman/); okładka assets/covers/pacman.png (gen_covers.py)
+assets/invaders/        squid/crab/octo/jelly 0-1 (44), ufo, boss0-1 (160), life, ship, icon_ship, bunker 112x56, bomb, bolt,
+                        pw_triple/laser/shield/slow, boom0-3 (72), bg_planet/rings/asteroids/blackhole, title 800x480
+                        (tools/gen_invaders_assets.py z assets_src/invaders/); okładka assets/covers/invaders.png
 src/games/lekcje/       lista.h (LEKCJA(id) na lekcję) + 00_szablon … 13_twoja_gra, 14_obrazki (dodatkowa, PNG): gra.cpp, README.md,
                         testy.txt, rozwiazania/*.cpp.txt
 sim/                    emulator: CMakeLists (LVGL: managed_components → third_party/lvgl → FetchContent zip), CMakePresets,
@@ -512,7 +546,7 @@ i powrót (czas dalej liczy); START na tytule nie startuje gry. **Zmieniając fi
 pauza) + 3 zrzuty BMP (tytuł, gra, menu), wzorce w `tests/expected/` nagrane z binarki **sprzed** refaktoru silnika
 (math2d, palette, ParticlePool, TileMap); od wieczora także `api_demo` (zrzut), `labirynt_route` (ślad 640 klatek: skręty,
 drzwi, moneta), `labirynt_door` (zrzut), `kosmos_play` (ślad + zrzut, losowość ze stałym ziarnem). od nocy `kart_auto` (ślad 1800 klatek autopilotem), `kart_race` (zrzut), `kart_player` (ślad). `tools/testy.ps1 mario`
-musi dać 39/39 (od 25.09: sześć testów Snake, pięć testów menu, pięć testów torów Karta, sześć testów Pacmana) po każdej zmianie w `src/engine`, `src/gfx`, `src/games/*`. Zrzut `menu` zmienia się po dodaniu lekcji — wtedy `-Update`. Testy lekcji: kod startowy w `gra.cpp`
+musi dać 47/47 (od 25.09: sześć testów Snake, pięć testów menu, pięć testów torów Karta, siedem testów Pacmana, siedem Space Invaders) po każdej zmianie w `src/engine`, `src/gfx`, `src/games/*`. Zrzut `menu` zmienia się po dodaniu lekcji — wtedy `-Update`. Testy lekcji: kod startowy w `gra.cpp`
 **ma padać**, `rozwiazania/zadN.cpp.txt` skopiowane do `gra.cpp` **ma przechodzić** (sprawdzone dla 01-12).
 
 ## Lake Mario - fizyka i poziom

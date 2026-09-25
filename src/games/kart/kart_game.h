@@ -116,6 +116,9 @@ private:
     gfx3d::Mesh     road_, marks_, terrain_, props_, tree_bb_[4], tree_shadow_m_, bush_bb_[2];
     gfx::IndexedImage atlas_;            // atlas tekstur (assets/kart/atlas.png, 8-bit z paleta)
     gfx3d::Mesh     kart_body_[4], helmet_[4], wheel_front_, wheel_rear_;
+    // LOD: uproszczone wersje tych samych modeli dla gokartow daleko od kamery i dla cieni rzutowanych
+    gfx3d::Mesh     kart_body_lo_[4], helmet_lo_[4], wheel_front_lo_, wheel_rear_lo_;
+    float           cam_px_ = 0, cam_pz_ = 0;   // pozycja kamery biezacej klatki (wybor LOD)
     gfx3d::Mesh     itembox_m_, banana_m_, shell_m_, mushroom_m_, shadow_m_;
     Bush            bushes_[N_BUSHES]{};
     float           tree_h_[N_TREES]{};    // wysokosc podloza pod drzewem (liczona raz)

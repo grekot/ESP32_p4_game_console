@@ -42,7 +42,7 @@ public:
     static constexpr int MAZE_X = 8, MAZE_Y = (H - MAZE_H) / 2;        // 8, 12
     static constexpr int PANEL_X = MAZE_X + MAZE_W + 8, PANEL_W = W - PANEL_X - 8;   // 664, 128
     static constexpr int SPR = 40, FRUIT_PX = 32;
-    static constexpr int GHOSTS = 4, WORLDS = 4, FRUITS = 8;
+    static constexpr int GHOSTS = 4, WORLDS = 8, FRUITS = 8;
 
     enum class State { Title, Ready, Playing, Dying, LevelClear, GameOver };
     enum Dir : uint8_t { RIGHT, DOWN, LEFT, UP, NONE };
@@ -59,7 +59,7 @@ private:
     struct Ghost {
         Actor     a;
         GhostMode mode = IN_HOUSE;
-        float     house_t = 0;     // czas w domu
+        float     house_t = 0;     // czas w domu (tylko do kolysania)
         float     bob = 0;
         int       target_x = 0, target_y = 0;   // do rysowania debug / decyzji
     };
@@ -86,6 +86,14 @@ private:
     int   phase_idx_ = 0;
     float phase_t_ = 0;
     float fright_t_ = 0;          // > 0: duchy przestraszone
+    float flash_t_ = 0;           // ostatnie tyle sekund strachu duchy migaja
+    int   stall_frames_ = 0;      // gracz stoi tyle klatek po zjedzeniu kulki (1) / duzej kulki (3) - jak w oryginale
+    // Wyjscia z domu jak w oryginale: licznik kulek "preferowanego" ducha (rozowy, blekitny, pomaranczowy - pierwszy
+    // w domu), po stracie zycia licznik globalny (7/17/32), a przy braku jedzenia zegar 4 s (3 s od poziomu 5).
+    int   dot_count_[GHOSTS]{};
+    int   global_dots_ = 0;
+    bool  global_mode_ = false;
+    float no_dot_t_ = 0;
     int   ghost_chain_ = 0;       // zjedzone duchy w jednym ciagu (200, 400, 800, 1600)
     float fruit_t_ = 0;           // > 0: owoc na planszy
     int   fruit_kind_ = 0;
@@ -134,8 +142,9 @@ private:
     void next_phase();
     bool walkable(int col, int row, bool ghost_door) const;
     void cell_of(const Actor& a, int& col, int& row) const;
-    float speed_mult() const;
-    float fright_time() const;
+    float phase_duration(int idx) const;
+    int   preferred_ghost() const;
+    bool  no_up_zone(int col, int row) const;
     Dir  autopilot_dir(int col, int row);
     void add_score(int pts);
     void popup(float x, float y, const char* text, uint16_t color);

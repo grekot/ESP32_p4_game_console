@@ -465,8 +465,17 @@ wnętrze `G`) czytany z planszy; wejście/wyjście to ruch skryptowany, nie po g
 w promieniu 2 kroków od zwykłego ducha jako zablokowanymi; cele: przestraszony duch ≤ 10 kroków, owoc ≤ 12, najbliższa
 kulka; bez celu – kierunek najdalej od duchów. Deterministyczny, przechodzi planszę 1 z jedną-dwiema śmierciami – regresja
 obejmuje śmierć, owoc, zjedzenie ducha, powrót oczu i przejście do planszy 2.
+**Uzupełnienie (25.09 wieczorem, użytkownik: „dodaj wedle twojej propozycji, nie obcinaj poziomów, wręcz dodaj ich
+więcej”).** Tabele poziomów z automatu (Pac-Man Dossier) jako `LEVELS[21]`: prędkości w procentach bazy 7,75 kratki/s,
+czas strachu i liczba mignięć (0 s = duchy tylko zawracają), progi Elroya; harmonogram trybów per poziom (2–4: pościg
+1033 s, od 5: 1037 s i rozproszenie 1 klatki); kulka zatrzymuje gracza na 1 klatkę, duża na 3 (`stall_frames_`, liczone
+w klatkach, żeby test był deterministyczny); wyjścia z domu wg liczników kulek (osobiste, globalne po śmierci, zegar
+bezczynności) zamiast zegarów; strefy zakazu skrętu w górę przy domu i starcie. Plansz 8 (cztery nowe z generatora,
+tunele w wierszach 7 i 11), światów 8 (drugi arkusz 2×2 z Gemini: ocean, kosmos, pustynia, lód – wyszedł ciemny,
+więc przyciemniany tylko do 90 %). Autopilot na planszy 1 nadal przechodzi (ślady nagrane na nowo). Odrzucone:
+przerywniki i ekran demonstracyjny (animacje bez wartości dla rozgrywki), błędy oryginału.
 **Konsekwencje.** PC 0,30 ms/klatkę (Snake 0,70). PSRAM: labirynt 591 kB + maska 295 kB + tytuł 768 kB + sprite'y ~0,3 MB;
-partycja assets +1,5 MB. Wypalanie ścian raz na poziom (na P4 szacunkowo 20-40 ms + dekodowanie tła PNG). Nazwa „Pacman”
+partycja assets +1,5 MB (+0,6 MB za 4 tła). Wypalanie ścian raz na poziom (na P4 szacunkowo 20-40 ms + dekodowanie tła PNG). Nazwa „Pacman”
 i nazwy plansz/światów robocze. Zintegrowany z głównym drzewem tego samego wieczoru.
 
 ## 35. Instalator Windows dla dzieci: Inno Setup per użytkownik + program startowy z aktualizacjami z GitHub Releases (25.09.2026)
@@ -496,3 +505,23 @@ na DIB okna, nie na płótnie – zrzuty i testy jej nie widzą; stuknięcie = p
 pada USB** (winmm `dwButtons`/`dwPOV`, mapowanie `PAD_*` w `keymap.cfg`, domyślnie Xbox wg nazw: A=A, B=B –
 zgodnie z napisami na ekranie, nie z położeniem przycisków jak w padzie Switch).
 
+## 36. Space Invaders: nowoczesna oprawa na klasycznych zasadach, bunkry z maski, praca w osobnym worktree (25.09.2026)
+
+**Kontekst.** Użytkownik: „space invaders w wypasionej graficznie wersji”, grafika z jego Gemini; w tym czasie inny agent
+robił instalator w głównym drzewie – polecenie: pracować równolegle tylko wtedy, gdy nie psujemy sobie kodu.
+**Decyzja.** (1) Osobny worktree `../LakeMarioGame_invaders` (gałąź `invaders`) z kopią bieżącego stanu, bez plików
+`sim/` i `menu.cpp`, które zmieniał drugi agent; gra w osobnym katalogu, a pliki wspólne (`registry.cpp`, `RECORD_KEYS`,
+`gen_covers.py`, `scenarios.txt`, wzorce menu) zmienione dopiero przy integracji, po zakończeniu pracy innych agentów.
+(2) Zasady klasyczne (formacja z zejściem na krawędzi i przyspieszeniem, strzał z dołu kolumny, UFO, bunkry, inwazja =
+koniec) plus elementy nowoczesne: nurkowania z powrotem do formacji (Galaxian), celowane strzały, bonusy, combo, boss co 5
+fal. Limit 3 pocisków gracza zamiast jednego z oryginału (potrójny 9, laser 12). (3) Bunkier = PNG z Gemini, a krycie
+pikseli w osobnej masce 112×56 kopiowanej z alfy na początku fali; trafienie wykrawa koło z postrzępioną krawędzią,
+obcy wymazują prostokąt. Pociski sprawdzają bunkier co 3 px drogi z danej klatki (inaczej przeskakiwałyby cienkie
+fragmenty). (4) Grafika: dwa arkusze 4×3 na magencie, klatki A/B jednego obcego i klatki wybuchu mają wspólną skalę;
+tła przyciemnione i winietowane u góry (tam stoi formacja). (5) Poświaty addytywne z zanikiem (1−r²)², bez `sqrtf`/`powf`
+na piksel – pod P4. (6) Autopilot: cel (bonus → boss → UFO → najniższy obcy z wyprzedzeniem ruchu formacji) i wybór
+pozycji w ±240 px wg kosztu zagrożenia (przewidywane położenie pocisków za ≤ 0,85 s, nurkujący) + kara za kolumnę pod
+bunkrem (nie strzela wtedy we własną osłonę). (7) Nazwa w menu „Space Invaders”, bo „Inwazja” to już lekcja 05.
+**Konsekwencje.** PC 0,48 ms/klatkę; PSRAM: tło 768 kB + tytuł 768 kB + sprite'y ~0,2 MB; assets +1,9 MB; firmware
++28 kB. Na P4 niezmierzone (kopiowanie tła co klatkę, duże poświaty bossa). Balans ustawiony pod autopilota,
+nie pod dziecko – do oceny przez użytkownika. Wydane w instalatorze 1.1.0.

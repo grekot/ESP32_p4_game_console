@@ -23,26 +23,55 @@ constexpr int DY[4] = { 0, 1, 0, -1 };
 constexpr int CELL = G::CELL, COLS = G::COLS, ROWS = G::ROWS;
 constexpr float HALF = (float)CELL * 0.5f;
 
-// Predkosci na poziomie 1 [px/s] (kratka 24 px) - mnozone przez speed_mult() na wyzszych poziomach.
-constexpr float PAC_SPEED     = 6.2f * CELL;
-constexpr float PAC_FRIGHT    = 6.8f * CELL;    // gracz szybszy, gdy duchy uciekaja
-constexpr float GHOST_SPEED   = 5.7f * CELL;
-constexpr float GHOST_FRIGHT  = 3.2f * CELL;
-constexpr float GHOST_TUNNEL  = 3.0f * CELL;
+// Tabela poziomow z oryginalu (Pac-Man Dossier): predkosci w procentach predkosci bazowej (gracz zwykle / w strachu,
+// duch zwykly / w strachu / w tunelu), czas strachu [s] i liczba mignien, progi "Cruise Elroy" (czerwony przyspiesza,
+// gdy zostalo tyle kulek) z predkoscia. Poziom 21 i dalsze = ostatni wiersz. 100 % = 7,75 kratki/s (186 px/s).
+struct LevelSpec {
+    uint8_t pac, pac_fr, ghost, ghost_fr, tunnel;
+    float   fright;
+    uint8_t flashes;
+    uint8_t elroy1, elroy1_spd, elroy2, elroy2_spd;
+};
+constexpr LevelSpec LEVELS[21] = {
+    { 80, 90, 75, 50, 40, 6.f, 5, 20, 80, 10, 85 },
+    { 90, 95, 85, 55, 45, 5.f, 5, 30, 90, 15, 95 },
+    { 90, 95, 85, 55, 45, 4.f, 5, 40, 90, 20, 95 },
+    { 90, 95, 85, 55, 45, 3.f, 5, 40, 90, 20, 95 },
+    { 100, 100, 95, 60, 50, 2.f, 5, 40, 100, 20, 105 },
+    { 100, 100, 95, 60, 50, 5.f, 5, 50, 100, 25, 105 },
+    { 100, 100, 95, 60, 50, 2.f, 5, 50, 100, 25, 105 },
+    { 100, 100, 95, 60, 50, 2.f, 5, 50, 100, 25, 105 },
+    { 100, 100, 95, 60, 50, 1.f, 3, 60, 100, 30, 105 },
+    { 100, 100, 95, 60, 50, 5.f, 5, 60, 100, 30, 105 },
+    { 100, 100, 95, 60, 50, 2.f, 5, 60, 100, 30, 105 },
+    { 100, 100, 95, 60, 50, 1.f, 3, 80, 100, 40, 105 },
+    { 100, 100, 95, 60, 50, 1.f, 3, 80, 100, 40, 105 },
+    { 100, 100, 95, 60, 50, 3.f, 5, 80, 100, 40, 105 },
+    { 100, 100, 95, 60, 50, 1.f, 3, 100, 100, 50, 105 },
+    { 100, 100, 95, 60, 50, 1.f, 3, 100, 100, 50, 105 },
+    { 100, 100, 95, 60, 50, 0.f, 0, 100, 100, 50, 105 },
+    { 100, 100, 95, 60, 50, 1.f, 3, 100, 100, 50, 105 },
+    { 100, 100, 95, 60, 50, 0.f, 0, 120, 100, 60, 105 },
+    { 100, 100, 95, 60, 50, 0.f, 0, 120, 100, 60, 105 },
+    { 90, 90, 95, 60, 50, 0.f, 0, 120, 100, 60, 105 },
+};
+inline const LevelSpec& spec_for(int level) { return LEVELS[engine::iclamp(level, 1, 21) - 1]; }
+constexpr float SPEED_100     = 7.75f * CELL;   // 100 % z tabeli
+constexpr float FLASH_PERIOD  = 0.28f;          // jedno migniecie przestraszonego ducha
 constexpr float GHOST_HOUSE   = 2.4f * CELL;    // wychodzenie z domu
 constexpr float EYES_SPEED    = 11.f * CELL;
 constexpr float CORNER        = 6.f;            // skret "przed czasem": tyle px przed/za srodkiem kratki
 
 constexpr float READY_TIME = 2.2f, DIE_TIME = 1.7f, CLEAR_TIME = 2.6f, FRUIT_TIME = 9.5f, EAT_PAUSE = 0.55f;
 constexpr int   FRUIT_PTS[G::FRUITS] = { 100, 300, 500, 700, 1000, 2000, 3000, 5000 };
-constexpr float SCATTER_T[4] = { 7.f, 7.f, 5.f, 5.f };
-constexpr float CHASE_T = 20.f;
-constexpr float HOUSE_T[G::GHOSTS]  = { 0.f, 1.0f, 5.0f, 10.f };   // po tylu sekundach duch wychodzi z domu...
-constexpr int   HOUSE_PEL[G::GHOSTS] = { 0, 0, 30, 60 };          // ...albo po tylu zjedzonych kulkach
+// Limity licznikow kulek wyjsc z domu (oryginal): osobiste na poziomie 1 i 2, od 3 wszystkie 0; globalne po stracie zycia.
+constexpr int   DOT_LIMIT_L1[G::GHOSTS] = { 0, 0, 30, 60 };
+constexpr int   DOT_LIMIT_L2[G::GHOSTS] = { 0, 0, 0, 50 };
+constexpr int   GLOBAL_LIMIT[G::GHOSTS] = { 0, 7, 17, 32 };
 constexpr int   CORNER_X[G::GHOSTS] = { COLS - 2, 1, COLS - 2, 1 };   // kat rozproszenia: czerwony PG, rozowy LG,
 constexpr int   CORNER_Y[G::GHOSTS] = { 0, 0, ROWS - 1, ROWS - 1 };   // blekitny PD, pomaranczowy LD
 constexpr int   EXTRA_LIFE = 10000;
-constexpr int   MAX_LEVEL_SELECT = 8;
+constexpr int   MAX_LEVEL_SELECT = 12;
 
 inline G::Dir opposite(G::Dir d) { return (G::Dir)((d + 2) & 3); }
 inline bool perpendicular(G::Dir a, G::Dir b) { return ((a ^ b) & 1) != 0; }
@@ -84,8 +113,35 @@ bool PacmanGame::walkable(int col, int row, bool ghost_door) const
     return true;
 }
 
-float PacmanGame::speed_mult() const { return engine::clampf(1.f + 0.05f * (float)(level_ - 1), 1.f, 1.35f); }
-float PacmanGame::fright_time() const { return fmaxf(1.5f, 6.5f - 0.6f * (float)(level_ - 1)); }
+// Harmonogram rozproszenie/poscig (oryginal): poziom 1: 7/20/7/20/5/20/5/nieskonczonosc, 2-4: 7/20/7/20/5/1033/(1 klatka)/nieskonczonosc,
+// od 5: 5/20/5/20/5/1037/(1 klatka)/nieskonczonosc. Parzyste indeksy = rozproszenie.
+float PacmanGame::phase_duration(int idx) const
+{
+    if (idx >= 7) return 1e9f;
+    const float s = level_ >= 5 ? 5.f : 7.f;
+    switch (idx) {
+    case 0: case 2: return s;
+    case 1: case 3: return 20.f;
+    case 4: return 5.f;
+    case 5: return level_ == 1 ? 20.f : (level_ >= 5 ? 1037.f : 1033.f);
+    default: return level_ == 1 ? 5.f : 1.f / 60.f;
+    }
+}
+
+// Pierwszy duch w domu w kolejnosci rozowy, blekitny, pomaranczowy - tylko on zbiera kulki i moze wyjsc.
+int PacmanGame::preferred_ghost() const
+{
+    for (int i = 1; i < GHOSTS; ++i) if (ghost_[i].mode == IN_HOUSE) return i;
+    return -1;
+}
+
+// Strefy, w ktorych duchy w zwyklym trybie nie skrecaja w gore (oryginal): po bokach srodka nad domem i nad startem.
+bool PacmanGame::no_up_zone(int col, int row) const
+{
+    if (row == door_y_ - 1 && (col == door_x_ - 1 || col == door_x_ + 1)) return true;
+    if (row == start_y_ && (col == start_x_ - 1 || col == start_x_ + 1)) return true;
+    return false;
+}
 
 void PacmanGame::add_score(int pts)
 {
@@ -177,6 +233,9 @@ void PacmanGame::load_level()
     level_time_ = 0;
     for (Popup& p : popups_) p.alive = false;
     reset_actors();
+    memset(dot_count_, 0, sizeof(dot_count_));
+    global_mode_ = false;
+    global_dots_ = 0;
     bake_maze();
     state_ = State::Ready;
     state_t_ = 0;
@@ -208,6 +267,8 @@ void PacmanGame::reset_actors()
     ghost_chain_ = 0;
     eaten_ghost_ = -1;
     pause_t_ = 0;
+    stall_frames_ = 0;
+    no_dot_t_ = 0;
     phase_ = SCATTER;
     phase_idx_ = 0;
     phase_t_ = 0;
@@ -250,6 +311,8 @@ void PacmanGame::update(float dt, const input::PadState& pad)
                 state_t_ = 0;
             } else {
                 reset_actors();
+                global_mode_ = true;   // po stracie zycia duchy wychodza wg licznika globalnego (7/17/32)
+                global_dots_ = 0;
                 state_ = State::Ready;
                 state_t_ = 0;
             }
@@ -314,10 +377,9 @@ void PacmanGame::update_playing(float dt, const input::PadState& pad)
         }
     } else {
         phase_t_ += dt;
-        const bool scatter = (phase_idx_ & 1) == 0;
-        const float dur = scatter ? SCATTER_T[engine::imin(phase_idx_ / 2, 3)] : (phase_idx_ >= 7 ? 1e9f : CHASE_T);
-        if (phase_t_ >= dur) next_phase();
+        if (phase_t_ >= phase_duration(phase_idx_)) next_phase();
     }
+    no_dot_t_ += dt;
     if (fruit_t_ > 0) {
         fruit_t_ -= dt;
         if (fruit_t_ < 0) fruit_t_ = 0;
@@ -370,7 +432,12 @@ void PacmanGame::next_phase()
 
 void PacmanGame::move_pac(float dt)
 {
-    const float speed = (fright_t_ > 0 ? PAC_FRIGHT : PAC_SPEED) * speed_mult();
+    if (stall_frames_ > 0) {   // kulka zatrzymuje gracza na klatke (duza na 3) - jak w oryginale
+        --stall_frames_;
+        return;
+    }
+    const LevelSpec& sp = spec_for(level_);
+    const float speed = SPEED_100 * (float)(fright_t_ > 0 ? sp.pac_fr : sp.pac) / 100.f;
     int col, row;
     cell_of(pac_, col, row);
     float cx = (float)col * CELL + HALF, cy = (float)row * CELL + HALF;
@@ -453,6 +520,13 @@ void PacmanGame::eat_at(int col, int row)
     --pellets_left_;
     ++pellets_eaten_;
     add_score(power ? 50 : 10);
+    stall_frames_ = power ? 3 : 1;
+    no_dot_t_ = 0;
+    if (global_mode_) ++global_dots_;
+    else {
+        const int pref = preferred_ghost();
+        if (pref > 0) ++dot_count_[pref];
+    }
     if (power) set_fright();
     if ((pellets_eaten_ == 70 && !fruit_shown_[0]) || (pellets_eaten_ == 170 && !fruit_shown_[1])) {
         fruit_shown_[pellets_eaten_ == 70 ? 0 : 1] = true;
@@ -469,11 +543,13 @@ void PacmanGame::eat_at(int col, int row)
 
 void PacmanGame::set_fright()
 {
-    fright_t_ = fright_time();
+    const LevelSpec& sp = spec_for(level_);
+    fright_t_ = sp.fright;
+    flash_t_ = fminf(sp.fright, (float)sp.flashes * FLASH_PERIOD);
     ghost_chain_ = 0;
     for (Ghost& g : ghost_) {
-        if (g.mode == NORMAL) {
-            g.mode = FRIGHTENED;
+        if (g.mode == NORMAL || g.mode == FRIGHTENED) {
+            if (sp.fright > 0.f) g.mode = FRIGHTENED;   // na wysokich poziomach duchy tylko zawracaja
             g.a.dir = opposite(g.a.dir);
             g.a.dec_col = -99;
         }
@@ -552,8 +628,10 @@ void PacmanGame::ghost_decide(Ghost& g, int idx, int col, int row)
     static const Dir ORDER[4] = { UP, LEFT, DOWN, RIGHT };   // kolejnosc rozstrzygania remisow jak w oryginale
     Dir cand[4];
     int n = 0;
+    const bool ban_up = g.mode == NORMAL && no_up_zone(col, row);
     for (Dir d : ORDER) {
         if (d == opp) continue;
+        if (d == UP && ban_up) continue;
         if (walkable(col + DX[d], row + DY[d], door_ok)) cand[n++] = d;
     }
     if (n == 0) {
@@ -590,10 +668,24 @@ void PacmanGame::move_ghost(Ghost& g, float dt, int idx)
         g.bob = sinf(g.house_t * 5.f) * 4.f;
         bool leaving = false;
         for (const Ghost& o : ghost_) if (o.mode == LEAVING) leaving = true;
-        // wyjscie z domu po czasie albo po kulkach (blekitny i pomaranczowy), po jednym duchu naraz
-        const bool by_time = g.house_t >= HOUSE_T[idx];
-        const bool by_pellets = idx >= 2 && pellets_eaten_ >= HOUSE_PEL[idx];
-        if (!leaving && (by_time || by_pellets)) {
+        // wyjscie z domu jak w oryginale: tylko preferowany duch, po jednym naraz; licznik osobisty (poziom 1: 0/30/60,
+        // poziom 2: 0/0/50, dalej 0), po stracie zycia licznik globalny (7/17/32), a bez jedzenia zegar 4 s (3 s od poziomu 5)
+        if (leaving) return;
+        if (idx != 0 && preferred_ghost() != idx) return;
+        bool go = idx == 0;   // czerwony (po powrocie jako oczy) wychodzi od razu
+        if (idx == 0) {
+        } else if (global_mode_) {
+            go = global_dots_ >= GLOBAL_LIMIT[idx];
+            if (idx == 3 && go) global_mode_ = false;   // pomaranczowy wyszedl - wracamy do licznikow osobistych
+        } else {
+            const int* lim = level_ == 1 ? DOT_LIMIT_L1 : DOT_LIMIT_L2;
+            go = level_ >= 3 || dot_count_[idx] >= lim[idx];
+        }
+        if (no_dot_t_ >= (level_ >= 5 ? 3.f : 4.f)) {
+            go = true;
+            no_dot_t_ = 0;
+        }
+        if (go) {
             g.mode = LEAVING;
             g.bob = 0;
         }
@@ -625,7 +717,7 @@ void PacmanGame::move_ghost(Ghost& g, float dt, int idx)
         if (g.a.y >= house_cy - 0.5f) {
             g.a.y = house_cy;
             g.mode = IN_HOUSE;
-            g.house_t = fmaxf(HOUSE_T[idx] - 1.0f, 0.f);   // sekunda w domu i z powrotem do gry
+            g.house_t = 0;
         }
         return;
     }
@@ -636,13 +728,16 @@ void PacmanGame::move_ghost(Ghost& g, float dt, int idx)
     // NORMAL / FRIGHTENED / EYES: ruch po kratkach
     int col, row;
     cell_of(g.a, col, row);
+    const LevelSpec& sp = spec_for(level_);
     float speed;
     if (g.mode == EYES) speed = EYES_SPEED;
-    else if (g.mode == FRIGHTENED) speed = GHOST_FRIGHT * speed_mult();
+    else if (tunnel_row_[row] && (col < 2 || col >= COLS - 2)) speed = SPEED_100 * (float)sp.tunnel / 100.f;
+    else if (g.mode == FRIGHTENED) speed = SPEED_100 * (float)sp.ghost_fr / 100.f;
     else {
-        speed = GHOST_SPEED * speed_mult();
-        if (tunnel_row_[row] && (col < 2 || col >= COLS - 2)) speed = GHOST_TUNNEL;
-        else if (idx == 0 && pellets_left_ <= 20) speed *= pellets_left_ <= 10 ? 1.2f : 1.1f;   // "Cruise Elroy"
+        int pct = sp.ghost;
+        if (idx == 0 && pellets_left_ <= sp.elroy2) pct = sp.elroy2_spd;        // "Cruise Elroy"
+        else if (idx == 0 && pellets_left_ <= sp.elroy1) pct = sp.elroy1_spd;
+        speed = SPEED_100 * (float)pct / 100.f;
     }
 
     float step = speed * dt;

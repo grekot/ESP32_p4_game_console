@@ -119,6 +119,7 @@ src/
   games/kart/          wyscigi 3D (gfx3d, low-poly): tor z wzniesieniami, gokarty-modele, 3 rywali AI, przedmioty, drift
   games/snake/         waz: 10 poziomow w 5 swiatach, 9 przedmiotow, portal, tryb bez konca, grafika z Gemini (PNG z alfa)
   games/pacman/        labirynt: 4 plansze x 4 swiaty, 4 duchy z AI jak w oryginale, owoce, autopilot; grafika z Gemini
+  games/invaders/      Space Invaders: formacja 5x10, nurkowania, UFO, bunkry kruszone pikselami, boss co 5 fal, bonusy; grafika z Gemini
   games/lekcje/        lekcje: lista.h + NN_nazwa/ (gra.cpp, README.md, testy.txt, rozwiazania/)
   gfx/lodepng/         dekoder PNG (lodepng, licencja zlib; tylko dekoder)
   gfx3d/               software'owy renderer 3D: math3d (Vec3/Mat4), mesh (siatki + bryly), renderer (rasteryzacja, swiatlo, mgla, sortowanie)
@@ -129,6 +130,7 @@ tools/                 testy.ps1 (regresja + testy lekcji), setup_kid_pc.ps1, fe
                        gen_snake_assets.py (surowe obrazy Gemini z assets_src/snake/ -> assets/snake/),
                        gen_pacman_assets.py (assets_src/pacman/ -> assets/pacman/), pacman_maze_check.py, pacman_maze_gen.py
 assets_src/snake/      surowe obrazy z Gemini (arkusze obiektow na magencie, tla swiatow, ilustracja tytulowa) - nie ida na plytke
+assets_src/invaders/   surowe obrazy z Gemini dla Space Invaders (2 arkusze sprite'ow, 4 tla, tytul) - nie ida na plytke
 assets_src/pacman/     surowe obrazy z Gemini dla Pacmana (bohater, duchy, owoce, tla, tytul) - nie ida na plytke
 third_party/           (gitignore) LVGL pobrane przez fetch_lvgl.ps1 na komputerze bez PlatformIO
 docs/HARDWARE.md       pinout, opis plytki, co zweryfikowac po przyjsciu sprzetu
@@ -241,24 +243,51 @@ krawędzią, skala, korekta jasności teł). Ciało węża to cieniowane kulki g
 | ![Pacman – ekran tytułowy](docs/images/pacman_title.png) | ![Pacman – świat Neon](docs/images/pacman.png) |
 |---|---|
 
-Klasyczne zasady w natywnym 800×480: labirynt 27×19 kratek po 24 px po lewej, panel z punktami po prawej. Kulka 10 pkt,
-duża kulka 50 pkt i na kilka sekund (6,5 s na poziomie 1, coraz krócej) duchy uciekają – zjedzone dają 200/400/800/1600
-w jednym ciągu i wracają do domu jako same oczy. Owoc pojawia się po 70 i 170 zjedzonych kulkach (wiśnie … gwiazda, 100 … 5000
+Klasyczne zasady w natywnym 800×480: labirynt 27×19 kratek po 24 px po lewej, panel z punktami po prawej. Kulka 10 pkt
+(każda zatrzymuje gracza na klatkę, duża na 3 – jak w oryginale), duża kulka 50 pkt i na kilka sekund duchy uciekają –
+zjedzone dają 200/400/800/1600 w jednym ciągu i wracają do domu jako same oczy. Owoc pojawia się po 70 i 170 zjedzonych kulkach (wiśnie … gwiazda, 100 … 5000
 pkt), dodatkowe życie za 10 000. Cztery duchy z celami jak w oryginale: czerwony goni, różowy zachodzi 4 kratki przed gracza,
 błękitny celuje w punkt odbity względem czerwonego, pomarańczowy goni z daleka i ucieka do rogu z bliska; tryby rozproszenia
-i pościgu zmieniają się wg zegara (7/20/7/20/5/20/5 s), a każda zmiana odwraca duchy. Cztery plansze („Klasyk” ręcznie,
-trzy z generatora `tools/pacman_maze_gen.py` z gwarancją braku ślepych zaułków) i cztery światy (neon, cukierki, dżungla,
-lawa – tło z Gemini, kolor ścian); poziom n gra na planszy (n−1) mod 4, tunel zawija. Sterowanie: krzyżak – kierunek można
+i pościgu zmieniają się wg zegara oryginału (poziom 1: 7/20/7/20/5/20/5 s, poziomy 2–4 i 5+ z coraz krótszym rozproszeniem),
+a każda zmiana odwraca duchy. **Tabele poziomów z automatu** (Pac-Man Dossier): prędkość gracza 80 → 90 → 100 % (90 % od
+poziomu 21), duchów 75 → 85 → 95 %, w tunelu 40–50 %, czas strachu 6, 5, 4, 3, 2, 5, 2, 2, 1, 5, 2, 1, 1, 3, 1, 1, 0 … s
+z liczbą mignięć, progi „Cruise Elroy” (czerwony przyspiesza przy 20/10 kulkach na poziomie 1, aż do 120/60), wyjścia
+z domu wg liczników kulek (osobiste 0/30/60 na poziomie 1, 0/0/50 na 2; globalne 7/17/32 po stracie życia; 4 s bez
+jedzenia = wyjście, 3 s od poziomu 5) i strefy nad domem i nad startem, gdzie duchy nie skręcają w górę. Osiem plansz
+(„Klasyk” ręcznie, siedem z generatora `tools/pacman_maze_gen.py` z gwarancją braku ślepych zaułków, tunele w różnych
+wierszach) i osiem światów (neon, cukierki, dżungla, lawa, ocean, kosmos, pustynia, lód – tło z Gemini, kolor ścian);
+poziom n gra na planszy (n−1) mod 8, tunel zawija. Sterowanie: krzyżak – kierunek można
 wcisnąć wcześniej, skręt następuje na najbliższym skrzyżowaniu (także 6 px przed środkiem kratki, jak w oryginale),
-zawrócenie natychmiast; X na tytule = poziom startowy (1–8), Y = autopilot (BFS z omijaniem duchów, goni przestraszone;
+zawrócenie natychmiast; X na tytule = poziom startowy (1–12), Y = autopilot (BFS z omijaniem duchów, goni przestraszone;
 demo i testy). Rekord w NVS (`pacman_top`).
 
 Grafika: bohater (4 klatki paszczy + 4 klatki śmierci), duchy (4 kolory × 2 klatki, przestraszony niebieski/biały, oczy),
-8 owoców, ilustracja tytułowa i 4 tła z Gemini (25.09.2026, konto użytkownika), obróbka `python tools/gen_pacman_assets.py`
+8 owoców, ilustracja tytułowa i 8 teł z Gemini (25.09.2026, konto użytkownika), obróbka `python tools/gen_pacman_assets.py`
 (klatki paszczy wyrównane do lewej krawędzi, żeby kula nie skakała między klatkami; różowy duch kluczowany wyższym progiem
 magenty). Ściany rysowane w kodzie z pola odległości od korytarza: neonowa rurka w stałej odległości od korytarza
 (narożniki zaokrąglone same z siebie), poświata, ciemna płyta w głębi bloków, ramka zewnętrzna z podwójną linią –
 wypalane raz na poziom razem z tłem. Na PC 0,30 ms/klatkę.
+
+## Space Invaders: kosmiczni najeźdźcy w nowoczesnej oprawie
+
+| ![Space Invaders – ekran tytułowy](docs/images/invaders_title.png) | ![Space Invaders – fala 1](docs/images/invaders.png) |
+|---|---|
+| ![Space Invaders – boss](docs/images/invaders_boss.png) | |
+
+Formacja 5×10 obcych (kalmar 40 pkt, meduza 30, krab 20, ośmiornica 10) przesuwa się na boki i schodzi w dół na każdej
+krawędzi, przyspiesza, gdy jej ubywa – dojście do linii bunkrów kończy grę. Od fali 2 pojedynczy obcy nurkują łukiem na
+gracza i wracają na swoje miejsce (zestrzelony w locie – punkty ×2), od fali 3 część pocisków celuje w statek. UFO
+przelatuje górą i zostawia bonus: potrójny strzał, laser (szybki ogień, pociski przebijają), osłona (pochłania jedno
+trafienie), spowolnienie czasu albo dodatkowe życie. Cztery kryształowe bunkry kruszą się piksel po pikselu z obu stron.
+Co 5. fala to boss z paskiem życia, wachlarzami pocisków i eskortą. Combo: trafienia w odstępach < 0,7 s mnożą punkty
+do ×4. Cztery światy (orbita, pierścienie, pas asteroid, czarna dziura) na zmianę co falę. Sterowanie: lewo/prawo albo
+gałka, A = strzał (przytrzymanie = seria), X na tytule = fala startowa, Y = autopilot (demo i testy). Rekord w NVS
+(`invaders_top`).
+
+Grafika: 2 arkusze sprite'ów (obcy × 2 klatki, UFO, boss zwykły i uszkodzony, statek, bunkier, pociski, bonusy, 4 klatki
+wybuchu), 4 tła i ilustracja tytułowa z Gemini (25.09.2026, konto użytkownika), obróbka `python tools/gen_invaders_assets.py`.
+W kodzie: gwiazdy paralaksy w 3 warstwach, poświaty addytywne (pociski, silnik, UFO, boss), iskry, pierścień osłony,
+wstrząsy ekranu. Na PC 0,48 ms/klatkę.
 
 ## Dodawanie nowej gry
 

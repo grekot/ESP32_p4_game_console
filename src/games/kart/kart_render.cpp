@@ -162,11 +162,12 @@ void add_sign(gfx3d::Mesh& m, const Vec3& base, float w, float h, float nx, floa
 // Kask: gladka elipsoida (wspolne wierzcholki -> cieniowanie Gouraud i odblask bez fasetek) z obszarami koloru na
 // tej samej powierzchni zamiast doklejonych kostek: wizjer (przod, pas nad "podbrodkiem"), pas przez srodek skorupy
 // w kolorze bolidu, ciemny otwor na szyje. Os lokalna: X prawo, Y gora, Z przod; r = polosie (szerokosc, wysokosc,
-// dlugosc). segments x rings: 20 x 11 = 400 trojkatow.
-void add_helmet(gfx3d::Mesh& m, const Vec3& c, const Vec3& r, uint16_t shell, uint16_t stripe, uint16_t visor)
+// dlugosc). segments x rings: 24 x 12 = 576 trojkatow.
+void add_helmet(gfx3d::Mesh& m, const Vec3& c, const Vec3& r, uint16_t shell, uint16_t stripe, uint16_t visor, int S = 24, int R = 12)
 {
-    constexpr int S = 20, R = 11;
-    int idx[R + 1][S];
+    if (S > 24) S = 24;
+    if (R > 12) R = 12;
+    int idx[13][24];
     const int top = m.add_vertex({ c.x, c.y + r.y, c.z });
     const int bot = m.add_vertex({ c.x, c.y - r.y, c.z });
     for (int i = 1; i < R; ++i) {
@@ -182,7 +183,7 @@ void add_helmet(gfx3d::Mesh& m, const Vec3& c, const Vec3& r, uint16_t shell, ui
         if (dy < -0.62f) return neck;
         if (dz > 0.42f && dy > -0.18f && dy < 0.36f) return visor;                          // wizjer
         if (dz > 0.30f && ((dy > -0.24f && dy < -0.18f) || (dy > 0.36f && dy < 0.44f))) return trim;   // obwodka
-        if (fabsf(sinf(th)) < 0.2f && dy > 0.05f) return stripe;   // pas przez srodek: stala szerokosc katowa (2 segmenty)
+        if (fabsf(sinf(th)) < 0.17f && dy > 0.05f) return stripe;   // pas przez srodek: stala szerokosc katowa (2 segmenty)
         return shell;
     };
     for (int j = 0; j < S; ++j) {
@@ -195,6 +196,65 @@ void add_helmet(gfx3d::Mesh& m, const Vec3& c, const Vec3& r, uint16_t shell, ui
             m.add_quad_out(idx[i][j], idx[i + 1][j], idx[i + 1][j1], idx[i][j1], region(phm, thm), out);
         }
         m.add_tri_out(bot, idx[R - 1][j1], idx[R - 1][j], neck, Vec3(0, -1, 0));
+    }
+}
+
+// Kadlub bolidu: jedna gladka skorupa zamiast bryl o prostokatnym przekroju. Sekcje kluczowe (z, srodek y,
+// polszerokosc, polwysokosc) laczone plynnie (smoothstep, `sub` sekcji posrednich), przekroj = "squircle" o N punktach
+// (plaski spod, zaokraglone boki i wierzch), wspolne wierzcholki -> Gouraud i odblask lakieru. Wierzch (y > 0,35 hh)
+// dostaje malowanie z atlasu: u w poprzek (lu0..lu1), v wzdluz (z_front -> v_front, z_back -> v_back).
+struct HullSec { float z, y, hw, hh; };
+
+void add_hull(gfx3d::Mesh& m, const HullSec* ks, int nk, int sub, uint16_t color, float lu0, float lu1, float z_front, float v_front,
+              float z_back, float v_back, int N = 12)
+{
+    constexpr int MAXS = 32;
+    if (N > 12) N = 12;
+    HullSec sec[MAXS];
+    int ns = 0;
+    for (int k = 0; k + 1 < nk && ns < MAXS - 1; ++k) {
+        for (int j = 0; j < sub && ns < MAXS - 1; ++j) {
+            const float t = (float)j / sub, e = t * t * (3.f - 2.f * t);
+            const HullSec& a = ks[k];
+            const HullSec& b = ks[k + 1];
+            sec[ns++] = { a.z + (b.z - a.z) * t, a.y + (b.y - a.y) * e, a.hw + (b.hw - a.hw) * e, a.hh + (b.hh - a.hh) * e };
+        }
+    }
+    sec[ns++] = ks[nk - 1];
+    float px[12], py[12];   // jednostkowy przekroj (squircle, wykladnik 3), od spodu przeciwnie do zegara
+    for (int i = 0; i < N; ++i) {
+        const float a = -1.5707963f + 6.2831853f * (float)i / N, ca = cosf(a), sa = sinf(a);
+        px[i] = (ca < 0 ? -1.f : 1.f) * powf(fabsf(ca), 2.f / 3.f);
+        py[i] = (sa < 0 ? -1.f : 1.f) * powf(fabsf(sa), 2.f / 3.f);
+        if (py[i] < -0.55f) py[i] = -0.55f - (py[i] + 0.55f) * 0.25f;   // spod splaszczony (plyta podlogowa)
+    }
+    int ring[MAXS][12];
+    for (int k = 0; k < ns; ++k)
+        for (int i = 0; i < N; ++i)
+            ring[k][i] = m.add_vertex({ px[i] * sec[k].hw, sec[k].y + py[i] * sec[k].hh, sec[k].z });
+    auto vz = [&](float z) { return v_front + (z_front - z) / (z_front - z_back) * (v_back - v_front); };
+    for (int k = 0; k + 1 < ns; ++k) {
+        for (int i = 0; i < N; ++i) {
+            const int i1 = (i + 1) % N;
+            const Vec3 out(px[i] + px[i1], py[i] + py[i1], 0.f);
+            const bool top = py[i] > 0.35f && py[i1] > 0.35f;
+            const int a = ring[k][i], b = ring[k + 1][i], c = ring[k + 1][i1], d = ring[k][i1];
+            if (top) {
+                auto u = [&](float x) { return lu0 + (x * 0.5f + 0.5f) * (lu1 - lu0); };
+                const float uv[4][2] = { { u(px[i]), vz(sec[k].z) }, { u(px[i]), vz(sec[k + 1].z) }, { u(px[i1]), vz(sec[k + 1].z) },
+                                         { u(px[i1]), vz(sec[k].z) } };
+                m.add_quad_uv(a, b, c, d, out, uv, color);
+            } else {
+                m.add_quad_out(a, b, c, d, color, out);
+            }
+        }
+    }
+    // zaslepki: tyl (ku -z) i szpic (ku +z)
+    const int cb = m.add_vertex({ 0, sec[0].y, sec[0].z }), cf = m.add_vertex({ 0, sec[ns - 1].y, sec[ns - 1].z });
+    for (int i = 0; i < N; ++i) {
+        const int i1 = (i + 1) % N;
+        m.add_tri_out(cb, ring[0][i], ring[0][i1], gfx3d::shade565(color, 0.8f), Vec3(0, 0, sec[0].z > sec[ns - 1].z ? 1.f : -1.f));
+        m.add_tri_out(cf, ring[ns - 1][i], ring[ns - 1][i1], color, Vec3(0, 0, sec[ns - 1].z > sec[0].z ? 1.f : -1.f));
     }
 }
 
@@ -323,6 +383,9 @@ void KartGame::build_scene()
     CONSOLE_LOGI(TAG, "scena 3D: droga %d+%d tri, teren %d tri, obiekty %d tri, gokart %d+%d tri, atlas %s", road_.triangle_count(),
                  marks_.triangle_count(), terrain_.triangle_count(), props_.triangle_count(), kart_body_[0].triangle_count(),
                  wheel_rear_.triangle_count() * 4, atlas_.idx ? "OK" : "BRAK");
+    CONSOLE_LOGI(TAG, "gokart LOD: pelny %d+%d+%d tri (nadwozie, kask, 4 kola), uproszczony %d+%d+%d", kart_body_[0].triangle_count(),
+                 helmet_[0].triangle_count(), (wheel_front_.triangle_count() + wheel_rear_.triangle_count()) * 2, kart_body_lo_[0].triangle_count(),
+                 helmet_lo_[0].triangle_count(), (wheel_front_lo_.triangle_count() + wheel_rear_lo_.triangle_count()) * 2);
 }
 
 void KartGame::build_track_scene()
@@ -659,8 +722,10 @@ void KartGame::build_kart_models()
     const uint16_t metal = gfx::rgb565(196, 198, 208), black = gfx::rgb565(28, 28, 34), white = gfx::rgb565(242, 242, 246);
     const uint16_t carbon = gfx::rgb565(44, 46, 54);
     for (int c = 0; c < 4; ++c) {
-        gfx3d::Mesh& m = kart_body_[c];
-        m.init(680, 940);
+      for (int lod = 0; lod < 2; ++lod) {   // 0 = pelny model (z bliska), 1 = uproszczony (daleko, cienie)
+        gfx3d::Mesh& m = lod ? kart_body_lo_[c] : kart_body_[c];
+        m.init(lod ? 760 : 900, lod ? 1000 : 1300);
+        const int hull_n = lod ? 8 : 12, hull_sub = lod ? 1 : 3, tube_n = lod ? 4 : 8, ball_s = lod ? 4 : 8, ball_r = lod ? 3 : 5;
         const uint16_t body = KART_COLORS[c], dark = KART_DARK[c], suit = SUIT[c];
         // malowanie: u w poprzek (64 teksele), v wzdluz: szpic (z = 9.2) -> v0, ogon (z = -9.4) -> v1
         const float lu0 = LIVERY_X0 + c * 64.f + 1.f, lu1 = lu0 + 62.f;
@@ -669,14 +734,11 @@ void KartGame::build_kart_models()
         float uv[4];
 
         // --- kadlub ---
-        liv(-6.2f, -9.4f, uv);
-        m.add_loft({ 0, 2.6f, -9.4f }, 1.6f, 0.8f, { 0, 3.0f, -6.2f }, 2.9f, 1.5f, body, uv);      // ogon (pokrywa silnika)
-        liv(-0.6f, -6.2f, uv);
-        m.add_loft({ 0, 3.0f, -6.2f }, 2.9f, 1.5f, { 0, 3.05f, -0.6f }, 3.1f, 1.6f, body, uv);     // kokpit
-        liv(6.4f, -0.6f, uv);
-        m.add_loft({ 0, 3.05f, -0.6f }, 3.1f, 1.6f, { 0, 2.55f, 6.4f }, 1.5f, 0.85f, body, uv);    // nos
-        liv(9.2f, 6.4f, uv);
-        m.add_loft({ 0, 2.55f, 6.4f }, 1.5f, 0.85f, { 0, 2.25f, 9.2f }, 0.85f, 0.4f, body, uv);    // szpic
+        // jedna gladka skorupa: ogon (pokrywa silnika) -> kokpit -> nos -> szpic; te same wymiary co dawne bryly
+        static const HullSec HULL[] = { { -9.4f, 2.6f, 1.6f, 0.8f }, { -6.2f, 3.0f, 2.9f, 1.5f }, { -0.6f, 3.05f, 3.1f, 1.6f },
+                                        { 6.4f, 2.55f, 1.5f, 0.85f }, { 9.2f, 2.25f, 0.85f, 0.4f } };
+        add_hull(m, HULL, 5, hull_sub, body, lu0, lu1, 9.2f, lv(9.2f), -9.4f, lv(-9.4f), hull_n);
+        (void)liv; (void)uv;
         m.add_box({ 0, 1.1f, -1.0f }, { 7.4f, 0.4f, 14.6f }, carbon);                           // plyta podlogowa
         m.add_box({ 0, 1.3f, -8.2f }, { 6.6f, 0.5f, 2.6f }, carbon);                            // dyfuzor (tyl)
 
@@ -725,26 +787,27 @@ void KartGame::build_kart_models()
         // --- kierowca ---
         m.add_box({ 0, 4.5f, -4.5f }, { 3.8f, 2.6f, 0.7f }, black);                             // oparcie fotela
         m.add_loft({ 0, 4.9f, -3.9f }, 1.6f, 0.9f, { 0, 5.3f, -1.4f }, 1.7f, 1.2f, suit);       // tulow (od tylu do przodu)
-        m.add_box({ 0, 6.35f, -2.7f }, { 4.4f, 0.8f, 1.9f }, suit);                             // barki
+        add_tube(m, { -2.1f, 6.3f, -2.7f }, { 2.1f, 6.3f, -2.7f }, 0.62f, tube_n, suit);              // barki (okragle)
         m.add_box({ 0, 6.9f, -2.6f }, { 1.1f, 0.5f, 1.1f }, gfx::rgb565(214, 170, 140));        // kark
-        add_tube(m, { -2.0f, 6.3f, -2.3f }, { -1.5f, 5.85f, 1.3f }, 0.46f, 8, suit);            // ramiona (okragle)
-        add_tube(m, { 2.0f, 6.3f, -2.3f }, { 1.5f, 5.85f, 1.3f }, 0.46f, 8, suit);
-        m.add_sphere({ -1.5f, 5.85f, 1.6f }, 0.58f, 8, 5, dark);                                  // rekawice (kule)
-        m.add_sphere({ 1.5f, 5.85f, 1.6f }, 0.58f, 8, 5, dark);
-        m.add_box({ 0, 5.85f, 1.9f }, { 3.4f, 1.5f, 0.4f }, black);                              // kierownica
-        m.add_box({ 0, 5.85f, 1.9f }, { 0.9f, 0.5f, 0.45f }, metal);                             // srodek kierownicy
-        add_tube(m, { 0, 5.5f, 2.0f }, { 0, 4.4f, 3.6f }, 0.24f, 6, metal);                     // kolumna
+        add_tube(m, { -2.0f, 6.3f, -2.3f }, { -1.5f, 5.85f, 1.3f }, 0.46f, tube_n, suit);            // ramiona (okragle)
+        add_tube(m, { 2.0f, 6.3f, -2.3f }, { 1.5f, 5.85f, 1.3f }, 0.46f, tube_n, suit);
+        m.add_sphere({ -1.5f, 5.85f, 1.6f }, 0.58f, ball_s, ball_r, dark);                                  // rekawice (kule)
+        m.add_sphere({ 1.5f, 5.85f, 1.6f }, 0.58f, ball_s, ball_r, dark);
+        add_tube(m, { 0, 5.85f, 1.75f }, { 0, 5.85f, 2.05f }, 1.15f, lod ? 6 : 10, black);                 // kierownica (okragla)
+        add_tube(m, { 0, 5.85f, 1.7f }, { 0, 5.85f, 2.1f }, 0.4f, tube_n, metal);                     // srodek kierownicy
+        add_tube(m, { 0, 5.5f, 2.0f }, { 0, 4.4f, 3.6f }, 0.24f, lod ? 4 : 6, metal);                     // kolumna
         m.smooth   = true;      // normalne usrednione w narozach = zaokraglone cieniowanie lakieru
         m.specular = 0.38f;
         m.compute_smooth_normals();
 
-        gfx3d::Mesh& h = helmet_[c];
-        h.init(210, 410);
+        gfx3d::Mesh& h = lod ? helmet_lo_[c] : helmet_[c];
+        h.init(lod ? 130 : 300, lod ? 220 : 590);
         // elipsoida lekko wydluzona do przodu; wizjer ciemny z odblaskiem, pas w kolorze bolidu (add_helmet)
-        add_helmet(h, { 0, 8.3f, -2.45f }, { 1.95f, 2.0f, 2.25f }, HELMET[c], body, gfx::rgb565(20, 26, 44));
+        add_helmet(h, { 0, 8.3f, -2.45f }, { 1.95f, 2.0f, 2.25f }, HELMET[c], body, gfx::rgb565(20, 26, 44), lod ? 12 : 24, lod ? 7 : 12);
         h.smooth = true;
         h.specular = 0.85f;
         h.compute_smooth_normals();
+      }
     }
     // opona prawie czarna (bieznik z tekstury), felga ciemny grafit (jasny kapsel liczy sie w add_wheel)
     const uint16_t tyre = gfx::rgb565(22, 22, 26), hub = gfx::rgb565(88, 90, 100);
@@ -754,6 +817,10 @@ void KartGame::build_kart_models()
     wheel_front_.add_wheel({ 0, 0, 0 }, 2.1f, 2.6f, 16, tyre, hub, 0.6f, tread);
     wheel_rear_.init(150, 220);
     wheel_rear_.add_wheel({ 0, 0, 0 }, 2.4f, 3.4f, 16, tyre, hub, 0.58f, tread);
+    wheel_front_lo_.init(110, 160);
+    wheel_front_lo_.add_wheel({ 0, 0, 0 }, 2.1f, 2.6f, 10, tyre, hub, 0.6f, tread);
+    wheel_rear_lo_.init(110, 160);
+    wheel_rear_lo_.add_wheel({ 0, 0, 0 }, 2.4f, 3.4f, 10, tyre, hub, 0.58f, tread);
 }
 
 // ============================================================================ scena
@@ -795,17 +862,27 @@ void KartGame::draw_kart_3d(int index)
         wm[w] = wm[w] * spin;
     }
 
+    // LOD: pelny model tylko blisko kamery (< 50 jednostek, zwykle gracz) i przy pelnej jakosci; dalsze gokarty, jakosc
+    // obnizona (plytka pod obciazeniem) i wszystkie cienie - wersja uproszczona. KART_LOD_HI / KART_LOD_LO wymuszaja (pomiary).
+    const float cdx = k.x - cam_px_, cdz = k.y - cam_pz_;
+    const bool  near = getenv("KART_LOD_HI") ? true : (getenv("KART_LOD_LO") ? false : quality_ == 0 && cdx * cdx + cdz * cdz < 50.f * 50.f);
+    const int   col = k.color & 3;
+    const gfx3d::Mesh& body   = near ? kart_body_[col] : kart_body_lo_[col];
+    const gfx3d::Mesh& helmet = near ? helmet_[col] : helmet_lo_[col];
+    const gfx3d::Mesh& wf = near ? wheel_front_ : wheel_front_lo_;
+    const gfx3d::Mesh& wr = near ? wheel_rear_ : wheel_rear_lo_;
+
     // cien rzutowany wzdluz slonca na plaszczyzne podloza pod gokartem (maska -> przyciemnienie po warstwie 0)
     if (quality_ < 2) {
         const Mat4 sh = Mat4::shadow_onto_plane(sun_dir(), gy + 0.1f);
-        r3d_.draw_shadow(kart_body_[k.color & 3], sh * base);
-        for (int w = 0; w < 4; ++w) r3d_.draw_shadow(w < 2 ? wheel_front_ : wheel_rear_, sh * wm[w]);
+        r3d_.draw_shadow(kart_body_lo_[col], sh * base);
+        for (int w = 0; w < 4; ++w) r3d_.draw_shadow(w < 2 ? wheel_front_lo_ : wheel_rear_lo_, sh * wm[w]);
     } else {
         r3d_.draw_shadow(shadow_m_, Mat4::translation({ k.x, gy + 0.2f, k.y }) * Mat4::heading(k.angle));
     }
-    r3d_.draw_mesh(kart_body_[k.color & 3], base, 1);
-    r3d_.draw_mesh(helmet_[k.color & 3], base, 1);
-    for (int w = 0; w < 4; ++w) r3d_.draw_mesh(w < 2 ? wheel_front_ : wheel_rear_, wm[w], 1);
+    r3d_.draw_mesh(body, base, 1);
+    r3d_.draw_mesh(helmet, base, 1);
+    for (int w = 0; w < 4; ++w) r3d_.draw_mesh(w < 2 ? wf : wr, wm[w], 1);
 }
 
 void KartGame::draw_scene(gfx::Canvas& c)
@@ -854,6 +931,8 @@ void KartGame::draw_scene(gfx::Canvas& c)
     r3d_.set_flat_only(quality_ >= 1);
     r3d_.enable_zbuffer(quality_ == 0 && !getenv("KART_NOZ"));   // KART_NOZ: pomiar kosztu Z-bufora na PC
 
+    cam_px_ = cam.pos.x;
+    cam_pz_ = cam.pos.z;
     r3d_.begin(c, cam, light, fog);
     draw_sky(c, r3d_.horizon_y());
 
@@ -1306,6 +1385,12 @@ void KartGame::render(gfx::Canvas& c)
     if (scene_ok_) draw_scene(c);
     else c.clear(fog_col_);
     draw_hud(c);
+    if (getenv("KART_STATS")) {   // narzedzie: srednia liczba narysowanych trojkatow (miara kosztu niezalezna od obciazenia PC)
+        static long sum = 0;
+        static int  n = 0;
+        sum += r3d_.triangles_drawn();
+        if (++n == 300) { CONSOLE_LOGI(TAG, "STATS trojkaty/klatke %ld", sum / n); sum = 0; n = 0; }
+    }
     const float ms = (float)(platform::micros() - t0) / 1000.f;
     render_ms_ = render_ms_ <= 0 ? ms : render_ms_ * 0.9f + ms * 0.1f;
     if (render_ms_ > 13.f && !engine::deterministic()) {   // w testach --frames jakosc stala (zrzuty powtarzalne)

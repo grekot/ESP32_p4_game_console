@@ -179,6 +179,10 @@ const Theme THEMES[G::WORLDS] = {
     { "bg_candy",  "Cukierki", { 255, 80, 170 }, { 255, 40, 140 }, { 255, 205, 235 }, { 90, 20, 70 },  gfx::rgb565(40, 10, 40) },
     { "bg_jungle", "Dzungla",  { 50, 205, 95 },  { 20, 160, 60 },  { 190, 255, 205 }, { 14, 70, 35 },  gfx::rgb565(8, 30, 14) },
     { "bg_lava",   "Lawa",     { 255, 120, 30 }, { 255, 70, 0 },   { 255, 225, 150 }, { 95, 35, 10 },  gfx::rgb565(40, 14, 8) },
+    { "bg_ocean",  "Ocean",    { 30, 205, 225 }, { 0, 150, 200 },  { 195, 255, 255 }, { 10, 60, 70 },  gfx::rgb565(6, 30, 40) },
+    { "bg_space",  "Kosmos",   { 175, 95, 255 }, { 120, 40, 220 }, { 232, 208, 255 }, { 45, 20, 80 },  gfx::rgb565(20, 8, 40) },
+    { "bg_desert", "Pustynia", { 240, 190, 70 }, { 200, 140, 30 }, { 255, 242, 195 }, { 80, 60, 20 },  gfx::rgb565(40, 30, 10) },
+    { "bg_ice",    "Lod",      { 140, 200, 255 }, { 80, 150, 255 }, { 240, 250, 255 }, { 30, 50, 90 },  gfx::rgb565(10, 20, 45) },
 };
 const char* const GHOST_FILES[G::GHOSTS] = { "red", "pink", "cyan", "orange" };
 const char* const FRUIT_FILES[G::FRUITS] = { "cherry", "strawberry", "orange", "apple", "melon", "bell", "key", "star" };
@@ -390,7 +394,7 @@ void PacmanGame::draw_fruit(gfx::Canvas& c)
 void PacmanGame::draw_ghosts(gfx::Canvas& c)
 {
     const int frame = ((int)(anim_ * 8.f)) & 1;
-    const bool flash = fright_t_ > 0 && fright_t_ < 1.6f && ((int)(anim_ * 8.f) & 1);
+    const bool flash = fright_t_ > 0 && fright_t_ < flash_t_ && ((int)(fright_t_ / 0.14f) & 1);
     for (int i = 0; i < GHOSTS; ++i) {
         const Ghost& g = ghost_[i];
         if (pause_t_ > 0 && i == eaten_ghost_) continue;

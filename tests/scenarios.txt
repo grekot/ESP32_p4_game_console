@@ -48,4 +48,12 @@ trace | pacman_auto     | --game pacman --hold A 3 4 --hold Y 10 11 --frames 460
 shot  | pacman_play     | --game pacman --hold A 3 4 --hold Y 10 11 --frames 900
 trace | pacman_player   | --game pacman --hold A 3 4 --hold LEFT 150 200 --hold UP 200 260 --hold RIGHT 260 330 --hold DOWN 330 360 --hold RIGHT 360 420 --hold LEFT 420 480 --frames 480 --trace 10
 shot  | pacman_lava     | --game pacman --hold X 2 3 --hold X 5 6 --hold X 8 9 --hold A 12 13 --hold Y 16 17 --frames 500
+shot  | pacman_space    | --game pacman --hold X 2 3 --hold X 5 6 --hold X 8 9 --hold X 11 12 --hold X 14 15 --hold A 18 19 --hold Y 22 23 --frames 500
 trace | pacman_gameover | --game pacman --hold X 2 3 --hold X 5 6 --hold X 8 9 --hold X 11 12 --hold X 14 15 --hold X 17 18 --hold X 20 21 --hold A 24 25 --hold Y 30 31 --frames 14000 --trace 500
+shot  | invaders_title    | --game invaders --frames 5
+trace | invaders_auto     | --game invaders --hold A 3 4 --hold Y 10 11 --frames 4000 --trace 100
+shot  | invaders_play     | --game invaders --hold A 3 4 --hold Y 10 11 --frames 1400
+trace | invaders_player   | --game invaders --hold A 3 4 --hold LEFT 130 200 --hold A 200 400 --hold RIGHT 300 360 --frames 480 --trace 10
+shot  | invaders_boss     | --game invaders --hold X 2 3 --hold X 5 6 --hold X 8 9 --hold X 11 12 --hold A 15 16 --hold Y 20 21 --frames 420
+trace | invaders_bossfight | --game invaders --hold X 2 3 --hold X 5 6 --hold X 8 9 --hold X 11 12 --hold A 15 16 --hold Y 20 21 --frames 2600 --trace 100
+trace | invaders_gameover | --game invaders --hold A 3 4 --frames 4200 --trace 300
