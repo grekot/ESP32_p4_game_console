@@ -1,0 +1,64 @@
+# Instalator Windows konsoli (emulator + gry) i wydanie na GitHubie.
+#
+# Wydanie:  git tag v1.0.0 && git push origin v1.0.0
+#   -> build Release (MSYS2 MinGW, LVGL pobierane przez CMake), Inno Setup, wydanie "v1.0.0"
+#      z plikiem KotarbaConsole-1.0.0-setup.exe. Zainstalowane konsole zobacza je przy starcie
+#      (sim/launcher_win32.cpp szuka w "releases/latest" pliku *-setup.exe).
+# Recznie (Actions -> Run workflow): tylko build i artefakt do pobrania, bez wydania.
+
+name: Instalator Windows
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja
+
+      - name: Wersja z taga
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then v="${GITHUB_REF_NAME#v}"; else v="0.0.0-ci.${GITHUB_RUN_NUMBER}"; fi
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+          echo "Wersja: $v"
+
+      - name: Build emulatora (Release)
+        shell: msys2 {0}
+        run: |
+          cmake -S sim -B sim/build-release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCONSOLE_VERSION="$VERSION"
+          cmake --build sim/build-release
+          ./sim/build-release/console_sim.exe --list
+
+      - name: Inno Setup
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; }
+          & $iscc "/DAppVersion=$env:VERSION" "/DBuildDir=$env:GITHUB_WORKSPACE\sim\build-release" installer\console.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KotarbaConsole-${{ env.VERSION }}-setup
+          path: dist/*.exe
+
+      - name: Wydanie na GitHubie
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Kotarba Game Console ${{ env.VERSION }}
+          files: dist/*.exe
+          generate_release_notes: true

@@ -1,0 +1,37 @@
+// Zasoby Windows: ikona (tools/gen_icon.py) i informacje o wersji. Wspolne dla console_sim.exe i KotarbaConsole.exe.
+#include <winver.h>
+
+// Wersja jako goly token (cudzyslowy z CMake nie przechodza przez windres) zamieniany na napis.
+#ifndef CONSOLE_VERSION_RAW
+#define CONSOLE_VERSION_RAW dev
+#endif
+#define RC_STR2(x) #x
+#define RC_STR(x) RC_STR2(x)
+#ifndef CONSOLE_VERSION_NUM
+#define CONSOLE_VERSION_NUM 0,0,0,0
+#endif
+
+1 ICON "app.ico"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     CONSOLE_VERSION_NUM
+PRODUCTVERSION  CONSOLE_VERSION_NUM
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_APP
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "041504B0"
+        BEGIN
+            VALUE "CompanyName",     "Grzegorz Kotarba"
+            VALUE "FileDescription", "Kotarba Game Console"
+            VALUE "ProductName",     "Kotarba Game Console"
+            VALUE "FileVersion",     RC_STR(CONSOLE_VERSION_RAW)
+            VALUE "ProductVersion",  RC_STR(CONSOLE_VERSION_RAW)
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0415, 1200
+    END
+END

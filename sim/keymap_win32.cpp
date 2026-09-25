@@ -10,6 +10,7 @@
 #include <windows.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "core/log.h"
@@ -57,6 +58,20 @@ const int DEFAULT_VK[input::KEY_COUNT] = {
 };
 static_assert(sizeof(DEFAULT_VK) / sizeof(DEFAULT_VK[0]) == (size_t)input::KEY_COUNT,
               "domyslne mapowanie musi obejmowac wszystkie klawisze z input::Key");
+
+// Przyciski pada (Xbox przez winmm; inne pady - wg "Kontrolery gier" w Windows). Krzyzak pada (POV) zawsze = krzyzak.
+const int DEFAULT_PAD[input::KEY_COUNT] = {
+    0, 0, 0, 0,   // krzyzak - z POV
+    1,            // A
+    2,            // B
+    3,            // X
+    4,            // Y
+    8,            // START  (Xbox: Menu/Start)
+    7,            // SELECT (Xbox: View/Back)
+    0, 0, 0, 0,   // galka - z osi pada
+};
+static_assert(sizeof(DEFAULT_PAD) / sizeof(DEFAULT_PAD[0]) == (size_t)input::KEY_COUNT,
+              "domyslne przyciski pada musza obejmowac wszystkie klawisze z input::Key");
 
 char upper(char c) { return (c >= 'a' && c <= 'z') ? (char)(c - 'a' + 'A') : c; }
 
@@ -109,6 +124,7 @@ char* trim(char* s)
 }
 
 int  s_vk[input::KEY_COUNT];
+int  s_pad[input::KEY_COUNT];
 bool s_loaded = false;
 
 bool load_file(const char* path)
@@ -134,6 +150,18 @@ bool load_file(const char* path)
         char* right = trim(eq + 1);
 
         input::Key key;
+        // PAD_A = 1: przycisk pada USB (0 = zaden)
+        if (upper(left[0]) == 'P' && upper(left[1]) == 'A' && upper(left[2]) == 'D' && left[3] == '_') {
+            char* end = nullptr;
+            const long b = strtol(right, &end, 10);
+            if (!input::key_from_name(left + 4, key) || end == right || *end || b < 0 || b > 32) {
+                CONSOLE_LOGW(TAG, "%s:%d: zly wpis pada '%s = %s'", path, lineno, left, right);
+                continue;
+            }
+            s_pad[(int)key] = (int)b;
+            ++applied;
+            continue;
+        }
         if (!input::key_from_name(left, key)) {
             CONSOLE_LOGW(TAG, "%s:%d: nieznany klawisz konsoli '%s'", path, lineno, left);
             continue;
@@ -156,6 +184,7 @@ bool load_file(const char* path)
 void keymap_load(const char* explicit_path)
 {
     for (int i = 0; i < input::KEY_COUNT; ++i) s_vk[i] = DEFAULT_VK[i];
+    for (int i = 0; i < input::KEY_COUNT; ++i) s_pad[i] = DEFAULT_PAD[i];
     s_loaded = true;
 
     bool ok = false;
@@ -180,7 +209,8 @@ void keymap_load(const char* explicit_path)
     }
 
     for (int i = 0; i < input::KEY_COUNT; ++i) {
-        CONSOLE_LOGI(TAG, "  %-11s <- %s", input::key_name((input::Key)i), name_from_vk(s_vk[i]));
+        if (s_pad[i]) CONSOLE_LOGI(TAG, "  %-11s <- %s, pad %d", input::key_name((input::Key)i), name_from_vk(s_vk[i]), s_pad[i]);
+        else          CONSOLE_LOGI(TAG, "  %-11s <- %s", input::key_name((input::Key)i), name_from_vk(s_vk[i]));
     }
 }
 
@@ -189,6 +219,13 @@ int keymap_vk(input::Key key)
     if (!s_loaded) keymap_load(nullptr);
     const int i = (int)key;
     return (i >= 0 && i < input::KEY_COUNT) ? s_vk[i] : -1;
+}
+
+int keymap_pad_button(input::Key key)
+{
+    if (!s_loaded) keymap_load(nullptr);
+    const int i = (int)key;
+    return (i >= 0 && i < input::KEY_COUNT) ? s_pad[i] : 0;
 }
 
 }  // namespace sim

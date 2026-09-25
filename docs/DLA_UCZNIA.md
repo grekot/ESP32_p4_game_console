@@ -9,7 +9,7 @@ Każda gra, którą napiszesz, będzie działać w emulatorze, a potem na prawdz
 1. Kliknij skrót **Lekcje C++** na pulpicie. Otworzy się VS Code – program do pisania kodu.
 2. Po lewej stronie znajdź folder `src` → `games` → `lekcje` → `01_wizytowka` i kliknij **`gra.cpp`**.
 3. Wciśnij **F6** (albo Ctrl+Shift+B). Komputer przez chwilę kompiluje (zamienia kod na program), potem otwiera okno z grą.
-4. Zamykasz okno klawiszem **Esc**. Zmieniasz coś w kodzie, znów F6. I tak w kółko – to całe programowanie.
+4. Zamykasz okno, **przytrzymując Esc** (albo krzyżykiem okna). Zmieniasz coś w kodzie, znów F6. I tak w kółko – to całe programowanie.
 
 Obok każdego `gra.cpp` jest **`README.md`** – tam jest lekcja: co nowego, jak to działa i zadania.
 Czytaj README, zmieniaj `gra.cpp`, sprawdzaj F6.
@@ -26,7 +26,7 @@ Konsola ma krzyżak i przyciski jak pad. W emulatorze udają je klawisze:
 | X | **S** | dodatkowy |
 | Y | **A** | dodatkowy |
 | START | **Enter** | pauza (należy do konsoli, gra jej nie widzi) |
-| – | **Esc** | zamknij emulator |
+| – | **Esc** (przytrzymaj) | zamknij emulator |
 
 Lewy przycisk myszy = palec na ekranie dotykowym. Prostokąty na dole ekranu to dotykowy pad – znikają, gdy użyjesz klawiszy.
 
@@ -111,7 +111,7 @@ przeniesie cię w to miejsce w kodzie. Najczęstsze komunikaty:
 | `redefinition of 'x'` | tę nazwę już zadeklarowałeś wyżej |
 | `cannot convert 'Color' to 'int'` | pomyliłeś kolejność: kolor jest ostatni |
 | `multiple definition of 'setup()'` | w jakiejś lekcji brakuje `namespace {` na górze |
-| `Permission denied` / `collect2: error` przy linkowaniu | emulator jest jeszcze otwarty – zamknij okno (Esc) i F6 |
+| `Permission denied` / `collect2: error` przy linkowaniu | emulator jest jeszcze otwarty – zamknij okno (przytrzymaj Esc) i F6 |
 
 Komputer pokazuje najwyżej 3 błędy naraz. Napraw pierwszy – kolejne często znikają same.
 
@@ -148,7 +148,7 @@ Wysyłaniem do internetu (push) zajmuje się rodzic.
 | F6 nic nie robi | kliknij najpierw w plik `gra.cpp` – zadanie uruchamia grę **z otwartego pliku** |
 | `nie ma gry "..."` | nazwa w `CONSOLE_ADD_GAME(...)` w `gra.cpp` i w `lista.h` muszą być takie same |
 | gra się nie zmieniła po edycji | plik niezapisany? (biała kropka na karcie); VS Code zapisuje sam po chwili |
-| błąd `collect2` / `Permission denied` | okno emulatora jest otwarte – zamknij Esc |
+| błąd `collect2` / `Permission denied` | okno emulatora jest otwarte – zamknij je (przytrzymaj Esc) |
 | czerwone podkreślenia w edytorze, a kompiluje się | to tylko podpowiedzi; jeśli VS Code zapyta o „IntelliSense provider", wybierz **Yes** |
 | Windows „chronił komputer" przy starcie `console_sim.exe` | kliknij „Więcej informacji" → „Uruchom mimo to"; to twój własny, świeżo skompilowany program |
 

@@ -416,3 +416,83 @@ z zegarem wirtualnym (1/60 s na klatkę) – bez tego przyspieszone `--frames` n
 nieznane). Jasność przez PWM LEDC na pinie podświetlenia – niesprawdzone na płytce. Rekordy innych gier trzeba
 dopisać do `RECORD_KEYS`, żeby „Wyczyść rekordy” je obejmowało.
 
+## 32. Kart: grafika z Gemini najpierw tam, gdzie nie ogranicza jej paleta – niebo, drzewa, ikony (25.09.2026)
+
+**Kontekst.** Pytanie użytkownika, czy tekstury z Gemini uatrakcyjnią Karta. Ocena: tak, bez kosztu CPU (piksel to dwa
+odczyty z tablic niezależnie od treści), ale teren ma trzy pułapki: wspólna paleta 256 kolorów atlasu, brak mipmap
+(migotanie w oddali) i brak bezszwowości obrazów z Gemini. Użytkownik wybrał dwa kroki; ten wpis to krok 1.
+**Decyzja.** (1) Pasy nieba (góry, chmury) i ikony HUD to RGBA bez palety – podmiana wprost. (2) Panorama 360° z dwóch
+obrazów A B A B zamiast lustra (lustro dawało widoczną symetrię) i z szwem sumującym sylwetki zamiast przenikania.
+(3) Drzewa w atlasie 8-bit z twardą alfą (alpha-test) – wspólna paleta nie przeszkadza przy dominujących zieleniach;
+4 rodzaje zamiast 2 na wolnym miejscu atlasu, bez zmiany logiki gry (ślady testów te same). (4) Surowe obrazy w
+`assets_src/kart/`, obróbka deterministyczna w `tools/gen_kart_gemini.py`; brak źródła = wersja rysowana.
+**Konsekwencje.** Obraz wyraźnie ładniejszy przy tym samym czasie klatki (PC ~5 ms). Gemini nie trzyma się
+dokładnie poleceń (siatka 3x2 zamiast 3x1, wzgórza pod chmurami) – skrypt to obsługuje, ale przy podmianie obrazów
+trzeba obejrzeć wynik. Teren (krok 2) nadal rysowany skryptem.
+
+## 33. Kart: tory jako dane, motyw = atlas + panorama + kolory; tekstury z Gemini bezszwowe z wersja daleka (25.09.2026)
+
+**Kontekst.** Uzytkownik: krok 2 (teren) i od razu kilka roznych torow.
+**Decyzja.** (1) Tor to dane w `kart_tracks.h` (punkty kontrolne, pola, skrzynki, motyw, parametry wzgorz); tor 0 bez
+zmian, zeby testy regresji zostaly miarodajne (skala 1 i faza 0 daja te same liczby). (2) Motyw to osobny atlas 8-bit
+o tym samym ukladzie kafelkow + panorama gor + kolory nieba i mgly - kod renderera sie nie zmienia, zmieniaja sie dane.
+(3) Tekstury nawierzchni z Gemini: srodkowy wycinek (wieksze elementy, mniej drobnego szumu), bezszwowosc przez
+przenikanie z kopia przesunieta o pol kafelka, wersja daleka rozmyta z zawinieciem - migotanie zmierzone skryptem
+zamiast oceny na oko (spadek z 12 do 8-11). (4) Walidator ukladow torow w Pythonie przed pierwszym uruchomieniem gry
+(krzywa identyczna z gra). (5) Wykryty przy okazji blad fizyki zderzen poprawiony swiadomie, wzorce nagrane na nowo.
+**Konsekwencje.** Przelaczenie toru przebudowuje siatki (na PC ulamek sekundy, na P4 niezmierzone) i wczytuje atlas
+(256 kB) i panorame (480 kB) motywu - raz na motyw. Assets +2,5 MB. Tory 1-3 bez nagranych przez czlowieka czasow;
+trudnosc (ciasne zakrety na Kanionie i Zimie) do oceny przez uzytkownika.
+
+## 34. Pacman: ściany z pola odległości, plansze z generatora z gwarancjami, AI duchów jak w oryginale (25.09.2026)
+
+**Kontekst.** Użytkownik: „gra packman” z grafiką z jego Gemini, równolegle z pracą drugiego agenta nad Kartem (osobny
+worktree gita, żeby nie psuć sobie kodu). Konsola jest pozioma (800×480), oryginalny labirynt 28×31 jest pionowy.
+**Decyzja.** (1) Labirynt 27×19 kratek po 24 px + panel 128 px po prawej; postacie 40 px (1,67 kratki – jak w oryginale
+duszek jest większy od korytarza). (2) Ściany nie z grafiki i nie z kafelków: dla każdego piksela kratki-ściany liczona
+jest odległość do najbliższego korytarza (sąsiedzi 4-kierunkowi = odległość do krawędzi, po skosie = do narożnika),
+rurka neonowa świeci przy d = 5 px, poświata wokół, płyta w głębi (d > 7,3); poza labiryntem jest „korytarz”, więc ramka
+ma podwójną linię jak w klasyku. Pierwsza wersja (grube pasy przez środki kratek + maska) wyglądała jak masywne
+bloki – odrzucona po zrzucie. Kolory ścian per świat, tło z Gemini przyciemnione do 55 %. (3) Plansze: „Klasyk” ręcznie,
+pozostałe trzy z `tools/pacman_maze_gen.py` – węzły na nieparzystych współrzędnych, pełna krata, losowe usuwanie
+krawędzi (z lustrem) tylko gdy każdy węzeł zachowa stopień ≥ 2 i graf spójność; `tools/pacman_maze_check.py` sprawdza
+każdą planszę (osiągalność, brak ślepych zaułków, brak otwartych bloków 2×2, dom duchów, tunel z obu stron). Ręczne
+rysowanie trzech plansz dawało po kilkanaście błędów – generator wygrał. (4) Ruch po kratkach z decyzją raz na kratkę
+(`dec_col/dec_row`), skręt „przed czasem” do 6 px od środka z przyciągnięciem, zawrócenie w dowolnej chwili; duchy
+wybierają kierunek minimalizujący odległość do celu z kolejnością remisów góra-lewo-dół-prawo (oryginał), cele czterech
+duchów i harmonogram rozproszenie/pościg wg oryginału, wyjścia z domu po czasie albo po kulkach. Dom duchów (drzwi `-`,
+wnętrze `G`) czytany z planszy; wejście/wyjście to ruch skryptowany, nie po grafie. (5) Autopilot = BFS z kratkami
+w promieniu 2 kroków od zwykłego ducha jako zablokowanymi; cele: przestraszony duch ≤ 10 kroków, owoc ≤ 12, najbliższa
+kulka; bez celu – kierunek najdalej od duchów. Deterministyczny, przechodzi planszę 1 z jedną-dwiema śmierciami – regresja
+obejmuje śmierć, owoc, zjedzenie ducha, powrót oczu i przejście do planszy 2.
+**Konsekwencje.** PC 0,30 ms/klatkę (Snake 0,70). PSRAM: labirynt 591 kB + maska 295 kB + tytuł 768 kB + sprite'y ~0,3 MB;
+partycja assets +1,5 MB. Wypalanie ścian raz na poziom (na P4 szacunkowo 20-40 ms + dekodowanie tła PNG). Nazwa „Pacman”
+i nazwy plansz/światów robocze. Zintegrowany z głównym drzewem tego samego wieczoru.
+
+## 35. Instalator Windows dla dzieci: Inno Setup per użytkownik + program startowy z aktualizacjami z GitHub Releases (25.09.2026)
+
+**Kontekst.** Użytkownik: „instalator na Windowsa, żeby dać dzieciom do zabawy, idealnie z aktualizacjami z GitHuba”.
+**Decyzja.** (1) **Inno Setup 6** (`installer/console.iss`), instalacja **per użytkownik** (`PrivilegesRequired=lowest`,
+`%LOCALAPPDATA%\Programs\KotarbaConsole`) – bez UAC, więc aktualizacja może się zainstalować sama. Polski kreator, skrót
+w Start (+ opcjonalnie na pulpicie), `STEROWANIE.txt`. `assets/` kasowane przy każdej instalacji (zmienione nazwy plików),
+`keymap.cfg` tylko gdy go nie ma (ręczne zmiany przetrwają), `save_*.bin` zostają przy aktualizacji, znikają przy deinstalacji.
+(2) **Osobny program startowy `KotarbaConsole.exe`** (`sim/launcher_win32.cpp`, WinHTTP + BCrypt, bez bibliotek): pyta
+`api.github.com/.../releases/latest` (4 s), gdy tag > `CONSOLE_VERSION` – MessageBox „zainstalować?”, pobiera
+`*-setup.exe` do `%TEMP%` z okienkiem postępu, sprawdza SHA-256 z pola `digest` API, uruchamia z `/SILENT /RELAUNCH`
+i kończy się (instalator nadpisuje oba exe i uruchamia konsolę ponownie). Potem startuje `console_sim.exe` z
+`CREATE_NO_WINDOW` (bez czarnego okna konsoli). Emulator bez zmian w logice – testy i tryb `--frames` nietknięte.
+Odrzucone: sprawdzanie w samym `console_sim.exe` (exe zablokowany przez działający proces, miesza się z testami),
+PowerShell jako program startowy (okno konsoli, antywirusy), MSIX/winget (podpis cyfrowy, konto sklepu).
+(3) **Wydanie = tag `vX.Y.Z`** → `.github/workflows/release.yml` (windows-latest, MSYS2 MinGW, LVGL przez FetchContent,
+Inno Setup z obrazu albo choco) buduje `KotarbaConsole-X.Y.Z-setup.exe` i publikuje wydanie. Build lokalny ma wersję
+`dev` = bez sprawdzania aktualizacji. Wersja trafia też do zasobu exe (`sim/app.rc`, ikona z `tools/gen_icon.py`)
+i do „O konsoli” (tylko emulator; w trybie testowym nadal „(test)”).
+**Konsekwencje.** Repozytorium musi być publiczne (API bez tokenu, limit 60 zapytań/h z jednego IP – wystarczy).
+Exe niepodpisane: SmartScreen pokaże „Nieznany wydawca” przy pierwszej instalacji z przeglądarki (Więcej informacji →
+Uruchom mimo to); aktualizacje z programu startowego tego ostrzeżenia nie wywołują (brak znacznika Mark-of-the-Web).
+Wszystko, co ma trafić do wydania (gry, assets), musi być zacommitowane przed tagiem.
+(4) Przy okazji, na prośbę użytkownika: **Esc zamyka dopiero po przytrzymaniu 1,5 s** (nakładka z paskiem rysowana
+na DIB okna, nie na płótnie – zrzuty i testy jej nie widzą; stuknięcie = podpowiedź 2,5 s), **przyciski i krzyżak
+pada USB** (winmm `dwButtons`/`dwPOV`, mapowanie `PAD_*` w `keymap.cfg`, domyślnie Xbox wg nazw: A=A, B=B –
+zgodnie z napisami na ekranie, nie z położeniem przycisków jak w padzie Switch).
+

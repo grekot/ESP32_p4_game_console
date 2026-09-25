@@ -35,3 +35,17 @@ shot  | menu_lessons    | --hold X 5 6 --hold DOWN 10 11 --hold DOWN 14 15 --fra
 shot  | menu_settings   | --hold X 5 6 --hold X 10 11 --hold DOWN 14 15 --hold RIGHT 18 19 --frames 40
 shot  | menu_about      | --hold Y 5 6 --hold A 15 30 --frames 20
 trace | menu_nav        | --hold RIGHT 5 6 --hold RIGHT 10 11 --hold UP 15 16 --hold RIGHT 20 21 --hold DOWN 25 26 --hold Y 30 31 --hold A 45 46 --frames 70 --trace 5
+# Kart - wiele torow (25.09.2026): wybor toru strzalkami na tytule, autopilot okraza tor (AI i gracz), zrzut motywu kanionu
+trace | kart_kanion     | --game kart --hold RIGHT 3 4 --hold A 20 21 --hold Y 80 2400 --frames 2400 --trace 200
+trace | kart_zima       | --game kart --hold RIGHT 3 4 --hold RIGHT 7 8 --hold A 20 21 --hold Y 80 2400 --frames 2400 --trace 200
+trace | kart_jesien     | --game kart --hold LEFT 3 4 --hold A 20 21 --hold Y 80 2400 --frames 2400 --trace 200
+shot  | kart_kanion     | --game kart --hold RIGHT 3 4 --hold A 20 21 --hold Y 80 1300 --frames 1300
+shot  | kart_title_zima | --game kart --hold RIGHT 3 4 --hold RIGHT 7 8 --frames 40
+# Pacman (25.09.2026): autopilot (Y) na planszy 1 - smierc, owoc, zjedzenie ducha (oczy wracaja), koniec planszy -> plansza 2;
+# gracz: skrety, zawrocenie, smierc; zrzuty: tytul, strach + punkty za duchy, swiat lawy (poziom 4); koniec gry od poziomu 8
+shot  | pacman_title    | --game pacman --frames 5
+trace | pacman_auto     | --game pacman --hold A 3 4 --hold Y 10 11 --frames 4600 --trace 100
+shot  | pacman_play     | --game pacman --hold A 3 4 --hold Y 10 11 --frames 900
+trace | pacman_player   | --game pacman --hold A 3 4 --hold LEFT 150 200 --hold UP 200 260 --hold RIGHT 260 330 --hold DOWN 330 360 --hold RIGHT 360 420 --hold LEFT 420 480 --frames 480 --trace 10
+shot  | pacman_lava     | --game pacman --hold X 2 3 --hold X 5 6 --hold X 8 9 --hold A 12 13 --hold Y 16 17 --frames 500
+trace | pacman_gameover | --game pacman --hold X 2 3 --hold X 5 6 --hold X 8 9 --hold X 11 12 --hold X 14 15 --hold X 17 18 --hold X 20 21 --hold A 24 25 --hold Y 30 31 --frames 14000 --trace 500

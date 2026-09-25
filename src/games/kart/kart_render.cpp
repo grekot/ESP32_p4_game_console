@@ -31,7 +31,6 @@ constexpr float SHOULDER_R   = 70.f;   // pobocze (trawa przy drodze)
 constexpr float FAR_R        = 115.f;  // dalsze pobocze; dalej teren z siatki
 constexpr float TERRAIN_STEP = 32.f;   // komorka siatki terenu
 constexpr int   TERRAIN_N    = 32;     // 32 x 32 komorki = 1024 jednostek
-const int       BOOST_IDX_R[2] = { 30, 150 };   // jak BOOST_IDX w kart_game.cpp (3 probki od kazdego)
 
 constexpr float SUN_ANGLE = 0.9f;      // kierunek slonca w plaszczyznie XZ (rad) - swiatlo i tarcza na niebie zgodne
 constexpr float SUN_ELEV  = 1.15f;     // skladowa pionowa kierunku do slonca (przed normalizacja) - ok. 50 stopni,
@@ -44,7 +43,9 @@ constexpr Tile tile(float x, float y, float w, float h) { return { x + 0.5f, y +
 constexpr Tile T_ASPHALT = tile(0, 0, 128, 128), T_GRASS = tile(128, 0, 128, 128), T_GRASS_DRY = tile(256, 0, 128, 128);
 constexpr Tile T_CROWD = tile(384, 0, 128, 32);
 constexpr Tile T_BANNER[3] = { tile(384, 32, 128, 32), tile(384, 64, 128, 32), tile(384, 96, 128, 32) };
-constexpr Tile T_TREE[2] = { tile(0, 128, 128, 128), tile(128, 128, 128, 128) };
+// drzewa: dab, sosna, brzoza, klon (tools/gen_kart_atlas.py; z Gemini, gdy jest assets_src/kart/trees_sheet.jpg)
+constexpr Tile T_TREE[4] = { tile(0, 128, 128, 128), tile(128, 128, 128, 128), tile(256, 256, 128, 128), tile(384, 256, 128, 128) };
+constexpr float TREE_SIZE[4] = { 30.f, 28.f, 27.f, 29.f };
 constexpr Tile T_BUSH[2] = { tile(256, 128, 64, 64), tile(320, 128, 64, 64) };
 constexpr Tile T_TREAD = tile(256, 192, 64, 64), T_GATE = tile(0, 384, 448, 40);
 constexpr float LIVERY_X0 = 0.f, LIVERY_Y0 = 256.f;   // 4 malowania 64x128 obok siebie
@@ -77,10 +78,6 @@ inline float noise01(int a, int b)
     return (float)(h & 0xFFFF) / 65535.f;
 }
 
-const uint16_t SKY_TOP   = gfx::rgb565(30, 86, 204);
-const uint16_t SKY_MID   = gfx::rgb565(104, 164, 238);
-const uint16_t SKY_HORIZ = gfx::rgb565(206, 222, 242);
-const uint16_t FOG_COL   = gfx::rgb565(206, 222, 242);
 const uint16_t PANEL     = gfx::rgb565(12, 16, 28);
 const uint16_t PANEL_HI  = gfx::rgb565(120, 140, 190);
 const uint16_t TEXT_DIM  = gfx::rgb565(160, 170, 195);
@@ -162,6 +159,70 @@ void add_sign(gfx3d::Mesh& m, const Vec3& base, float w, float h, float nx, floa
     m.add_billboard({ base.x - nx * 0.15f, base.y, base.z - nz * 0.15f }, w, h, -nx, -nz, uv, fallback);
 }
 
+// Kask: gladka elipsoida (wspolne wierzcholki -> cieniowanie Gouraud i odblask bez fasetek) z obszarami koloru na
+// tej samej powierzchni zamiast doklejonych kostek: wizjer (przod, pas nad "podbrodkiem"), pas przez srodek skorupy
+// w kolorze bolidu, ciemny otwor na szyje. Os lokalna: X prawo, Y gora, Z przod; r = polosie (szerokosc, wysokosc,
+// dlugosc). segments x rings: 20 x 11 = 400 trojkatow.
+void add_helmet(gfx3d::Mesh& m, const Vec3& c, const Vec3& r, uint16_t shell, uint16_t stripe, uint16_t visor)
+{
+    constexpr int S = 20, R = 11;
+    int idx[R + 1][S];
+    const int top = m.add_vertex({ c.x, c.y + r.y, c.z });
+    const int bot = m.add_vertex({ c.x, c.y - r.y, c.z });
+    for (int i = 1; i < R; ++i) {
+        const float phi = 3.1415926f * (float)i / R;
+        for (int j = 0; j < S; ++j) {
+            const float th = 6.2831853f * (float)j / S;   // 0 = przod (+Z)
+            idx[i][j] = m.add_vertex({ c.x + r.x * sinf(phi) * sinf(th), c.y + r.y * cosf(phi), c.z + r.z * sinf(phi) * cosf(th) });
+        }
+    }
+    const uint16_t neck = gfx::rgb565(20, 20, 26), trim = gfx::rgb565(60, 62, 72);
+    auto region = [&](float phi, float th) -> uint16_t {
+        const float dy = cosf(phi), dz = sinf(phi) * cosf(th);   // kierunek na sferze (y, z)
+        if (dy < -0.62f) return neck;
+        if (dz > 0.42f && dy > -0.18f && dy < 0.36f) return visor;                          // wizjer
+        if (dz > 0.30f && ((dy > -0.24f && dy < -0.18f) || (dy > 0.36f && dy < 0.44f))) return trim;   // obwodka
+        if (fabsf(sinf(th)) < 0.2f && dy > 0.05f) return stripe;   // pas przez srodek: stala szerokosc katowa (2 segmenty)
+        return shell;
+    };
+    for (int j = 0; j < S; ++j) {
+        const int j1 = (j + 1) % S;
+        const float thm = 6.2831853f * ((float)j + 0.5f) / S;
+        m.add_tri_out(top, idx[1][j], idx[1][j1], region(0.1f, thm), Vec3(0, 1, 0));
+        for (int i = 1; i < R - 1; ++i) {
+            const float phm = 3.1415926f * ((float)i + 0.5f) / R;
+            const Vec3 out = Vec3(sinf(phm) * sinf(thm), cosf(phm), sinf(phm) * cosf(thm));
+            m.add_quad_out(idx[i][j], idx[i + 1][j], idx[i + 1][j1], idx[i][j1], region(phm, thm), out);
+        }
+        m.add_tri_out(bot, idx[R - 1][j1], idx[R - 1][j], neck, Vec3(0, -1, 0));
+    }
+}
+
+// Rura o przekroju wielokata (ramiona kierowcy, kolumna kierownicy): wspolne wierzcholki pierscieni, zeby
+// cieniowanie gladkie dawalo okragly wyglad (add_rod ma przekroj kwadratowy).
+void add_tube(gfx3d::Mesh& m, const Vec3& a, const Vec3& b, float r, int sides, uint16_t col)
+{
+    const Vec3 d   = (b - a).normalized();
+    const Vec3 ref = fabsf(d.y) < 0.9f ? Vec3(0, 1, 0) : Vec3(1, 0, 0);
+    const Vec3 u   = gfx3d::cross(d, ref).normalized(), v = gfx3d::cross(d, u);
+    int ra[12], rb[12];
+    if (sides > 12) sides = 12;
+    for (int i = 0; i < sides; ++i) {
+        const float t = 6.2831853f * (float)i / sides;
+        const Vec3 o = u * (cosf(t) * r) + v * (sinf(t) * r);
+        ra[i] = m.add_vertex(a + o);
+        rb[i] = m.add_vertex(b + o);
+    }
+    const int ca = m.add_vertex(a), cb = m.add_vertex(b);
+    for (int i = 0; i < sides; ++i) {
+        const int i1 = (i + 1) % sides;
+        const float t = 6.2831853f * ((float)i + 0.5f) / sides;
+        m.add_quad_out(ra[i], rb[i], rb[i1], ra[i1], col, u * cosf(t) + v * sinf(t));
+        m.add_tri_out(ca, ra[i1], ra[i], col, d * -1.f);
+        m.add_tri_out(cb, rb[i], rb[i1], col, d);
+    }
+}
+
 }  // namespace
 
 float KartGame::wrap_angle_static(float a)
@@ -176,8 +237,11 @@ float KartGame::wrap_angle_static(float a)
 float KartGame::ground_height(float x, float z) const
 {
     // lagodne wzniesienia: suma sinusow (deterministyczna, gladka, tania); ostatni skladnik = duze, dalekie pagorki
-    return 7.f * sinf(x * 0.0105f + 1.1f) + 6.f * sinf(z * 0.0123f + 2.3f) + 3.5f * sinf((x + z) * 0.019f + 0.5f) +
-           2.f * sinf((x - 2.f * z) * 0.027f) + 9.f * sinf(x * 0.0061f + 0.7f) * sinf(z * 0.0072f + 1.9f);
+    // tor: skala i faza (kart_tracks.h); dla toru 0 (hills 1, phase 0) wartosci identyczne jak przed wieloma torami
+    const float ph = TRACKS[track_].phase;
+    return TRACKS[track_].hills *
+           (7.f * sinf(x * 0.0105f + 1.1f + ph) + 6.f * sinf(z * 0.0123f + 2.3f - ph) + 3.5f * sinf((x + z) * 0.019f + 0.5f + ph) +
+            2.f * sinf((x - 2.f * z) * 0.027f + ph) + 9.f * sinf(x * 0.0061f + 0.7f - ph) * sinf(z * 0.0072f + 1.9f + ph));
 }
 
 float KartGame::surface_height(float x, float z) const
@@ -229,13 +293,7 @@ void KartGame::build_scene()
 {
     scene_ok_ = r3d_.init(18000);
     if (!scene_ok_) return;
-    atlas_ = gfx::load_png_indexed("kart/atlas.png");
-    if (atlas_.idx && atlas_.w == 512) r3d_.set_texture(atlas_.idx, 9, atlas_.h, atlas_.palette, FOG_COL);
-    else CONSOLE_LOGW(TAG, "brak assets/kart/atlas.png - scena bez tekstur (kolory zastepcze)");
-    build_road();
-    build_terrain();
-    build_props();
-    build_decor();
+    build_track_scene();
 
     // --- przedmioty ---
     itembox_m_.init(40, 24);
@@ -267,13 +325,44 @@ void KartGame::build_scene()
                  wheel_rear_.triangle_count() * 4, atlas_.idx ? "OK" : "BRAK");
 }
 
+void KartGame::build_track_scene()
+{
+    // motyw toru: kolory nieba i mgly, atlas i panorama gor (wczytane raz na motyw, zyja do konca programu)
+    const int th = TRACKS[track_].theme;
+    const ThemeDef& M = THEMES[th];
+    sky_top_   = gfx::rgb565(M.sky_top[0], M.sky_top[1], M.sky_top[2]);
+    sky_mid_   = gfx::rgb565(M.sky_mid[0], M.sky_mid[1], M.sky_mid[2]);
+    sky_horiz_ = gfx::rgb565(M.sky_horiz[0], M.sky_horiz[1], M.sky_horiz[2]);
+    fog_col_   = gfx::rgb565(M.fog[0], M.fog[1], M.fog[2]);
+    if (!theme_loaded_[th]) {
+        theme_loaded_[th] = true;
+        char path[48];
+        snprintf(path, sizeof(path), "kart/atlas_%s.png", M.id);
+        atlas_th_[th] = gfx::load_png_indexed(path);
+        if (!atlas_th_[th].idx) atlas_th_[th] = gfx::load_png_indexed("kart/atlas.png");
+        snprintf(path, sizeof(path), "kart/mountains_%s.png", M.id);
+        mountains_th_[th] = gfx::load_png_rgba(path);
+        if (!mountains_th_[th].px) mountains_th_[th] = gfx::load_png_rgba("kart/mountains.png");
+    }
+    atlas_     = atlas_th_[th];
+    mountains_ = mountains_th_[th];
+    if (atlas_.idx && atlas_.w == 512) r3d_.set_texture(atlas_.idx, 9, atlas_.h, atlas_.palette, fog_col_);
+    else CONSOLE_LOGW(TAG, "brak atlasu motywu %s - scena bez tekstur (kolory zastepcze)", M.id);
+    n_obst_ = 0;   // przeszkody (drzewa, opony, trybuna) dopisuje budowa obiektow ponizej
+    build_road();
+    build_terrain();
+    build_props();
+    build_decor();
+    scene_track_ = track_;
+}
+
 void KartGame::build_road()
 {
     // Segmenty specjalne (linia startu, pola przyspieszenia) maja asfalt rysowany plasko w marks_ (wzor), reszta
     // asfaltu i cala trawa sa w road_ - teksturowane (atlas) i cieniowane Gouraud po normalnych (wzniesienia).
     auto special = [&](int i) {
         if (i == 0 || i == N_PATH - 1) return true;
-        for (int b = 0; b < 2; ++b) if (i >= BOOST_IDX_R[b] && i < BOOST_IDX_R[b] + 3) return true;
+        for (int b = 0; b < 2; ++b) if (i >= TRACKS[track_].boost[b] && i < TRACKS[track_].boost[b] + 3) return true;
         return false;
     };
 
@@ -361,7 +450,7 @@ void KartGame::build_road()
         }
         const bool start = (i == 0 || i == N_PATH - 1);
         int bi = 0;
-        for (int k = 0; k < 2; ++k) if (i >= BOOST_IDX_R[k] && i < BOOST_IDX_R[k] + 3) bi = BOOST_IDX_R[k];
+        for (int k = 0; k < 2; ++k) if (i >= TRACKS[track_].boost[k] && i < TRACKS[track_].boost[k] + 3) bi = TRACKS[track_].boost[k];
         for (int col = 0; col < 8; ++col) {
             uint16_t c;
             if (start) c = ((i + col) & 1) ? gfx::rgb565(242, 242, 242) : gfx::rgb565(26, 26, 30);
@@ -510,11 +599,13 @@ void KartGame::build_props()
 void KartGame::build_decor()
 {
     // --- drzewa i krzaki: billboardy z atlasu (jeden prostokat obracany do kamery), cien = dysk w masce ---
-    for (int k = 0; k < 2; ++k) {
+    for (int k = 0; k < 4; ++k) {
         tree_bb_[k].init(8, 4);
         const float uv[4] = { T_TREE[k].u0, T_TREE[k].v0, T_TREE[k].u1, T_TREE[k].v1 };
-        tree_bb_[k].add_billboard({ 0, 0, 0 }, k == 0 ? 30.f : 26.f, k == 0 ? 30.f : 26.f, 0, 1, uv, gfx::rgb565(50, 140, 60));
+        tree_bb_[k].add_billboard({ 0, 0, 0 }, TREE_SIZE[k], TREE_SIZE[k], 0, 1, uv, gfx::rgb565(50, 140, 60));
         tree_bb_[k].unlit = tree_bb_[k].alpha_test = true;
+    }
+    for (int k = 0; k < 2; ++k) {
         bush_bb_[k].init(8, 4);
         const float buv[4] = { T_BUSH[k].u0, T_BUSH[k].v0, T_BUSH[k].u1, T_BUSH[k].v1 };
         bush_bb_[k].add_billboard({ 0, 0, 0 }, 10.f, 10.f, 0, 1, buv, gfx::rgb565(50, 140, 60));
@@ -569,7 +660,7 @@ void KartGame::build_kart_models()
     const uint16_t carbon = gfx::rgb565(44, 46, 54);
     for (int c = 0; c < 4; ++c) {
         gfx3d::Mesh& m = kart_body_[c];
-        m.init(560, 760);
+        m.init(680, 940);
         const uint16_t body = KART_COLORS[c], dark = KART_DARK[c], suit = SUIT[c];
         // malowanie: u w poprzek (64 teksele), v wzdluz: szpic (z = 9.2) -> v0, ogon (z = -9.4) -> v1
         const float lu0 = LIVERY_X0 + c * 64.f + 1.f, lu1 = lu0 + 62.f;
@@ -636,33 +727,33 @@ void KartGame::build_kart_models()
         m.add_loft({ 0, 4.9f, -3.9f }, 1.6f, 0.9f, { 0, 5.3f, -1.4f }, 1.7f, 1.2f, suit);       // tulow (od tylu do przodu)
         m.add_box({ 0, 6.35f, -2.7f }, { 4.4f, 0.8f, 1.9f }, suit);                             // barki
         m.add_box({ 0, 6.9f, -2.6f }, { 1.1f, 0.5f, 1.1f }, gfx::rgb565(214, 170, 140));        // kark
-        add_rod(m, { -2.0f, 6.3f, -2.3f }, { -1.5f, 5.85f, 1.3f }, 0.42f, suit);                // ramiona
-        add_rod(m, { 2.0f, 6.3f, -2.3f }, { 1.5f, 5.85f, 1.3f }, 0.42f, suit);
-        m.add_box({ -1.5f, 5.85f, 1.65f }, { 0.9f, 0.9f, 0.8f }, dark);                          // rekawice
-        m.add_box({ 1.5f, 5.85f, 1.65f }, { 0.9f, 0.9f, 0.8f }, dark);
+        add_tube(m, { -2.0f, 6.3f, -2.3f }, { -1.5f, 5.85f, 1.3f }, 0.46f, 8, suit);            // ramiona (okragle)
+        add_tube(m, { 2.0f, 6.3f, -2.3f }, { 1.5f, 5.85f, 1.3f }, 0.46f, 8, suit);
+        m.add_sphere({ -1.5f, 5.85f, 1.6f }, 0.58f, 8, 5, dark);                                  // rekawice (kule)
+        m.add_sphere({ 1.5f, 5.85f, 1.6f }, 0.58f, 8, 5, dark);
         m.add_box({ 0, 5.85f, 1.9f }, { 3.4f, 1.5f, 0.4f }, black);                              // kierownica
         m.add_box({ 0, 5.85f, 1.9f }, { 0.9f, 0.5f, 0.45f }, metal);                             // srodek kierownicy
-        add_rod(m, { 0, 5.5f, 2.0f }, { 0, 4.4f, 3.6f }, 0.22f, metal);                          // kolumna
+        add_tube(m, { 0, 5.5f, 2.0f }, { 0, 4.4f, 3.6f }, 0.24f, 6, metal);                     // kolumna
         m.smooth   = true;      // normalne usrednione w narozach = zaokraglone cieniowanie lakieru
         m.specular = 0.38f;
         m.compute_smooth_normals();
 
         gfx3d::Mesh& h = helmet_[c];
-        h.init(110, 170);
-        h.add_sphere({ 0, 8.35f, -2.55f }, 2.05f, 12, 6, HELMET[c], HELMET[c]);
+        h.init(210, 410);
+        // elipsoida lekko wydluzona do przodu; wizjer ciemny z odblaskiem, pas w kolorze bolidu (add_helmet)
+        add_helmet(h, { 0, 8.3f, -2.45f }, { 1.95f, 2.0f, 2.25f }, HELMET[c], body, gfx::rgb565(20, 26, 44));
         h.smooth = true;
-        h.specular = 0.8f;
+        h.specular = 0.85f;
         h.compute_smooth_normals();
-        h.add_box({ 0, 8.45f, -0.85f }, { 2.4f, 1.0f, 0.55f }, gfx::rgb565(22, 28, 44));         // wizjer
-        h.add_box({ 0, 10.2f, -2.55f }, { 0.8f, 0.4f, 2.8f }, body);                            // pas na kasku
     }
     // opona prawie czarna (bieznik z tekstury), felga ciemny grafit (jasny kapsel liczy sie w add_wheel)
     const uint16_t tyre = gfx::rgb565(22, 22, 26), hub = gfx::rgb565(88, 90, 100);
     const float tread[4] = { T_TREAD.u0, T_TREAD.v0, T_TREAD.u1, T_TREAD.v1 };
-    wheel_front_.init(110, 160);
-    wheel_front_.add_wheel({ 0, 0, 0 }, 2.1f, 2.6f, 12, tyre, hub, 0.6f, tread);
-    wheel_rear_.init(110, 160);
-    wheel_rear_.add_wheel({ 0, 0, 0 }, 2.4f, 3.4f, 12, tyre, hub, 0.58f, tread);
+    // 16 bokow (bylo 12 - obrys opony byl widocznie kanciasty z bliska)
+    wheel_front_.init(150, 220);
+    wheel_front_.add_wheel({ 0, 0, 0 }, 2.1f, 2.6f, 16, tyre, hub, 0.6f, tread);
+    wheel_rear_.init(150, 220);
+    wheel_rear_.add_wheel({ 0, 0, 0 }, 2.4f, 3.4f, 16, tyre, hub, 0.58f, tread);
 }
 
 // ============================================================================ scena
@@ -722,7 +813,17 @@ void KartGame::draw_scene(gfx::Canvas& c)
     const Kart& p = karts_[0];
     const float kart_y = surface_height(p.x, p.y);
     gfx3d::Camera cam;
-    if (state_ == State::Title) {
+    const char* view = getenv("KART_CAM");   // podglad modelu (narzedzie): "kat_stopnie,odleglosc,wysokosc"
+    if (view) {
+        float ang = 30.f, dist = 22.f, hgt = 8.f;
+        sscanf(view, "%f,%f,%f", &ang, &dist, &hgt);
+        const float a = p.angle + ang * 0.0174533f;
+        const float h0 = surface_height(p.x, p.y);
+        cam.pos    = { p.x + cosf(a) * dist, h0 + hgt, p.y + sinf(a) * dist };
+        cam.target = { p.x, h0 + 4.5f, p.y };
+        cam.fov_y  = 0.8f;
+        fov_vis_   = 0.8f;
+    } else if (state_ == State::Title) {
         // ekran tytulowy: kamera kolysze sie za polami startowymi (nie wjezdza w gokarty ani w brame)
         const float a  = p.angle + 3.14159265f + sinf(anim_ * 0.4f) * 0.9f;
         const float cx = (p.x + karts_[1].x) * 0.5f, cz = (p.y + karts_[1].y) * 0.5f;
@@ -747,7 +848,7 @@ void KartGame::draw_scene(gfx::Canvas& c)
     light.ambient = 0.46f;
     light.diffuse = 0.74f;
     gfx3d::Fog fog;
-    fog.color = FOG_COL;
+    fog.color = fog_col_;
     fog.start = quality_ == 0 ? 420.f : 300.f;
     fog.end   = quality_ == 0 ? 1300.f : (quality_ == 1 ? 900.f : 600.f);
     r3d_.set_flat_only(quality_ >= 1);
@@ -786,7 +887,9 @@ void KartGame::draw_scene(gfx::Canvas& c)
         if (t.x < 0) continue;
         const float s = 0.85f + noise01(i, 9) * 0.4f;
         const float a = atan2f(cam.pos.z - t.y, cam.pos.x - t.x);
-        r3d_.draw_mesh(tree_bb_[t.kind & 1], Mat4::translation({ t.x, tree_h_[i] - 0.3f, t.y }) * Mat4::heading(a) * Mat4::scale(s, s, s), 1, false);
+        // rodzaj: kind (0/1 z logiki gry, nie ruszamy - slady testow) + druga para z szumu po indeksie
+        const int kind = (t.kind & 1) + (noise01(i, 13) > 0.5f ? 2 : 0);
+        r3d_.draw_mesh(tree_bb_[kind], Mat4::translation({ t.x, tree_h_[i] - 0.3f, t.y }) * Mat4::heading(a) * Mat4::scale(s, s, s), 1, false);
     }
     if (quality_ < 2)
         for (int i = 0; i < N_BUSHES; ++i) {
@@ -851,11 +954,11 @@ void KartGame::draw_sky(gfx::Canvas& c, float horizon)
     const int hz = engine::iclamp((int)horizon, 1, H - 1);
     for (int y = 0; y < H; ++y) {
         uint16_t col;
-        if (y >= hz) col = FOG_COL;
+        if (y >= hz) col = fog_col_;
         else {
             // trzy progi: glebokie niebo u gory, blekit w polowie, mgielka przy horyzoncie
             const int t = y * 64 / hz;
-            col = t < 32 ? mix565i(SKY_TOP, SKY_MID, t) : mix565i(SKY_MID, SKY_HORIZ, t - 32);
+            col = t < 32 ? mix565i(sky_top_, sky_mid_, t) : mix565i(sky_mid_, sky_horiz_, t - 32);
         }
         uint32_t* row = reinterpret_cast<uint32_t*>(px + (size_t)y * W);
         const uint32_t v = ((uint32_t)col << 16) | col;
@@ -1020,6 +1123,22 @@ void KartGame::draw_hud_title(gfx::Canvas& c)
     center(134, "drift z mini-turbo  |  pola przyspieszenia", TEXT_DIM, 16);
     hud_panel(c, W / 2 - 300, 186, 600, 34, 150);
     center(194, "A gaz    strzalki skret    B drift    X przedmiot    dol hamulec    Y autopilot", TEXT_DIM, 14);
+
+    // wybor toru: nazwa, motyw, rekord okrazenia, strzalki
+    char buf[64];
+    hud_panel(c, W / 2 - 230, 236, 460, 92, 175);
+    snprintf(buf, sizeof(buf), "TOR %d / %d", track_ + 1, TRACK_COUNT);
+    center(244, buf, TEXT_DIM, 14);
+    center(262, TRACKS[track_].name, gfx::pal::WHITE, 28);
+    if (rec_lap_[track_] > 0)
+        snprintf(buf, sizeof(buf), "motyw: %s   |   rekord okr\u0105\u017cenia %.2f s", THEMES[TRACKS[track_].theme].name, (double)rec_lap_[track_]);
+    else snprintf(buf, sizeof(buf), "motyw: %s   |   brak rekordu", THEMES[TRACKS[track_].theme].name);
+    center(298, buf, gfx::pal::YELLOW, 14);
+    const int ay = 266;
+    for (int s = -1; s <= 1; s += 2) {   // strzalki < >
+        const int ax = W / 2 + s * 200;
+        for (int i = 0; i < 12; ++i) c.vline(ax + s * i, ay + i, 24 - 2 * i, gfx::pal::YELLOW);   // grot na zewnatrz
+    }
     if (fmodf(anim_, 1.f) < 0.65f) {
         fill_round_rect_alpha(c, W / 2 - 90, H - 62, 180, 44, 12, PANEL, 170);
         center(H - 56, "Wcisnij A", gfx::pal::WHITE, 28);
@@ -1168,6 +1287,7 @@ void KartGame::draw_hud_finish(gfx::Canvas& c)
 
 void KartGame::draw_hud(gfx::Canvas& c)
 {
+    if (getenv("KART_CAM")) return;   // podglad modelu bez HUD
     // stan wizualny: komunikat o nowym okrazeniu
     const float dt = engine::clampf(anim_ - last_anim_, 0.f, 0.1f);
     last_anim_ = anim_;
@@ -1184,7 +1304,7 @@ void KartGame::render(gfx::Canvas& c)
 {
     const int64_t t0 = platform::micros();
     if (scene_ok_) draw_scene(c);
-    else c.clear(FOG_COL);
+    else c.clear(fog_col_);
     draw_hud(c);
     const float ms = (float)(platform::micros() - t0) / 1000.f;
     render_ms_ = render_ms_ <= 0 ? ms : render_ms_ * 0.9f + ms * 0.1f;

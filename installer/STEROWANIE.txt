@@ -1,0 +1,27 @@
+KOTARBA GAME CONSOLE - sterowanie na komputerze
+================================================
+
+  Strzałki ......... krzyżak (ruch, wybór w menu)
+  Z ................ A  (skok, wybór, strzał)
+  X ................ B  (cofnij, drugi przycisk)
+  S ................ X
+  A ................ Y
+  Enter ............ START (pauza w grze)
+  Backspace ........ SELECT
+  I J K L .......... gałka analogowa
+  Lewy przycisk myszy = dotknięcie ekranu
+  Esc (przytrzymaj)  WYJŚCIE z konsoli - trzeba trzymać ok. 1,5 s,
+                     krótkie wciśnięcie nic nie zamyka
+
+Pad USB (np. do Xboxa): krzyżak, lewa gałka i przyciski A B X Y, Start = START,
+Back = SELECT. Inny pad ma przyciski w innej kolejności? Zmień wpisy PAD_A ... PAD_SELECT
+w keymap.cfg (numery przycisków widać w Windows: "Kontrolery gier" -> Właściwości).
+
+W menu: strzałki lewo/prawo wybierają grę, Z uruchamia. W grze Enter = pauza,
+a w pauzie można wrócić do menu.
+
+Klawisze można zmienić w pliku keymap.cfg w katalogu konsoli:
+  %LOCALAPPDATA%\Programs\KotarbaConsole\keymap.cfg
+
+Aktualizacje: przy starcie konsola sprawdza, czy na GitHubie jest nowsza wersja,
+i pyta, czy ją zainstalować. Bez internetu uruchamia się normalnie.

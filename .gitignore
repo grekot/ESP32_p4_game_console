@@ -29,3 +29,7 @@ src/games/lekcje/**/zrzut.png
 # LVGL pobrane skryptem tools/fetch_lvgl.ps1 (komputer bez PlatformIO)
 third_party/
 __pycache__/
+
+# Instalator Windows (tools/build_installer.ps1)
+sim/build-release/
+dist/

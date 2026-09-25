@@ -58,6 +58,14 @@ int64_t       s_next_frame_us = 0;
 
 input::PadState s_pad_keys;
 
+// Esc zamyka konsole dopiero po przytrzymaniu (dzieci wciskaja go przypadkiem). Krotkie wcisniecie
+// pokazuje tylko podpowiedz. Zamkniecie okna krzyzykiem dziala od razu.
+constexpr int64_t ESC_HOLD_US = 1500000;
+constexpr int64_t ESC_HINT_US = 2500000;
+int64_t s_esc_since = 0;          // micros() wcisniecia Esc, 0 = puszczony
+int64_t s_esc_hint_until = 0;
+HFONT   s_overlay_font = nullptr;
+
 // Odwzorowanie klawiatury mechanicznej konsoli: kazdy z 10 klawiszy ma przypisany klawisz PC
 // (domyslny albo z keymap.cfg). Zadnego odklocania - klawiatura PC nie drga.
 // Klawisz uznajemy za wcisniety, jesli jest trzymany ALBO byl tapniety od poprzedniego odczytu.
@@ -77,12 +85,29 @@ void update_keys()
     for (int i = 0; i <= (int)input::Key::Select; ++i) {
         if (key_down((input::Key)i)) mask |= (uint16_t)(1u << i);
     }
+
+    // Pad USB: przyciski wg keymap (PAD_A = 1 ...), krzyzak pada (POV) = krzyzak konsoli, takze po skosie.
+    sim::GamepadState gp;
+    const bool has_pad = sim::gamepad_read(gp);
+    if (has_pad) {
+        for (int i = 0; i <= (int)input::Key::Select; ++i) {
+            const int b = sim::keymap_pad_button((input::Key)i);
+            if (b > 0 && (gp.buttons & (1u << (b - 1)))) mask |= (uint16_t)(1u << i);
+        }
+        if (gp.pov >= 0) {
+            const int d = gp.pov;
+            if (d <= 4500 || d >= 31500)  mask |= (uint16_t)(1u << (int)input::Key::Up);
+            if (d >= 4500 && d <= 13500)  mask |= (uint16_t)(1u << (int)input::Key::Right);
+            if (d >= 13500 && d <= 22500) mask |= (uint16_t)(1u << (int)input::Key::Down);
+            if (d >= 22500 && d <= 31500) mask |= (uint16_t)(1u << (int)input::Key::Left);
+        }
+    }
     s_pad_keys = input::pad_from_mask(mask);
 
     // Galka: jesli jest pad USB, bierzemy z niego prawdziwe wartosci analogowe; jesli nie,
     // osobne klawisze daja wychylenie skrajne (tak jak krzyzak, ale osobnym kanalem).
-    float ax = 0.f, ay = 0.f;
-    if (!sim::gamepad_axes(ax, ay)) {
+    float ax = gp.x, ay = gp.y;
+    if (!has_pad) {
         if (key_down(input::Key::StickLeft))  ax -= 1.f;
         if (key_down(input::Key::StickRight)) ax += 1.f;
         if (key_down(input::Key::StickUp))    ay -= 1.f;
@@ -108,15 +133,24 @@ LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
             return 0;
 
         case WM_KEYDOWN:
-            if (wp == VK_ESCAPE) { s_running = false; return 0; }
+            if (wp == VK_ESCAPE) {
+                if (!(lp & (1 << 30)) && !s_esc_since) s_esc_since = micros();   // bez autopowtorzen
+                return 0;
+            }
             if (wp < 256) { s_keys[wp] = true; s_key_hit[wp] = true; }
             return 0;
 
         case WM_KEYUP:
+            if (wp == VK_ESCAPE) {
+                if (s_esc_since) s_esc_hint_until = micros() + ESC_HINT_US;
+                s_esc_since = 0;
+                return 0;
+            }
             if (wp < 256) s_keys[wp] = false;
             return 0;
 
         case WM_KILLFOCUS:                    // po utracie fokusu klawisze "zawisaja"
+            s_esc_since = 0;
             memset(s_keys, 0, sizeof(s_keys));
             memset(s_key_hit, 0, sizeof(s_key_hit));
             s_mouse_down = false;
@@ -183,6 +217,7 @@ bool init()
     wc.lpfnWndProc   = wnd_proc;
     wc.hInstance     = inst;
     wc.hCursor       = LoadCursor(nullptr, IDC_ARROW);
+    wc.hIcon         = LoadIconW(inst, MAKEINTRESOURCEW(1));   // sim/app.ico (app.rc)
     wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
     wc.lpszClassName = WINDOW_CLASS;
     if (!RegisterClassExW(&wc)) {
@@ -193,7 +228,7 @@ bool init()
     RECT rc = { 0, 0, engine::CANVAS_W * DEFAULT_ZOOM, engine::CANVAS_H * DEFAULT_ZOOM };
     AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
 
-    s_hwnd = CreateWindowExW(0, WINDOW_CLASS, L"Console - emulator (ESP32-P4)",
+    s_hwnd = CreateWindowExW(0, WINDOW_CLASS, L"Kotarba Game Console",
                              WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
                              rc.right - rc.left, rc.bottom - rc.top,
                              nullptr, nullptr, inst, nullptr);
@@ -231,7 +266,7 @@ bool init()
               engine::CANVAS_W * DEFAULT_ZOOM, engine::CANVAS_H * DEFAULT_ZOOM,
               engine::CANVAS_W, engine::CANVAS_H, DEFAULT_ZOOM);
     CONSOLE_LOGI(TAG, "klawisze konsoli wg mapowania powyzej; lewy przycisk myszy = dotyk ekranu, "
-                   "Esc = wyjscie");
+                   "Esc przytrzymany 1,5 s = wyjscie");
     return true;
 }
 
@@ -259,6 +294,45 @@ uint16_t* alloc_pixels(size_t pixel_count, bool /*fast*/)
 
 namespace {
 int s_brightness = 100;   // set_brightness: przyciemnienie obrazu w oknie
+
+// Nakladka Esc na obraz w oknie (nie na plotno konsoli - zrzuty i testy jej nie widza).
+// Przytrzymany Esc: pasek postepu, po ESC_HOLD_US wyjscie. Puszczony za wczesnie: podpowiedz.
+void esc_overlay()
+{
+    if (sim::ignore_real_input()) return;         // --frames: okno ukryte, prawdziwe klawisze ignorowane
+    const int64_t now = micros();
+    const bool holding = s_esc_since != 0;
+    if (!holding && now >= s_esc_hint_until) return;
+    const float progress = holding ? (float)(now - s_esc_since) / (float)ESC_HOLD_US : 0.f;
+    if (progress >= 1.f) { s_running = false; return; }
+
+    const int W = engine::CANVAS_W, H = engine::CANVAS_H;
+    const int pw = 460, ph = holding ? 74 : 54, px = (W - pw) / 2, py = H - ph - 24;
+    for (int y = py; y < py + ph; ++y) {          // przyciemnione tlo panelu
+        uint32_t* row = s_dib_px + (size_t)y * W;
+        for (int x = px; x < px + pw; ++x) row[x] = (row[x] >> 2) & 0x3F3F3F;
+    }
+    if (holding) {                                // pasek postepu
+        const int bx = px + 20, by = py + ph - 22, bw = pw - 40, bh = 8;
+        const int fill = (int)(bw * progress);
+        for (int y = by; y < by + bh; ++y) {
+            uint32_t* row = s_dib_px + (size_t)y * W;
+            for (int x = bx; x < bx + bw; ++x) row[x] = x < bx + fill ? 0xF59E0B : 0x404850;
+        }
+    }
+    if (!s_overlay_font) {
+        s_overlay_font = CreateFontW(-22, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                                     CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, L"Segoe UI");
+    }
+    HGDIOBJ old = SelectObject(s_memdc, s_overlay_font);
+    SetBkMode(s_memdc, TRANSPARENT);
+    SetTextColor(s_memdc, RGB(255, 255, 255));
+    RECT rc = { px, py + 12, px + pw, py + 40 };
+    DrawTextW(s_memdc, holding ? L"Trzymaj Esc, aby wyj\u015b\u0107 z konsoli..." : L"Aby wyj\u015b\u0107, przytrzymaj Esc",
+              -1, &rc, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
+    SelectObject(s_memdc, old);
+    GdiFlush();   // nastepna klatka pisze do DIB-u bezposrednio
+}
 }  // namespace
 
 void present(const uint16_t* canvas)
@@ -286,6 +360,8 @@ void present(const uint16_t* canvas)
             s_dib_px[i] = ((((p >> 16) & 255) * k >> 8) << 16) | ((((p >> 8) & 255) * k >> 8) << 8) | ((p & 255) * k >> 8);
         }
     }
+
+    esc_overlay();
 
     int cw, ch;
     client_size(cw, ch);

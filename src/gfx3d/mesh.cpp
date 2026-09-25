@@ -36,6 +36,11 @@ uint16_t mix565(uint16_t a, uint16_t b, float t)
 
 bool Mesh::init(int max_vertices, int max_triangles)
 {
+    // ponowna budowa (np. inny tor Karta): pamiec zostaje, jesli wystarcza - bez wyciekow przy przelaczaniu
+    if (v_ && t_ && max_vertices <= cap_v_ && max_triangles <= cap_t_) {
+        nv_ = nt_ = 0;
+        return true;
+    }
     v_ = reinterpret_cast<Vertex*>(alloc_bytes(sizeof(Vertex) * (size_t)max_vertices));
     t_ = reinterpret_cast<Tri*>(alloc_bytes(sizeof(Tri) * (size_t)max_triangles));
     if (!v_ || !t_) {

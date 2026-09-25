@@ -10,6 +10,7 @@
 #include "core/log.h"
 #include "engine/math2d.h"
 #include "engine/rng.h"
+#include "engine/storage.h"
 #include "gfx/palette.h"
 #include "gfx/png.h"
 #include "platform/platform.h"
@@ -38,15 +39,8 @@ constexpr float KART_RADIUS  = 7.f;
 constexpr float ROAD_HALF    = 32.f;    // asfalt
 constexpr float CURB_HALF    = 38.f;    // asfalt + krawezniki
 
-// Punkty kontrolne linii srodkowej (zamknieta petla, Catmull-Rom). Swiat 1024x1024, margines >= 90.
-constexpr int   N_CTRL = 16;
-const float CTRL[N_CTRL][2] = {
-    { 200, 180 }, { 420, 130 }, { 640, 190 }, { 830, 150 }, { 910, 330 }, { 800, 470 }, { 620, 420 }, { 500, 560 },
-    { 570, 720 }, { 760, 750 }, { 890, 880 }, { 640, 930 }, { 380, 880 }, { 200, 770 }, { 130, 560 }, { 230, 390 },
-};
-// Indeksy probek linii z polami przyspieszenia i skrzynkami
-const int BOOST_IDX[2] = { 30, 150 };
-const int BOX_IDX[3]   = { 44, 128, 212 };
+// Uklady torow (punkty kontrolne, pola przyspieszenia, skrzynki): kart_tracks.h
+constexpr int N_CTRL = 16;
 
 inline float wrap_angle(float a)
 {
@@ -75,11 +69,12 @@ void KartGame::init(gfx::Canvas&)
         shell_     = gfx::load_png_rgba("kart/shell.png");
         mushroom_  = gfx::load_png_rgba("kart/mushroom.png");
         clouds_    = gfx::load_png_rgba("kart/clouds.png");
-        mountains_ = gfx::load_png_rgba("kart/mountains.png");
         smoke_     = gfx::load_png_rgba("kart/smoke.png");
         glow_      = gfx::load_png_rgba("kart/glow.png");
         flame_     = gfx::load_png_rgba("kart/flame.png");
         CONSOLE_LOGI(TAG, "grafika 2D: %s", smoke_.px ? "PNG z assets/kart" : "BRAK");
+        float saved[MAX_TRACKS];
+        if (engine::load_data("kart_best", saved, sizeof(saved))) memcpy(rec_lap_, saved, sizeof(rec_lap_));
         build_track();   // linia srodkowa, mapa nawierzchni, skrzynki, drzewa
         build_scene();   // siatki 3D (kart_render.cpp)
     }
@@ -136,15 +131,25 @@ void KartGame::place_karts_on_grid()
 
 // ============================================================================ tor
 
+void KartGame::select_track(int t)
+{
+    track_ = (t + TRACK_COUNT) % TRACK_COUNT;
+    build_track();
+    build_track_scene();
+    new_race();
+    CONSOLE_LOGI(TAG, "tor %d: %s (%s)", track_, TRACKS[track_].name, THEMES[TRACKS[track_].theme].name);
+}
+
 void KartGame::build_track()
 {
+    const TrackDef& T = TRACKS[track_];
     // 1. Linia srodkowa: Catmull-Rom przez punkty kontrolne, N_PATH probek
     const int per_seg = N_PATH / N_CTRL;
     for (int s = 0; s < N_CTRL; ++s) {
-        const float* p0 = CTRL[(s - 1 + N_CTRL) % N_CTRL];
-        const float* p1 = CTRL[s];
-        const float* p2 = CTRL[(s + 1) % N_CTRL];
-        const float* p3 = CTRL[(s + 2) % N_CTRL];
+        const float* p0 = T.ctrl[(s - 1 + N_CTRL) % N_CTRL];
+        const float* p1 = T.ctrl[s];
+        const float* p2 = T.ctrl[(s + 1) % N_CTRL];
+        const float* p3 = T.ctrl[(s + 2) % N_CTRL];
         for (int j = 0; j < per_seg; ++j) {
             const float t = (float)j / per_seg, t2 = t * t, t3 = t2 * t;
             const int   i = s * per_seg + j;
@@ -188,7 +193,7 @@ void KartGame::build_track()
     }
     // 3. Pola przyspieszenia (2): prostokat 28 x 24 jednostki na drodze
     for (int b = 0; b < 2; ++b) {
-        const int idx = BOOST_IDX[b];
+        const int idx = T.boost[b];
         float tx, ty;
         dir_at(idx, tx, ty);
         const float px = -ty, py = tx;
@@ -203,7 +208,7 @@ void KartGame::build_track()
 
     // 5. Skrzynki z przedmiotami: 3 rzedy po 3
     for (int g = 0; g < 3; ++g) {
-        const int idx = BOX_IDX[g];
+        const int idx = T.box[g];
         float tx, ty;
         dir_at(idx, tx, ty);
         for (int j = 0; j < 3; ++j) {
@@ -357,6 +362,10 @@ void KartGame::update_progress(Kart& k)
         if (&k == &karts_[0]) {
             const float lap_t = race_t_ - lap_start_t_;
             if (best_lap_ <= 0 || lap_t < best_lap_) best_lap_ = lap_t;
+            if (&k == &karts_[0] && !autopilot_ && (rec_lap_[track_] <= 0 || lap_t < rec_lap_[track_])) {
+                rec_lap_[track_] = lap_t;   // rekord toru tylko z jazdy recznej
+                engine::save_data("kart_best", rec_lap_, sizeof(rec_lap_));
+            }
             lap_start_t_ = race_t_;
         }
         k.lap++;
@@ -521,9 +530,17 @@ void KartGame::kart_collisions()
             const float nx = dx / d, ny = dy / d;
             a.x -= nx * push; a.y -= ny * push;
             b.x += nx * push; b.y += ny * push;
-            // szybszy traci wiecej - zderzenie kosztuje obu
-            a.speed *= 0.92f;
-            b.speed *= 0.92f;
+            // Kara predkosci tylko przy ZBLIZANIU sie, proporcjonalna do predkosci zblizania. Wczesniej *0.92 co klatke
+            // styku: dwa gokarty na tym samym torze jazdy (autopilot i rywal) sklejaly sie i pelzly ~19 km/h
+            // (rownowaga ACCEL*dt = 0.08*v) - wykryte na torze Kanion (25.09.2026).
+            const float vax = cosf(a.angle) * a.speed, vay = sinf(a.angle) * a.speed;
+            const float vbx = cosf(b.angle) * b.speed, vby = sinf(b.angle) * b.speed;
+            const float closing = (vax - vbx) * nx + (vay - vby) * ny;   // >0: a nachodzi na b
+            if (closing > 0.f) {
+                const float k = 1.f - engine::clampf(closing / 250.f, 0.f, 0.15f);
+                a.speed *= k;
+                b.speed *= k;
+            }
         }
     }
 }
@@ -626,12 +643,19 @@ void KartGame::update(float dt, const input::PadState& pad)
     update_effects(dt);
 
     switch (state_) {
-        case State::Title:
-            if (pad.a_pressed || pad.b_pressed || (pad.any_pressed && !pad.start_pressed)) {
+        case State::Title: {
+            // LEWO/PRAWO = wybor toru (przebudowa sceny), A/B albo dotyk = start
+            const bool l = pad.left, r = pad.right;
+            const bool le = l && !title_lr_[0], re = r && !title_lr_[1];
+            title_lr_[0] = l; title_lr_[1] = r;
+            if (le || re) { select_track(track_ + (re ? 1 : -1)); break; }
+            const bool dir = pad.up || pad.down || l || r;
+            if (pad.a_pressed || pad.b_pressed || (pad.any_pressed && !pad.start_pressed && !dir)) {
                 new_race();
                 state_ = State::Countdown;
             }
             break;
+        }
 
         case State::Countdown:
             countdown_ -= dt;

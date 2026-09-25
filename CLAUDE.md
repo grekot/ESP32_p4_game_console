@@ -136,6 +136,37 @@ dokumentacja w `docs/`, README i ten plik z polskimi znakami.
   gdzie `into` = składowa kierunku jazdy w stronę przeszkody. Deterministyczne; ślady Karta bez zmian, bo AI nie zjeżdża
   z toru (sprawdzone regresją). Ślady `kart_auto`/`kart_player` bez zmian (fizyka
   nietknięta), wzorzec `kart_race` nagrany na nowo. DECYZJE 28.
+- **Kart – 4 tory i motywy, krok 2 tekstur (25.09 wieczorem; „wprowadzaj krok 2, weź pod uwagę kilka różnych torów”):**
+  `src/games/kart/kart_tracks.h`: `TRACKS[]` (16 punktów kontrolnych, pola przyspieszenia, skrzynki, motyw, `hills`/`phase`
+  terenu) i `THEMES[]` (kolory nieba i mgły). Tory: **Jezioro** (tor 0 = pierwotny, na nim `kart_auto/race/player`),
+  **Kanion** (pustynia), **Zimowa przełęcz** (śnieg), **Jesienny las**. Wybór LEWO/PRAWO na ekranie tytułowym
+  (`select_track` → `build_track` + `build_track_scene`: atlas i panorama motywu wczytywane raz na motyw, `Mesh::init`
+  używa ponownie pamięci), rekord okrążenia per tor w `kart_best` (tylko jazda ręczna, w `RECORD_KEYS`). Nowy tor:
+  `python tools/kart_tracks_check.py --png podglad.png` (margines 90, odstęp odcinków ≥ 120, zakręt ≤ 1,9 rad/8 próbek
+  jak tor 0, trybuna przy próbce 9). Tekstury z Gemini (nowy czat „Generowanie tekstury asfaltu…” – stary przestał
+  generować: „I don't seem to have access”): `asphalt`, `ground_<motyw>`, `crowd`, `trees_sheet_<motyw>`,
+  `mountains_<motyw>` w `assets_src/kart/`; `gen_kart_gemini.py` robi bezszwowe kafelki (przenikanie z kopią przesuniętą
+  o pół kafelka, wycinek `crop` = większe elementy), wersję daleką (rozmycie z zawinięciem), `gen_kart_atlas.py` →
+  `assets/kart/atlas_<motyw>.png` (paleta `quantize(kmeans=2)`); jesień: `sky_flood` (Gemini dorysował różowe obłoki).
+  **Pomiar migotania** `python tools/kart_shimmer.py [--hold RIGHT 3 4]` (średnia różnica kolejnych klatek w pasie pod
+  horyzontem): stara łąka 12,05 → nowa 10,62; kanion 7,85, zima 8,22, jesień 7,83. **Naprawiony błąd fizyki**
+  (`kart_collisions`): kara ×0,92 co klatkę styku sklejała dwa gokarty jadące tym samym torem (~19 km/h, na torze 0
+  dwaj rywale stali tak ~1000 klatek po starcie) – teraz kara tylko przy zbliżaniu, proporcjonalna do prędkości
+  zbliżania; wzorce `kart_*` nagrane na nowo. PC 5,3/6,9/5,6/5,9 ms/klatkę; firmware 1 387 kB, 91,6 kB RAM; assets
+  5,41 MB z 11,94. Regresja 33/33 (`kart_kanion` ślad+zrzut, `kart_zima`, `kart_jesien`, `kart_title_zima`).
+  `tools/testy.ps1`: stderr emulatora nie przerywa już skryptu (PowerShell 5.1 + „Stop”).
+- **Kart – grafika z Gemini, krok 1 (25.09 wieczorem; użytkownik: „czy generując w Gemini tekstury uatrakcyjnimy
+  Karta?” → ocena → „zacznij od kroku 1”):** niebo i drzewa zamiast rysowanych skryptem. `assets_src/kart/`: arkusz drzew
+  4x2 (dąb, sosna, palma, brzoza, krzak, krzak z kwiatami, klon, cyprys), dwie panoramy gór, pas chmur, ikony 3x2 (górny
+  rząd: banan, skorupa, grzyb). `python tools/gen_kart_gemini.py` (po `gen_kart_assets.py`, przed `gen_kart_atlas.py`):
+  góry 2048x160 = A B A B, chmury 1024x160 = jedna pętla; szwy łączone z **sumowaniem sylwetek** (alfa = max, zanik tylko
+  w dalszej połowie szwu – zwykłe przenikanie dawało półprzezroczyste „duchy” szczytów), dół gór przechodzi w FOG_COL;
+  chmury obcięte nad dorysowanymi przez Gemini wzgórzami i odfiltrowane z kolorowych pikseli. Drzewa w atlasie 8-bit
+  (alpha-test, próg 128): `gen_kart_atlas.py` bierze `atlas_tiles()` z Gemini, gdy jest arkusz; **4 rodzaje drzew**
+  (nowe kafelki brzoza 256,256 i klon 384,256; `T_TREE[4]`, `TREE_SIZE`), rodzaj = `kind` z logiki (0/1, bez zmian –
+  ślady) + para z `noise01(i, 13)`. Wycinanie z magenty: `key_magenta(im, holes=True)` usuwa też zamkniętą magentę
+  (szczeliny w koronach). Ślady Karta bez zmian, nowy wzorzec `kart_race`; PC 4,9-5,05 ms/klatkę (jak przed). Krok 2
+  (trawa, asfalt, publiczność: bezszwowość, wspólna paleta, wersje bliska/daleka, migotanie) – do zrobienia.
 - **Menu konsoli „KOTARBA / GAME CONSOLE” (25.09 po południu, użytkownik: „menu mało atrakcyjne, trzeba też opcji
   konfiguracji”; wybrał wariant A = karuzela okładek; nazwa od „Kotarba Game Console” – do ewentualnej zmiany,
   stałe `theme::BRAND_NAME/BRAND_SUB`):** `src/ui/menu.cpp` przepisane – pasek z logo i 4 zakładkami (Gry, Lekcje,
@@ -168,6 +199,20 @@ dokumentacja w `docs/`, README i ten plik z polskimi znakami.
   poziomy przechodzą same). PC 0,84 ms/klatkę; firmware 1 317 kB flash, 97,2 kB RAM statycznie. Rekordy tylko w RAM.
   Regresja: `snake_auto`, `snake_title`, `snake_desert`, `snake_gameover`, `snake_player`, `snake_twobtn` (23/23 z menu nagranym na nowo).
   DECYZJE 30. **Nieoceniona przez użytkownika, na sprzęcie niesprawdzona** (koszt dekodowania tła PNG przy starcie poziomu).
+- **Pacman (25.09 wieczorem; użytkownik: „gra packman”, grafika z jego Gemini, równolegle z drugim agentem przy Karcie –
+  praca w osobnym worktree gita `../LakeMarioGame_pacman`, gałąź `pacman`):** `src/games/pacman/` (pacman_game.cpp: ruch po
+  kratkach z decyzją raz na kratkę, skręt „przed czasem” 6 px, zawrócenie natychmiast, 4 duchy z celami i harmonogramem
+  rozproszenie/pościg jak w oryginale, strach z łańcuchem 200…1600, oczy wracają do domu, owoce po 70/170 kulkach, dodatkowe
+  życie za 10 000, autopilot BFS; pacman_render.cpp: tło z Gemini + ściany z pola odległości od korytarza wypalane raz na
+  poziom, sprite'y PNG z alfa, panel; pacman_mazes.h: 4 plansze 27×19, „Klasyk” ręcznie + 3 z `tools/pacman_maze_gen.py`,
+  sprawdzane `tools/pacman_maze_check.py`). 4 światy (neon, cukierki, dżungla, lawa). Grafika: `assets_src/pacman/`
+  (5 obrazów Gemini) → `python tools/gen_pacman_assets.py` → `assets/pacman/` (1,5 MB); okładka z ilustracji tytułowej.
+  Rekord `pacman_top` w NVS (`RECORD_KEYS`). PC 0,30 ms/klatkę. Regresja 39/39 (`pacman_title`, `pacman_auto`,
+  `pacman_play`, `pacman_player`, `pacman_lava`, `pacman_gameover`; wzorce `menu`, `menu_carousel`, `menu_about` nagrane na
+  nowo – 6 gier w karuzeli). Zintegrowany z głównym drzewem 25.09 wieczorem (worktree można usunąć: `git worktree remove ../LakeMarioGame_pacman`);
+  firmware z Pacmanem: **1 413 kB flash (33,7 %), 98,1 kB RAM statycznie** (pierwszy `pio run` po `clean` padł na
+  `ninja: failed recompaction: Permission denied` – wyścig o `.pio` z innym procesem; drugi przebieg OK).
+  Nazwa „Pacman” i nazwy plansz/światów robocze. DECYZJE 34.
 - **Lekcja 14 `14_obrazki` (23.09 noc):** PNG z `load_image`, klatki animacji w tablicy `Sprite hero[2]`, Piskel, drzewa jako
   przeszkody z cofaniem ruchu; gra „sad” (jabłka, pszczoła). Kod startowy pada na 2 testy, zad4/zad5 przechodzą (zad3 tylko test 1).
   Lekcja dodatkowa po 10. Grafika z `gen_demo_assets.py` (`assets/obrazki/`).
@@ -192,8 +237,13 @@ cmake --build sim/build              # emulator (kilka sekund) - ZAMKNIJ dzialaj
 python tools/gen_demo_assets.py                              # PNG dla labirynt3d i kosmos (assets/), deterministyczne
 python tools/gen_kart_atlas.py                               # atlas tekstur Karta (assets/kart/atlas.png, Pillow, deterministyczny)
 python tools/gen_snake_assets.py                             # Snake: assets_src/snake/*.jpg (Gemini) -> assets/snake/*.png (Pillow)
+python tools/gen_kart_gemini.py                              # Kart: assets_src/kart (Gemini) -> gory per motyw, chmury, ikony; potem gen_kart_atlas.py
+python tools/gen_kart_atlas.py                               # Kart: assets/kart/atlas_<motyw>.png (tekstury, drzewa z Gemini)
+python tools/kart_tracks_check.py --png p.png                # Kart: walidacja ukladow torow z kart_tracks.h
+python tools/kart_shimmer.py                                 # Kart: pomiar migotania tekstur w oddali (emulator)
 python tools/gen_covers.py                                   # okladki menu: assets_src/covers/*.jpg -> assets/covers/<id>.png 440x248
 python tools/gen_pl_fonts.py                                 # polskie litery dla LVGL -> src/ui/fonts/console_fonts_pl.c
+powershell -File tools/build_installer.ps1 -Version 1.0.0     # instalator Windows -> dist/ (Inno Setup 6); wydanie: git tag v1.0.0 + push = CI
 powershell -File tools/testy.ps1 mario                       # regresja: 8 sladow + 6 zrzutow bajt w bajt (Mario, api_demo, labirynt, kosmos)
 powershell -File tools/testy.ps1 src/games/lekcje/02_pilka   # testy zadan jednej lekcji (kod startowy PADA, rozwiazanie przechodzi)
 powershell -File tools/testy.ps1 mario -Update               # nowe wzorce - tylko po swiadomej zmianie (np. menu po nowej lekcji)
@@ -256,6 +306,9 @@ src/gfx3d/              math3d.h (Vec3, Mat4 wierszowa, heading, shadow_onto_pla
                         begin/draw_mesh(depth_bias)/draw_tri/draw_shadow/end, project, horizon_y, set_flat_only)
 src/games/snake/        snake_game (plansze, ruch, przedmioty, autopilot BFS; debug_line: stan lvl len head dir apples score lives items
                         portal pw=SGMXO ap), snake_render (bake_field, kulki ciała, głowy obrócone, portal 8 faz, HUD, tytuł, nakładki)
+src/games/pacman/       pacman_game (plansza z pacman_mazes.h, ruch po kratkach, AI duchów, strach, owoce, autopilot BFS; debug_line:
+                        stan lvl maze pac dir pel score lives g=HLNFEI ph fr fruit ap), pacman_render (bake_maze: tło PNG + ściany
+                        z pola odległości, maska do migania; sprite'y z obrotami; panel; tytuł), pacman_mazes.h (4 plansze ASCII)
 src/games/kart/         kart_game (tor Catmull-Rom → path_ + surf_, fizyka 2D, AI, przedmioty, ranking, dym, obrót kół, ślady opon),
                         kart_render (atlas + colormapa; build_road: road_ teksturowana Gouraud + marks_ płaskie; build_terrain;
                         build_props: brama/trybuna/opony/banery z teksturami; build_decor: billboardy drzew i krzaków;
@@ -268,11 +321,16 @@ assets/                 PNG gier: bohater/, api_demo/, labirynt3d/ (brick stone 
                         z paletą: asfalt, trawa ×2, publiczność, banery, drzewa, krzaki, bieżnik, brama, 4 malowania -
                         tools/gen_kart_atlas.py, układ kafelków w docstringu i w tabeli T_* w kart_render.cpp); gokarty, skrzynki,
                         brama, trybuna to modele 3D w kodzie. Podmiana pliku = nowa grafika
+assets/pacman/          hero0-3, die0-3, ghost_<kolor>0/1, scared0/1, eyes, 8 owoców + ikony, bg_<świat> 648x456, title 800x480
+                        (tools/gen_pacman_assets.py z assets_src/pacman/); okładka assets/covers/pacman.png (gen_covers.py)
 src/games/lekcje/       lista.h (LEKCJA(id) na lekcję) + 00_szablon … 13_twoja_gra, 14_obrazki (dodatkowa, PNG): gra.cpp, README.md,
                         testy.txt, rozwiazania/*.cpp.txt
 sim/                    emulator: CMakeLists (LVGL: managed_components → third_party/lvgl → FetchContent zip), CMakePresets,
                         platform_win32 (set_unthrottled), keymap_win32 + keymap.cfg, gamepad_win32 (winmm), main (--list, --game id,
                         --bench, --hold do 12 wpisów; set_fixed_dt PRZED start_game = stałe ziarno)
+installer/              console.iss (Inno Setup, per uzytkownik, bez UAC), STEROWANIE.txt; program startowy sim/launcher_win32.cpp
+                        (KotarbaConsole.exe: aktualizacje z GitHub Releases, SHA-256, /SILENT /RELAUNCH), ikona sim/app.ico
+                        (tools/gen_icon.py) + sim/app.rc; CI .github/workflows/release.yml (tag v* -> wydanie). DECYZJE 35
 tests/                  scenarios.txt + expected/ (ślady i BMP: Mario nagrane 23.09 przed refaktorem; api_demo, labirynt, kosmos 23.09 wieczorem)
 tools/                  testy.ps1 (regresja + testy lekcji), setup_kid_pc.ps1 (PC ucznia), fetch_lvgl.ps1, bmp2png.ps1,
                         md2pdf.py (Markdown -> PDF przez Edge headless; python Windows + pakiet markdown),
@@ -454,7 +512,7 @@ i powrót (czas dalej liczy); START na tytule nie startuje gry. **Zmieniając fi
 pauza) + 3 zrzuty BMP (tytuł, gra, menu), wzorce w `tests/expected/` nagrane z binarki **sprzed** refaktoru silnika
 (math2d, palette, ParticlePool, TileMap); od wieczora także `api_demo` (zrzut), `labirynt_route` (ślad 640 klatek: skręty,
 drzwi, moneta), `labirynt_door` (zrzut), `kosmos_play` (ślad + zrzut, losowość ze stałym ziarnem). od nocy `kart_auto` (ślad 1800 klatek autopilotem), `kart_race` (zrzut), `kart_player` (ślad). `tools/testy.ps1 mario`
-musi dać 28/28 (od 25.09: sześć testów Snake, pięć testów menu) po każdej zmianie w `src/engine`, `src/gfx`, `src/games/*`. Zrzut `menu` zmienia się po dodaniu lekcji — wtedy `-Update`. Testy lekcji: kod startowy w `gra.cpp`
+musi dać 39/39 (od 25.09: sześć testów Snake, pięć testów menu, pięć testów torów Karta, sześć testów Pacmana) po każdej zmianie w `src/engine`, `src/gfx`, `src/games/*`. Zrzut `menu` zmienia się po dodaniu lekcji — wtedy `-Update`. Testy lekcji: kod startowy w `gra.cpp`
 **ma padać**, `rozwiazania/zadN.cpp.txt` skopiowane do `gra.cpp` **ma przechodzić** (sprawdzone dla 01-12).
 
 ## Lake Mario - fizyka i poziom

@@ -30,8 +30,13 @@ function Split-Args([string]$s) {
 
 function Run-Sim([string[]]$a) {
     # Tylko stdout (slad TRACE i logi I); stderr (logi W/E) pomijamy, zeby nie zaciemniac porownan.
+    # ErrorAction Continue: w PowerShell 5.1 linia na stderr programu natywnego przy "Stop" przerywala caly skrypt
+    # (np. ostrzezenie "brak pliku" emulatora) - o wyniku decyduje kod wyjscia i porownanie sladu.
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     $out = & $Exe @a 2>$null
     $code = $LASTEXITCODE
+    $ErrorActionPreference = $prev
     if ($null -eq $out) { $out = @() }
     return @{ Lines = @($out); Code = $code }
 }

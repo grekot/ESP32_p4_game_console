@@ -23,6 +23,7 @@ COVERS = {
     "kosmos": ("covers/kosmos.jpg", 0.0),
     "kart": ("covers/kart.jpg", 0.0),
     "snake": ("snake/title.jpg", 0.2),
+    "pacman": ("pacman/title.jpg", 0.3),
 }
 
 

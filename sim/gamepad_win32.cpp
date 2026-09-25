@@ -59,8 +59,8 @@ void detect_once()
 
         s_id      = id;
         s_present = true;
-        CONSOLE_LOGI(TAG, "pad USB %u: %s - lewa galka steruje galka konsoli",
-                  id, s_caps.szPname);
+        CONSOLE_LOGI(TAG, "pad USB %u: %s - lewa galka, %u przyciskow%s (mapowanie PAD_* w keymap.cfg)",
+                  id, s_caps.szPname, s_caps.wNumButtons, (s_caps.wCaps & JOYCAPS_HASPOV) ? ", krzyzak" : "");
         return;
     }
     CONSOLE_LOGI(TAG, "brak pada USB - galka konsoli sterowana klawiszami");
@@ -68,22 +68,25 @@ void detect_once()
 
 }  // namespace
 
-bool gamepad_axes(float& x, float& y)
+bool gamepad_read(GamepadState& s)
 {
     detect_once();
     if (!s_present) return false;
 
     JOYINFOEX info = {};
     info.dwSize  = sizeof(info);
-    info.dwFlags = JOY_RETURNX | JOY_RETURNY;
+    info.dwFlags = JOY_RETURNX | JOY_RETURNY | JOY_RETURNBUTTONS | JOY_RETURNPOV;
     if (joyGetPosEx(s_id, &info) != JOYERR_NOERROR) {
         s_present = false;                 // pad odlaczony w trakcie
         CONSOLE_LOGW(TAG, "pad USB zniknal");
         return false;
     }
 
-    x = normalize(info.dwXpos, s_caps.wXmin, s_caps.wXmax);
-    y = normalize(info.dwYpos, s_caps.wYmin, s_caps.wYmax);
+    s.x = normalize(info.dwXpos, s_caps.wXmin, s_caps.wXmax);
+    s.y = normalize(info.dwYpos, s_caps.wYmin, s_caps.wYmax);
+    s.buttons = info.dwButtons;
+    // pady bez krzyzaka zwracaja JOY_POVCENTERED (65535) albo smieci - bierzemy tylko 0..35999
+    s.pov = ((s_caps.wCaps & JOYCAPS_HASPOV) && info.dwPOV < 36000) ? (int)info.dwPOV : -1;
     return true;
 }
 

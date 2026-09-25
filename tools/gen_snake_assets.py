@@ -30,11 +30,13 @@ def magentaness(r, g, b):
     return min(r, b) - g
 
 
-def key_magenta(im):
+def key_magenta(im, holes=False):
     """RGB -> RGBA: tlo magenta przezroczyste, krawedzie z czesciowa alfa i bez rozowej poswiaty.
 
     Tlem jest tylko obszar magenty POLACZONY z brzegiem komorki (flood fill) - fioletowy grzyb czy portal
     w srodku obiektu zostaja nietkniete. Miekka alfa i zdejmowanie poswiaty tylko w pasie 3 px przy tle.
+    holes=True: dodatkowo kazdy wyraznie magentowy piksel (szczeliny miedzy galeziami drzew) jest tlem - dla obiektow
+    bez fioletu (drzewa Karta); rozowe kwiaty maja za mala "magentowosc", zeby zniknac.
     """
     im = im.convert("RGB")
     w, h = im.size
@@ -42,6 +44,11 @@ def key_magenta(im):
     bg = bytearray(w * h)
     stack = [(x, 0) for x in range(w)] + [(x, h - 1) for x in range(w)] + \
             [(0, y) for y in range(h)] + [(w - 1, y) for y in range(h)]
+    if holes:
+        for y in range(h):
+            for x in range(w):
+                if magentaness(*src[x, y]) >= 110:
+                    stack.append((x, y))
     while stack:
         x, y = stack.pop()
         i = y * w + x

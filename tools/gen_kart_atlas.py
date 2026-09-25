@@ -7,9 +7,12 @@
 Uklad kafelkow (x, y, w, h) - te same liczby sa w src/games/kart/kart_render.cpp (tabela ATLAS_*):
     asfalt        0,0,128,128     trawa 128,0,128,128     trawa sucha 256,0,128,128
     publicznosc 384,0,128,32      banery 384,32 / 384,64 / 384,96 (128x32)
-    drzewo okragle 0,128,128,128  choinka 128,128,128,128
+    drzewo okragle 0,128,128,128  choinka 128,128,128,128  brzoza 256,256,128,128  klon 384,256,128,128
     krzak 256,128,64,64           krzak jasny 320,128,64,64      bieznik 256,192,64,64      brama 0,384,448,40
     malowania bolidow 0/64/128/192, 256, 64x128 (czerwony, niebieski, zielony, zolty; gora = przod)
+Drzewa i krzaki: gdy jest assets_src/kart/trees_sheet.jpg (Gemini), kafelki biora sie z niego (tools/gen_kart_gemini.py,
+atlas_tiles), inaczej sa rysowane tutaj.
+Jeden atlas na motyw toru: assets/kart/atlas_<motyw>.png (motywy: THEMES w tools/gen_kart_gemini.py i kart_tracks.h).
 Deterministyczne (stale ziarno) - ten sam plik przy kazdym uruchomieniu. Wlasny PNG o tym samym ukladzie
 (512x512, tryb P, indeks 0 = przezroczysty) zastepuje ten plik bez zmian w kodzie.
 """
@@ -204,7 +207,8 @@ def livery(color, number):
     return img
 
 
-def main():
+def build(theme):
+    """Atlas motywu (512x512 RGBA): kafelki rysowane + kafelki z Gemini (tools/gen_kart_gemini.py), jesli sa."""
     rng = random.Random(4242)
     atlas = Image.new("RGBA", (W, H), (0, 0, 0, 0))
 
@@ -229,10 +233,29 @@ def main():
     for i, col in enumerate(KART_COLORS):
         put(livery(col, i + 1), i * 64, 256)
 
-    # paleta: 255 kolorow + indeks 0 = przezroczysty (magenta)
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from gen_kart_gemini import atlas_tiles
+    gem = atlas_tiles(theme)
+    # nazwa kafelka z Gemini -> miejsce w atlasie (uklad w docstringu i w tabeli T_* w kart_render.cpp)
+    slots = [("asphalt", 0, 0), ("grass", 128, 0), ("grass_far", 256, 0), ("crowd", 384, 0),
+             ("tree0", 0, 128), ("tree1", 128, 128), ("bush0", 256, 128), ("bush1", 320, 128),
+             ("tree2", 256, 256), ("tree3", 384, 256)]
+    for name, x, y in slots:
+        if name in gem:
+            img = gem[name]
+            atlas.paste(img.convert("RGBA") if img.mode != "RGBA" else img, (x, y))
+        elif name in ("tree2", "tree3"):   # bez arkusza: kopie drzew rysowanych
+            atlas.paste(atlas.crop((0 if name == "tree2" else 128, 128, 128 if name == "tree2" else 256, 256)), (x, y))
+    print("  %-8s z Gemini: %s" % (theme, ", ".join(sorted(gem)) if gem else "nic (wszystko rysowane)"))
+    return atlas
+
+
+def quantize(atlas):
+    """255 kolorow + indeks 0 = przezroczysty (magenta). Wspolna paleta calego atlasu (colormapa renderera)."""
     alpha = atlas.split()[3]
     rgb = atlas.convert("RGB")
-    q = rgb.quantize(255, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
+    q = rgb.quantize(255, method=Image.Quantize.MEDIANCUT, kmeans=2, dither=Image.Dither.NONE)
     pal = q.getpalette()[: 255 * 3]
     out = Image.new("P", (W, H))
     out.putpalette([255, 0, 255] + pal)
@@ -242,9 +265,18 @@ def main():
     for y in range(H):
         for x in range(W):
             dst[x, y] = 0 if al[x, y] < 128 else src[x, y] + 1
+    return out
+
+
+def main():
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from gen_kart_gemini import THEMES
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    out.save(OUT, optimize=True)
-    print(f"{OUT.relative_to(ROOT)}  {W}x{H}  paleta 256 (0 = przezroczysty)")
+    for theme in THEMES:
+        path = OUT.parent / ("atlas_%s.png" % theme)
+        quantize(build(theme)).save(path, optimize=True)
+        print(f"{path.relative_to(ROOT)}  {W}x{H}  paleta 256 (0 = przezroczysty)")
 
 
 if __name__ == "__main__":

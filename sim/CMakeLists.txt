@@ -8,7 +8,7 @@
 #   sim/build/console_sim.exe
 
 cmake_minimum_required(VERSION 3.20)
-project(console_sim LANGUAGES C CXX)
+project(console_sim LANGUAGES C CXX RC)
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 20)
@@ -18,6 +18,18 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(CONSOLE_SRC ${CMAKE_CURRENT_LIST_DIR}/../src)
+
+# Wersja wydania (instalator, aktualizacje z GitHuba, ekran "O konsoli"). Build lokalny = "dev" - program startowy
+# nie sprawdza wtedy aktualizacji. Wydanie: -DCONSOLE_VERSION=1.2.0 (robi to .github/workflows/release.yml z taga v1.2.0).
+set(CONSOLE_VERSION "dev" CACHE STRING "Wersja wydania, np. 1.2.0")
+if(CONSOLE_VERSION MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)")
+    set(CONSOLE_VERSION_NUM "${CMAKE_MATCH_1},${CMAKE_MATCH_2},${CMAKE_MATCH_3},0")
+else()
+    set(CONSOLE_VERSION_NUM "0,0,0,0")
+endif()
+set(CONSOLE_RC ${CMAKE_CURRENT_LIST_DIR}/app.rc)
+set_source_files_properties(${CONSOLE_RC} PROPERTIES COMPILE_DEFINITIONS
+    "CONSOLE_VERSION_RAW=${CONSOLE_VERSION};CONSOLE_VERSION_NUM=${CONSOLE_VERSION_NUM}")
 
 # ---------------------------------------------------------------- LVGL
 # Ta sama wersja co na plytce. Jesli firmware zostal juz zbudowany, uzywamy kopii sciagnietej
@@ -85,7 +97,8 @@ add_executable(console_sim
     ${CMAKE_CURRENT_LIST_DIR}/platform_win32.cpp
     ${CMAKE_CURRENT_LIST_DIR}/keymap_win32.cpp
     ${CMAKE_CURRENT_LIST_DIR}/gamepad_win32.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/main.cpp)
+    ${CMAKE_CURRENT_LIST_DIR}/main.cpp
+    ${CONSOLE_RC})
 
 target_include_directories(console_sim PRIVATE ${CONSOLE_SRC} ${CONSOLE_SRC}/ui ${CMAKE_CURRENT_LIST_DIR})
 
@@ -99,6 +112,7 @@ target_compile_definitions(console_sim PRIVATE
     LODEPNG_NO_COMPILE_ENCODER LODEPNG_NO_COMPILE_DISK LODEPNG_NO_COMPILE_ANCILLARY_CHUNKS LODEPNG_NO_COMPILE_CPP
     CONSOLE_HOST_BUILD=1
     CONSOLE_DISPLAY_ROTATION=90
+    CONSOLE_VERSION="${CONSOLE_VERSION}"
     # Odkomentuj, aby emulator pokazywal FPS (tak jak firmware z ta sama flaga)
     # CONSOLE_SHOW_FPS=1
 )
@@ -110,4 +124,17 @@ if(MINGW)
     target_compile_options(console_sim PRIVATE -Wall -Wextra -Wno-unused-parameter)
     # Statyczne linkowanie biblioteki standardowej - exe dziala bez DLL-i z MSYS2.
     target_link_options(console_sim PRIVATE -static-libgcc -static-libstdc++ -static)
+    # Wydanie (tools/build_installer.ps1, CI): bez symboli - exe 3x mniejszy
+    target_link_options(console_sim PRIVATE $<$<CONFIG:Release>:-s>)
+endif()
+
+# ---------------------------------------------------------------- program startowy wersji instalowanej
+# KotarbaConsole.exe: sprawdza aktualizacje na GitHubie i uruchamia console_sim.exe bez okna konsoli.
+# Instalator: installer/console.iss, budowa: tools/build_installer.ps1.
+add_executable(KotarbaConsole WIN32 ${CMAKE_CURRENT_LIST_DIR}/launcher_win32.cpp ${CONSOLE_RC})
+target_compile_definitions(KotarbaConsole PRIVATE CONSOLE_VERSION="${CONSOLE_VERSION}" UNICODE _UNICODE)
+target_link_libraries(KotarbaConsole PRIVATE winhttp bcrypt shell32 user32 gdi32)
+if(MINGW)
+    target_compile_options(KotarbaConsole PRIVATE -Wall -Wextra)
+    target_link_options(KotarbaConsole PRIVATE -static-libgcc -static-libstdc++ -static $<$<CONFIG:Release>:-s>)
 endif()

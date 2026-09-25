@@ -18,6 +18,7 @@
 #include "gfx/png.h"
 #include "gfx3d/mesh.h"
 #include "gfx3d/renderer.h"
+#include "games/kart/kart_tracks.h"
 
 namespace kart {
 
@@ -97,13 +98,22 @@ private:
     bool   skid_on_[N_KARTS][2]{};
     float  steer_vis_[N_KARTS]{}, wheel_spin_[N_KARTS]{}, yaw_rate_[N_KARTS]{}, prev_angle_[N_KARTS]{};
 
-    // tor
+    // tor (kart_tracks.h): wybor na ekranie tytulowym, rekordy okrazen per tor w pamieci trwalej ("kart_best")
+    static constexpr int MAX_TRACKS = 8;
+    int     track_ = 0;
+    int     scene_track_ = -1;         // tor, dla ktorego zbudowano siatki
+    float   rec_lap_[MAX_TRACKS]{};    // najlepsze okrazenie na torze (0 = brak)
+    bool    title_lr_[2]{};            // LEWO/PRAWO na ekranie tytulowym (zbocza)
+    uint16_t sky_top_ = 0, sky_mid_ = 0, sky_horiz_ = 0, fog_col_ = 0;   // kolory motywu toru
+    gfx::IndexedImage atlas_th_[THEME_COUNT];   // atlasy motywow (wczytywane przy pierwszym uzyciu)
+    gfx::Image        mountains_th_[THEME_COUNT];
+    bool              theme_loaded_[THEME_COUNT]{};
     float   path_x_[N_PATH], path_y_[N_PATH];
     uint8_t surf_[SURF * SURF];        // 0 trawa, 1 asfalt/krawezniki, 2 pole przyspieszenia
 
     // scena 3D
     gfx3d::Renderer r3d_;
-    gfx3d::Mesh     road_, marks_, terrain_, props_, tree_bb_[2], tree_shadow_m_, bush_bb_[2];
+    gfx3d::Mesh     road_, marks_, terrain_, props_, tree_bb_[4], tree_shadow_m_, bush_bb_[2];
     gfx::IndexedImage atlas_;            // atlas tekstur (assets/kart/atlas.png, 8-bit z paleta)
     gfx3d::Mesh     kart_body_[4], helmet_[4], wheel_front_, wheel_rear_;
     gfx3d::Mesh     itembox_m_, banana_m_, shell_m_, mushroom_m_, shadow_m_;
@@ -129,6 +139,7 @@ private:
     // logika
     void new_race();
     void build_track();
+    void select_track(int t);          // przebudowa toru i sceny (ekran tytulowy)
     void place_karts_on_grid();
     int  surface_at(float x, float y) const;
     void update_kart(Kart& k, float dt, float steer, bool gas, bool brake, bool drift);
@@ -154,7 +165,8 @@ private:
     float surface_height(float x, float z) const;
     float path_curvature(int idx) const;             // zmiana kierunku toru wokol probki (rad, znak = strona)
     void  path_frame(int idx, float& tx, float& tz, float& rx, float& rz) const;   // kierunek i prawo w probce
-    void  build_scene();
+    void  build_scene();               // raz: renderer, modele bolidow i przedmiotow; potem build_track_scene
+    void  build_track_scene();         // co tor: tekstury motywu, droga, teren, obiekty, drzewa
     void  build_road();
     void  build_terrain();
     void  build_props();

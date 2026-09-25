@@ -82,7 +82,8 @@ Plik jest szukany kolejno: obok pliku wykonywalnego (kopiowany tam przy budowani
 ```
 
 Poza tym: **lewy przycisk myszy** działa jak palec na ekranie dotykowym (wybór gry w menu,
-strefy wirtualnego pada), a **Esc** zamyka okno. Podpowiedzi wirtualnego pada znikają po pierwszym
+strefy wirtualnego pada), a **Esc przytrzymany 1,5 s** zamyka okno (pasek postępu na dole; krótkie wciśnięcie
+pokazuje tylko podpowiedź – żeby dziecko nie wyłączyło konsoli przypadkiem; krzyżyk okna zamyka od razu). Podpowiedzi wirtualnego pada znikają po pierwszym
 użyciu klawiszy — tak samo jak na płytce po podłączeniu klawiatury.
 
 Menu i ekran pauzy obsługują się klawiszami: `GORA`/`DOL` przenoszą zaznaczenie, `A` albo `START`
@@ -191,6 +192,29 @@ cmake -S sim -B sim/build -G Ninja -DCONSOLE_LVGL_DIR=C:/sciezka/do/lvgl
 
 Konfiguracja LVGL ([src/ui/lv_conf.h](../src/ui/lv_conf.h)) jest jednym plikiem wspólnym dla obu
 celów, więc UI nie może się rozjechać między płytką a PC.
+
+**Pad USB** (winmm, widzi pady XInput i DirectInput): lewa gałka = gałka konsoli, krzyżak pada = krzyżak,
+przyciski wg wpisów `PAD_A = 1` … `PAD_SELECT = 7` w `keymap.cfg` (numery jak w „Kontrolery gier” Windows;
+domyślnie pad Xbox: A=1 B=2 X=3 Y=4 Back=7 Start=8, 0 = brak przypisania).
+
+## Instalator dla dzieci i aktualizacje
+
+Wersja do zabawy (bez narzędzi programisty): `KotarbaConsole-X.Y.Z-setup.exe` z
+[wydań na GitHubie](https://github.com/grekot/ESP32_p4_game_console/releases). Instaluje się bez praw administratora do
+`%LOCALAPPDATA%\Programs\KotarbaConsole`, dodaje skrót w menu Start i `STEROWANIE.txt`. Skrót uruchamia
+`KotarbaConsole.exe`, który przy każdym starcie sprawdza najnowsze wydanie i pyta o instalację (bez internetu – startuje
+normalnie). Rekordy i ustawienia (`save_*.bin`) przetrwają aktualizację.
+
+Nowe wydanie (wszystko zacommitowane, potem):
+
+```
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+GitHub Actions (`.github/workflows/release.yml`) zbuduje instalator i opublikuje wydanie w kilka minut. Lokalnie:
+`powershell -File tools/build_installer.ps1 -Version 1.0.0` → `dist/` (wymaga Inno Setup 6). Build `dev` (bez `-Version`)
+nie sprawdza aktualizacji.
 
 ## Czego emulator nie sprawdzi
 

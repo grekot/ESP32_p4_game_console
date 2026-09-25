@@ -14,6 +14,7 @@
 #include "games/kosmos/kosmos_game.h"
 #include "games/labirynt3d/labirynt_game.h"
 #include "games/mario/mario_game.h"
+#include "games/pacman/pacman_game.h"
 #include "games/snake/snake_game.h"
 
 // Deklaracje wpisow lekcji (definicje sa w plikach lekcji, przez CONSOLE_ADD_GAME).
@@ -55,6 +56,12 @@ Game* create_snake()
     return &game;
 }
 
+Game* create_pacman()
+{
+    static pacman::PacmanGame game;
+    return &game;
+}
+
 char upper(char c) { return (c >= 'a' && c <= 'z') ? (char)(c - 'a' + 'A') : c; }
 
 bool equal_ignore_case(const char* a, const char* b)
@@ -75,6 +82,7 @@ const GameEntry GAMES[] = {
     { "kosmos", "Kosmos", "Strzelanka 2D: PNG, paralaksa, wybuchy", create_kosmos, "covers/kosmos.png" },
     { "kart", "Kart", "Wyscigi 3D: 3 okrazenia, rywale, przedmioty, drift", create_kart, "covers/kart.png" },
     { "snake", "Snake", "Waz: 10 poziomow, 5 swiatow, bonusy, rekordy", create_snake, "covers/snake.png" },
+    { "pacman", "Pacman", "Labirynt: kulki, 4 duchy, owoce, 4 plansze", create_pacman, "covers/pacman.png" },
 #define LEKCJA(id) console_entry_##id,
 #include "games/lekcje/lista.h"
 #undef LEKCJA

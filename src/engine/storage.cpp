@@ -23,7 +23,7 @@ void erase_data(const char* key)
     platform::erase_blob(key);
 }
 
-const char* const RECORD_KEYS[] = { "snake_top" };
+const char* const RECORD_KEYS[] = { "snake_top", "kart_best", "pacman_top" };
 const int         RECORD_KEY_COUNT = (int)(sizeof(RECORD_KEYS) / sizeof(RECORD_KEYS[0]));
 
 }  // namespace engine

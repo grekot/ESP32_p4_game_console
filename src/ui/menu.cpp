@@ -677,7 +677,11 @@ void build_about_page(lv_obj_t* page)
     static char v_games[32], v_build[48];
     snprintf(v_games, sizeof(v_games), "%d gier, %d lekcji", games, lessons);
     if (engine::deterministic()) snprintf(v_build, sizeof(v_build), "(test)");   // zrzut niezalezny od daty kompilacji
+#ifdef CONSOLE_VERSION
+    else snprintf(v_build, sizeof(v_build), "%s  (%s)", CONSOLE_VERSION, __DATE__);   // emulator: wersja wydania
+#else
     else snprintf(v_build, sizeof(v_build), "%s  %s", __DATE__, __TIME__);
+#endif
     const Row rows[] = { { "Uk\u0142ad", "ESP32-P4, 2 x RISC-V 360 MHz" }, { "Ekran", "4,3\"  800 x 480, dotyk GT911" },
                          { "Zawarto\u015b\u0107", v_games }, { "Kompilacja", v_build } };
     for (int i = 0; i < 4; ++i) {

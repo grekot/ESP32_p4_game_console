@@ -118,6 +118,7 @@ src/
   games/kosmos/        gra pokazowa: strzelanka 2D w 800x480, sprite'y PNG, paralaksa, wybuchy
   games/kart/          wyscigi 3D (gfx3d, low-poly): tor z wzniesieniami, gokarty-modele, 3 rywali AI, przedmioty, drift
   games/snake/         waz: 10 poziomow w 5 swiatach, 9 przedmiotow, portal, tryb bez konca, grafika z Gemini (PNG z alfa)
+  games/pacman/        labirynt: 4 plansze x 4 swiaty, 4 duchy z AI jak w oryginale, owoce, autopilot; grafika z Gemini
   games/lekcje/        lekcje: lista.h + NN_nazwa/ (gra.cpp, README.md, testy.txt, rozwiazania/)
   gfx/lodepng/         dekoder PNG (lodepng, licencja zlib; tylko dekoder)
   gfx3d/               software'owy renderer 3D: math3d (Vec3/Mat4), mesh (siatki + bryly), renderer (rasteryzacja, swiatlo, mgla, sortowanie)
@@ -125,8 +126,10 @@ assets/                obrazki PNG gier w assets/<id gry>/; emulator czyta z dys
 sim/                   emulator Windows: backend Win32, mapowanie klawiszy, pad USB, keymap.cfg
 tests/                 scenariusze regresji Lake Mario (slady --trace i zrzuty) + wzorce
 tools/                 testy.ps1 (regresja + testy lekcji), setup_kid_pc.ps1, fetch_lvgl.ps1, bmp2png.ps1, gen_demo_assets.py, gen_kart_assets.py,
-                       gen_snake_assets.py (surowe obrazy Gemini z assets_src/snake/ -> assets/snake/)
+                       gen_snake_assets.py (surowe obrazy Gemini z assets_src/snake/ -> assets/snake/),
+                       gen_pacman_assets.py (assets_src/pacman/ -> assets/pacman/), pacman_maze_check.py, pacman_maze_gen.py
 assets_src/snake/      surowe obrazy z Gemini (arkusze obiektow na magencie, tla swiatow, ilustracja tytulowa) - nie ida na plytke
+assets_src/pacman/     surowe obrazy z Gemini dla Pacmana (bohater, duchy, owoce, tla, tytul) - nie ida na plytke
 third_party/           (gitignore) LVGL pobrane przez fetch_lvgl.ps1 na komputerze bez PlatformIO
 docs/HARDWARE.md       pinout, opis plytki, co zweryfikowac po przyjsciu sprzetu
 docs/EMULATOR.md       emulator: budowanie, sterowanie, testy skryptowane
@@ -178,8 +181,17 @@ czasu i najlepszego okrążenia, mini-mapa,
 komunikaty o okrążeniach, tabela wyników z czasami na mecie. **Y (trzymaj)** włącza autopilota – demo i podstawa testów regresji.
 Sterowanie: A gaz, strzałki skręt, B drift, X przedmiot, dół hamulec.
 
+**Cztery tory** (wybór strzałkami na ekranie tytułowym, rekord okrążenia każdego toru zapisywany w pamięci):
+Jezioro (łąka), Kanion (pustynia, mesy), Zimowa przełęcz (śnieg), Jesienny las. Każdy ma własny układ, wzgórza,
+tekstury nawierzchni, drzewa, panoramę gór i kolory nieba – dane w `src/games/kart/kart_tracks.h`, grafika z Gemini
+(`assets_src/kart/` → `tools/gen_kart_gemini.py` → `tools/gen_kart_atlas.py`). Nowy tor sprawdza
+`tools/kart_tracks_check.py`.
+
+![Kart – cztery tory](docs/images/kart_tory.png)
+
 Fizyka pozostaje 2D (płaszczyzna XZ, mapa nawierzchni 128×128), wysokość terenu jest tylko wizualna. Elementy 2D
-(ikony, chmury, góry, dym, płomień) generuje `tools/gen_kart_assets.py`, atlas tekstur `tools/gen_kart_atlas.py` (oba Pillow;
+(ikony, chmury, góry, dym, płomień) generuje `tools/gen_kart_assets.py`, a wersje z Gemini (góry, chmury, ikony,
+drzewa: `assets_src/kart/`) nakłada `tools/gen_kart_gemini.py`, atlas tekstur `tools/gen_kart_atlas.py` (oba Pillow;
 własny PNG o tym samym układzie kafelków zastępuje atlas bez zmian w kodzie). Gdy render trwa dłużej niż 13 ms (płytka),
 gra sama skraca zasięg rysowania, przechodzi na cieniowanie płaskie, wyłącza Z-bufor, potem krzaki i cienie.
 
@@ -223,6 +235,30 @@ Y = autopilot (BFS do najbliższego celu; demo i testy – przechodzi całą kam
 Grafika: przedmioty, przeszkody, portal, głowy węża (3 kolory), 5 teł i ilustracja tytułowa wygenerowane w Gemini
 (25.09.2026, konto użytkownika), obrobione skryptem `python tools/gen_snake_assets.py` (wycięcie tła magenta z miękką
 krawędzią, skala, korekta jasności teł). Ciało węża to cieniowane kulki generowane w kodzie (obrys + kolor + cień przez maskę).
+
+## Pacman: labirynt z czterema duchami
+
+| ![Pacman – ekran tytułowy](docs/images/pacman_title.png) | ![Pacman – świat Neon](docs/images/pacman.png) |
+|---|---|
+
+Klasyczne zasady w natywnym 800×480: labirynt 27×19 kratek po 24 px po lewej, panel z punktami po prawej. Kulka 10 pkt,
+duża kulka 50 pkt i na kilka sekund (6,5 s na poziomie 1, coraz krócej) duchy uciekają – zjedzone dają 200/400/800/1600
+w jednym ciągu i wracają do domu jako same oczy. Owoc pojawia się po 70 i 170 zjedzonych kulkach (wiśnie … gwiazda, 100 … 5000
+pkt), dodatkowe życie za 10 000. Cztery duchy z celami jak w oryginale: czerwony goni, różowy zachodzi 4 kratki przed gracza,
+błękitny celuje w punkt odbity względem czerwonego, pomarańczowy goni z daleka i ucieka do rogu z bliska; tryby rozproszenia
+i pościgu zmieniają się wg zegara (7/20/7/20/5/20/5 s), a każda zmiana odwraca duchy. Cztery plansze („Klasyk” ręcznie,
+trzy z generatora `tools/pacman_maze_gen.py` z gwarancją braku ślepych zaułków) i cztery światy (neon, cukierki, dżungla,
+lawa – tło z Gemini, kolor ścian); poziom n gra na planszy (n−1) mod 4, tunel zawija. Sterowanie: krzyżak – kierunek można
+wcisnąć wcześniej, skręt następuje na najbliższym skrzyżowaniu (także 6 px przed środkiem kratki, jak w oryginale),
+zawrócenie natychmiast; X na tytule = poziom startowy (1–8), Y = autopilot (BFS z omijaniem duchów, goni przestraszone;
+demo i testy). Rekord w NVS (`pacman_top`).
+
+Grafika: bohater (4 klatki paszczy + 4 klatki śmierci), duchy (4 kolory × 2 klatki, przestraszony niebieski/biały, oczy),
+8 owoców, ilustracja tytułowa i 4 tła z Gemini (25.09.2026, konto użytkownika), obróbka `python tools/gen_pacman_assets.py`
+(klatki paszczy wyrównane do lewej krawędzi, żeby kula nie skakała między klatkami; różowy duch kluczowany wyższym progiem
+magenty). Ściany rysowane w kodzie z pola odległości od korytarza: neonowa rurka w stałej odległości od korytarza
+(narożniki zaokrąglone same z siebie), poświata, ciemna płyta w głębi bloków, ramka zewnętrzna z podwójną linią –
+wypalane raz na poziom razem z tłem. Na PC 0,30 ms/klatkę.
 
 ## Dodawanie nowej gry
 
